@@ -8,7 +8,6 @@ import { calculateRiskStatus, inferLifecycleStage } from "../utils/riskLogic";
 import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import ErrorBanner from "../components/ErrorBanner";
-import LoadingSpinner from "../components/LoadingSpinner";
 import { formatDate, formatDateTime } from "../utils/formatters";
 import { loginRequest } from "../auth/msalConfig";
 
