@@ -2,7 +2,6 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
-import { useAuth } from "./auth/useAuth";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
 import HomeScreen from "./pages/HomeScreen";
