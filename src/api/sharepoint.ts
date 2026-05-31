@@ -1,4 +1,4 @@
-import { Account, LOB, Site, AttritionCase, CaseUpdate, EmailThread, CreateCasePayload } from "../utils/types";
+import { Account, LOB, Site, AttritionCase, CaseUpdate, EmailThread } from "../utils/types";
 
 const SITE_URL = process.env.REACT_APP_SHAREPOINT_SITE_URL || "";
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
