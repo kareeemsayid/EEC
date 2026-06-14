@@ -1,45 +1,16 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { useAuth } from "../auth/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function LoginPage() {
   const { login, loading } = useAuth();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  // 3D tilt effect on card (mousemove)
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const rotateX = (y - centerY) / 20;
-      const rotateY = (centerX - x) / 20;
-      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
-    };
-
-    const handleMouseLeave = () => {
-      card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)";
-    };
-
-    card.addEventListener("mousemove", handleMouseMove);
-    card.addEventListener("mouseleave", handleMouseLeave);
-    return () => {
-      card.removeEventListener("mousemove", handleMouseMove);
-      card.removeEventListener("mouseleave", handleMouseLeave);
-    };
-  }, []);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Animated gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-teal-900 via-slate-800 to-gray-900 animate-gradient-xy" />
 
-      {/* Floating particles */}
+      {/* Floating particles / blobs */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob" />
         <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000" />
@@ -51,14 +22,10 @@ export default function LoginPage() {
 
       {/* Main content */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-12">
-        <div
-          ref={cardRef}
-          className="w-full max-w-md transition-all duration-300 ease-out will-change-transform"
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          {/* Glass card with backdrop blur */}
-          <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 transform transition-all duration-500 animate-slide-up-fade">
-            {/* Logo area with subtle glow */}
+        {/* Card with CSS 3D tilt on hover */}
+        <div className="group w-full max-w-md transition-all duration-500 ease-out [transform-style:preserve-3d] hover:scale-105 hover:rotate-1 hover:shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 transition-all duration-300 group-hover:bg-white/15">
+            {/* Logo */}
             <div className="flex justify-center mb-4">
               <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-teal-600 rounded-2xl flex items-center justify-center shadow-xl animate-pulse-glow">
                 <span className="text-white font-mono font-black text-3xl tracking-tighter drop-shadow-lg">
@@ -74,7 +41,7 @@ export default function LoginPage() {
               Concentrix · Trainer Portal
             </p>
 
-            {/* Feature list with icons */}
+            {/* Feature list */}
             <div className="mt-6 space-y-2 text-sm text-gray-200">
               <div className="flex items-center gap-2 animate-fade-in-left" style={{ animationDelay: "0.1s" }}>
                 <div className="w-5 h-5 rounded-full bg-teal-500/20 flex items-center justify-center">
@@ -96,17 +63,17 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Disclaimer box with glass effect */}
+            {/* Disclaimer */}
             <div className="mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
               <p className="text-xs text-teal-100 font-medium">🔐 Authorized Concentrix trainers only.</p>
               <p className="text-xs text-teal-200/80 mt-0.5">All actions are audited. Unauthorized use is prohibited.</p>
             </div>
 
-            {/* Sign in button with ripple effect */}
+            {/* Sign in button */}
             <button
               onClick={login}
               disabled={loading}
-              className="relative mt-8 w-full bg-white hover:bg-gray-100 text-teal-800 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden group"
+              className="relative mt-8 w-full bg-white hover:bg-gray-100 text-teal-800 font-semibold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden group/btn"
             >
               {loading ? (
                 <LoadingSpinner size="sm" />
@@ -116,12 +83,11 @@ export default function LoginPage() {
                     <path d="M1 1h10v10H1zM12 1h10v10H12zM1 12h10v10H1zM12 12h10v10H12z" />
                   </svg>
                   Sign in with Microsoft
-                  <span className="absolute inset-0 bg-teal-50/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <span className="absolute inset-0 bg-teal-50/20 transform -skew-x-12 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700" />
                 </>
               )}
             </button>
 
-            {/* Footer */}
             <p className="text-center text-xs text-teal-200/60 mt-6">
               Azure AD SSO · Secured by Concentrix IT
             </p>
@@ -129,7 +95,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Custom animations */}
+      {/* Keyframes (add to your global CSS if missing, but included here as style) */}
       <style>{`
         @keyframes gradientXY {
           0% { background-position: 0% 0%; }
@@ -161,15 +127,9 @@ export default function LoginPage() {
         .animate-blob {
           animation: blob 7s infinite;
         }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-        .animate-slide-up-fade {
-          animation: slideUpFade 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards;
-        }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+        .animate-slide-up-fade { animation: slideUpFade 0.8s cubic-bezier(0.2, 0.9, 0.4, 1.1) forwards; }
         .animate-fade-in-left {
           opacity: 0;
           animation: fadeInLeft 0.5s ease forwards;
