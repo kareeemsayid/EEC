@@ -3,7 +3,7 @@ import { useAuth } from "../auth/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 export default function LoginPage() {
-  const { login, loading } = useAuth();
+  const { login, profileLoading: loading } = useAuth();
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -95,7 +95,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Keyframes (add to your global CSS if missing, but included here as style) */}
+      {/* Keyframes */}
       <style>{`
         @keyframes gradientXY {
           0% { background-position: 0% 0%; }
