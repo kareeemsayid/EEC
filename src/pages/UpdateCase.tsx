@@ -8,8 +8,28 @@ import { calculateRiskStatus, inferLifecycleStage } from "../utils/riskLogic";
 import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import ErrorBanner from "../components/ErrorBanner";
+import Tooltip from "../components/Tooltip";
 import { formatDate, formatDateTime } from "../utils/formatters";
 import { loginRequest } from "../auth/msalConfig";
+import {
+  Search,
+  RefreshCw,
+  Mail,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  Building2,
+  Briefcase,
+  MapPin,
+  Zap,
+  ArrowRight,
+  Check,
+  History,
+  Info,
+} from "lucide-react";
 
 const UPDATE_TYPES = [
   "Absence Logged",
@@ -36,10 +56,14 @@ const ABSENCE_TYPES = [
 ];
 
 const LIFECYCLE_STAGES: LifecycleStage[] = [
-  "Initial Review",
-  "Coaching Plan",
-  "Final Warning",
+  "Monitoring",
+  "Under Review",
+  "High Risk",
+  "Critical Escalation",
+  "PS Review",
   "Termination Recommended",
+  "Workday Action Pending",
+  "Exit Coordination",
   "Closed",
 ];
 
@@ -66,7 +90,7 @@ const INITIAL_FORM: UpdateFormData = {
 };
 
 export default function UpdateCase() {
-  const { userProfile, getAccessToken } = useAuth();
+  const { user, getAccessToken } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCaseNum = searchParams.get("case") || "";
@@ -109,7 +133,6 @@ export default function UpdateCase() {
             escalationRequired: found.escalationRequired,
             documentationRequired: found.documentationRequired,
           }));
-          // Load email thread
           const thread = await fetchEmailThread(token, found.caseNumber);
           setEmailThread(thread);
         }
@@ -122,7 +145,6 @@ export default function UpdateCase() {
     [getAccessToken]
   );
 
-  // Auto-search if arriving with ?case= param
   useEffect(() => {
     if (initialCaseNum) searchCase(initialCaseNum);
   }, [initialCaseNum, searchCase]);
@@ -146,12 +168,12 @@ export default function UpdateCase() {
         absenceDate: form.absenceDate,
         absenceType: form.absenceType,
         updateType: form.updateType,
-        overrideStage: form.overrideStage || undefined,
+        overrideStage: form.overrideStage ? (form.overrideStage as LifecycleStage) : undefined,
         notes: form.notes,
         escalationRequired: form.escalationRequired,
         documentationRequired: form.documentationRequired,
-        updatedBy: userProfile?.displayName || "",
-        updatedByEmail: userProfile?.email || "",
+        updatedBy: user?.displayName || "",
+        updatedByEmail: user?.email || "",
       };
       await triggerUpdateCase(payload);
       setSuccess(`Case ${caseData.caseNumber} updated successfully. Thread reply sent.`);
@@ -163,209 +185,255 @@ export default function UpdateCase() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
-      <div>
-        <h1 className="font-barlow-condensed text-3xl font-bold text-gray-900 tracking-wide">
-          UPDATE CASE
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Search for a case and add an update</p>
+    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <RefreshCw className="w-5 h-5 text-teal-500" />
+            <span className="text-xs font-medium text-teal-600 uppercase tracking-wider">Modify Case</span>
+          </div>
+          <h1 className="font-barlow-condensed text-3xl font-bold text-gray-900 tracking-wide">
+            UPDATE CASE
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">Search for a case and add an update</p>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+      {/* Search Card with glass-morphism */}
+      <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-glass-sm p-5">
         <label className="block text-xs font-medium text-gray-600 mb-2">
           Case Number or Oracle ID
         </label>
         <div className="flex gap-3">
-          <input
-            type="text"
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
-            placeholder="e.g. EEC-2024-001 or ORG-123456"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && searchCase(query)}
-          />
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              className="w-full pl-9 pr-3 py-2.5 text-sm font-mono border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all bg-white/80"
+              placeholder="e.g. EEC-2024-001 or ORG-123456"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && searchCase(query)}
+            />
+          </div>
           <button
             onClick={() => searchCase(query)}
             disabled={searching || !query.trim()}
-            className="bg-teal-600 hover:bg-teal-500 disabled:opacity-60 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-gradient-teal hover:opacity-90 disabled:opacity-60 text-white text-sm font-medium px-6 py-2.5 rounded-xl transition-all shadow-glow-teal flex items-center gap-2"
           >
             {searching && <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />}
-            {searching ? "Searching…" : "Search"}
+            {searching ? "Searching..." : "Search"}
           </button>
         </div>
       </div>
 
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
+      {/* Success State */}
       {success && (
-        <div className="bg-teal-50 border border-teal-200 rounded-lg px-4 py-3 flex items-center gap-3">
-          <svg className="w-5 h-5 text-teal-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-          </svg>
-          <p className="text-sm text-teal-700 font-medium">{success}</p>
-          <button onClick={() => { setSuccess(null); setForm(INITIAL_FORM); }} className="ml-auto text-teal-500 hover:text-teal-700 text-xs underline">
+        <div className="glass-card bg-gradient-to-r from-teal-50/80 to-white border border-teal-200/50 rounded-xl px-5 py-4 flex items-center gap-4 animate-scale-in">
+          <div className="w-10 h-10 rounded-full bg-gradient-teal flex items-center justify-center shadow-glow-teal">
+            <Check className="w-5 h-5 text-white" />
+          </div>
+          <p className="text-sm text-teal-700 font-medium flex-1">{success}</p>
+          <button
+            onClick={() => { setSuccess(null); setForm(INITIAL_FORM); setCaseData(null); }}
+            className="text-teal-600 hover:text-teal-700 text-sm font-medium flex items-center gap-1"
+          >
             New Update
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Case Snapshot */}
+      {/* Case Snapshot with enhanced design */}
       {caseData && !success && (
         <>
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-slide-up">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-glass overflow-hidden animate-slide-up">
+            {/* Case Header */}
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-sm font-bold text-teal-700">
+                <span className="font-mono text-sm font-bold text-teal-700 bg-teal-50 px-2 py-1 rounded">
                   {caseData.caseNumber}
                 </span>
                 <RiskBadge risk={caseData.riskStatus} />
                 <StageBadge stage={caseData.lifecycleStage} />
               </div>
-              {caseData.caseStatus !== "Closed" && (
-                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
-                  {caseData.caseStatus}
-                </span>
-              )}
+              <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                caseData.caseStatus === "Active"
+                  ? "bg-green-100 text-green-700 border border-green-200"
+                  : "bg-gray-100 text-gray-600 border border-gray-200"
+              }`}>
+                {caseData.caseStatus}
+              </span>
             </div>
 
-            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
-              <SnapField label="Trainee" value={caseData.traineeName} />
-              <SnapField label="Oracle ID" value={caseData.oracleId} mono />
-              <SnapField label="Account" value={caseData.account} />
-              <SnapField label="LOB" value={caseData.lob} />
-              <SnapField label="Site" value={caseData.site} />
-              <SnapField label="Wave" value={caseData.wave} />
-              <SnapField label="Category" value={caseData.attritionCategory} />
-              <SnapField label="Sub-Reason" value={caseData.subReason} />
-              <SnapField label="Severity" value={caseData.severityLevel} />
-              <SnapField
-                label="Total Hours"
-                value={`${caseData.totalMissedHours}h`}
-                mono
-                highlight
-              />
-              <SnapField label="Incident Date" value={formatDate(caseData.incidentDate)} />
-              <SnapField label="Trainer" value={caseData.trainerName} />
+            {/* Case Details Grid */}
+            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <InfoField icon={<User className="w-4 h-4" />} label="Trainee" value={caseData.traineeName} />
+              <InfoField icon={<Briefcase className="w-4 h-4" />} label="Oracle ID" value={caseData.oracleId} mono />
+              <InfoField icon={<Building2 className="w-4 h-4" />} label="Account" value={caseData.account} />
+              <InfoField icon={<Building2 className="w-4 h-4" />} label="LOB" value={caseData.lob} />
+              <InfoField icon={<MapPin className="w-4 h-4" />} label="Site" value={caseData.site} />
+              <InfoField icon={<Calendar className="w-4 h-4" />} label="Incident" value={formatDate(caseData.incidentDate)} />
+              <InfoField icon={<AlertTriangle className="w-4 h-4" />} label="Category" value={caseData.attritionCategory} />
+              <InfoField icon={<Clock className="w-4 h-4" />} label="Total Hours" value={`${caseData.totalMissedHours}h`} mono highlight />
             </div>
 
             {/* Email Thread Info */}
             {emailThread ? (
-              <div className="px-5 py-3 border-t border-gray-100 bg-blue-50 flex items-center gap-4 text-sm">
-                <svg className="w-4 h-4 text-blue-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                <div className="min-w-0">
-                  <span className="font-medium text-blue-700 truncate block">
-                    {emailThread.subject || "Outlook Thread Active"}
+              <div className="px-5 py-3 border-t border-gray-100 bg-gradient-to-r from-blue-50/50 to-white flex items-center gap-4">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-blue-700 text-sm truncate block">
+                    {emailThread.threadSubject || "Outlook Thread Active"}
                   </span>
                   <span className="text-xs text-blue-500">
-                    Last reply: {formatDateTime(emailThread.lastReplyDate)} ·{" "}
-                    {emailThread.threadCount} message{emailThread.threadCount !== 1 ? "s" : ""}
+                    Last email: {formatDateTime(emailThread.lastEmailDate)} · {emailThread.totalEmailsSent} message{emailThread.totalEmailsSent !== 1 ? "s" : ""}
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="px-5 py-2 border-t border-gray-100 bg-gray-50 text-xs text-gray-400">
+              <div className="px-5 py-2 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-400 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
                 No email thread found for this case.
               </div>
             )}
           </div>
 
           {/* Update Form */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-5">
-            <h2 className="font-barlow-condensed font-semibold text-xl text-gray-900 tracking-wide">
+          <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-glass p-5 space-y-5">
+            <h2 className="font-barlow-condensed font-semibold text-xl text-gray-900 tracking-wide flex items-center gap-2">
+              <History className="w-5 h-5 text-teal-500" />
               ADD UPDATE
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField label="Update Type *">
-                <select
-                  className={inputClass}
-                  value={form.updateType}
-                  onChange={(e) => update("updateType", e.target.value)}
-                >
-                  <option value="">Select type…</option>
-                  {UPDATE_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </FormField>
-              <FormField label="Absence Type">
-                <select
-                  className={inputClass}
-                  value={form.absenceType}
-                  onChange={(e) => update("absenceType", e.target.value)}
-                >
-                  <option value="">Select absence type…</option>
-                  {ABSENCE_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-              </FormField>
-              <FormField label="Hours to Add">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  className={`${inputClass} font-mono`}
-                  value={form.hoursToAdd}
-                  onChange={(e) => update("hoursToAdd", parseFloat(e.target.value) || 0)}
-                />
-              </FormField>
-              <FormField label="Absence Date">
-                <input
-                  type="date"
-                  className={inputClass}
-                  value={form.absenceDate}
-                  onChange={(e) => update("absenceDate", e.target.value)}
-                />
-              </FormField>
-              <FormField label="Override Stage (optional)" className="sm:col-span-2">
-                <select
-                  className={inputClass}
-                  value={form.overrideStage}
-                  onChange={(e) => update("overrideStage", e.target.value)}
-                >
-                  <option value="">Auto-calculate from hours</option>
-                  {LIFECYCLE_STAGES.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-              </FormField>
+              <Tooltip content="Select the type of update you're recording" position="top">
+                <FormField label="Update Type" required>
+                  <select
+                    className={inputClass}
+                    value={form.updateType}
+                    onChange={(e) => update("updateType", e.target.value)}
+                  >
+                    <option value="">Select type...</option>
+                    {UPDATE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </FormField>
+              </Tooltip>
+              <Tooltip content="Type of absence if applicable" position="top">
+                <FormField label="Absence Type">
+                  <select
+                    className={inputClass}
+                    value={form.absenceType}
+                    onChange={(e) => update("absenceType", e.target.value)}
+                  >
+                    <option value="">Select absence type...</option>
+                    {ABSENCE_TYPES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </FormField>
+              </Tooltip>
+              <Tooltip content="Hours to add to the total (optional)" position="top">
+                <FormField label="Hours to Add">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    className={`${inputClass} font-mono`}
+                    value={form.hoursToAdd}
+                    onChange={(e) => update("hoursToAdd", parseFloat(e.target.value) || 0)}
+                  />
+                </FormField>
+              </Tooltip>
+              <Tooltip content="Date of absence if applicable" position="top">
+                <FormField label="Absence Date">
+                  <input
+                    type="date"
+                    className={inputClass}
+                    value={form.absenceDate}
+                    onChange={(e) => update("absenceDate", e.target.value)}
+                  />
+                </FormField>
+              </Tooltip>
+              <Tooltip content="Override automatic stage calculation (optional)" position="top">
+                <FormField label="Override Stage" className="sm:col-span-2">
+                  <select
+                    className={inputClass}
+                    value={form.overrideStage}
+                    onChange={(e) => update("overrideStage", e.target.value)}
+                  >
+                    <option value="">Auto-calculate from hours</option>
+                    {LIFECYCLE_STAGES.map((s) => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </FormField>
+              </Tooltip>
             </div>
 
-            <div className="flex gap-6">
-              <Toggle
-                label="Escalation Required"
-                value={form.escalationRequired}
-                onChange={(v) => update("escalationRequired", v)}
-              />
-              <Toggle
-                label="Documentation Required"
-                value={form.documentationRequired}
-                onChange={(v) => update("documentationRequired", v)}
-              />
+            {/* Toggles */}
+            <div className="flex gap-8">
+              <Tooltip content="Flag for escalation to management" position="top">
+                <Toggle
+                  label="Escalation Required"
+                  value={form.escalationRequired}
+                  onChange={(v) => update("escalationRequired", v)}
+                />
+              </Tooltip>
+              <Tooltip content="Mark if documents are needed" position="top">
+                <Toggle
+                  label="Documentation Required"
+                  value={form.documentationRequired}
+                  onChange={(v) => update("documentationRequired", v)}
+                />
+              </Tooltip>
             </div>
 
-            <FormField label="Update Notes *">
-              <textarea
-                className={`${inputClass} resize-none`}
-                rows={4}
-                value={form.notes}
-                onChange={(e) => update("notes", e.target.value)}
-                placeholder="Describe the update, outcome, or next steps…"
-              />
-            </FormField>
+            <Tooltip content="Describe the update details" position="top">
+              <FormField label="Update Notes" required>
+                <textarea
+                  className={`${inputClass} resize-none`}
+                  rows={4}
+                  value={form.notes}
+                  onChange={(e) => update("notes", e.target.value)}
+                  placeholder="Describe the update, outcome, or next steps..."
+                />
+              </FormField>
+            </Tooltip>
 
-            {/* Live Diff Panel */}
+            {/* Live Diff Panel with enhanced design */}
             {form.hoursToAdd > 0 && newRisk && newStage && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 animate-slide-up">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                  Before / After Preview
-                </p>
-                <div className="grid grid-cols-2 gap-4">
+              <div className="glass-card bg-gradient-to-r from-gray-50/80 to-white border border-gray-200/50 rounded-xl p-4 animate-slide-up">
+                <div className="flex items-center gap-2 mb-4">
+                  <Info className="w-4 h-4 text-gray-500" />
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Before / After Preview
+                  </p>
+                </div>
+
+                {/* Threshold Warnings */}
+                {(newHours >= 8 && caseData.totalMissedHours < 8) && (
+                  <div className="mb-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700 font-medium flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    Warning threshold (8h) crossed - escalation email will be triggered
+                  </div>
+                )}
+                {(newHours >= 16 && caseData.totalMissedHours < 16) && (
+                  <div className="mb-3 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700 font-medium flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Critical threshold (16h) crossed - PS notification will be sent
+                  </div>
+                )}
+
+                {/* Diff Columns */}
+                <div className="grid grid-cols-3 gap-4 items-center">
                   <DiffColumn
                     label="Current"
                     hours={caseData.totalMissedHours}
@@ -373,6 +441,10 @@ export default function UpdateCase() {
                     stage={caseData.lifecycleStage}
                     dim
                   />
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <ArrowRight className="w-6 h-6 text-teal-500" />
+                    <span className="text-xs font-mono text-teal-600 font-bold">+{form.hoursToAdd}h</span>
+                  </div>
                   <DiffColumn
                     label="After Update"
                     hours={newHours}
@@ -383,22 +455,24 @@ export default function UpdateCase() {
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            {/* Navigation */}
+            <div className="flex items-center justify-between pt-5 border-t border-gray-100">
               <button
                 onClick={() => navigate("/")}
-                className="text-sm text-gray-600 hover:text-gray-900"
+                className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors"
               >
-                ← Cancel
+                <ChevronLeft className="w-4 h-4" />
+                Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="bg-teal-600 hover:bg-teal-500 disabled:opacity-60 text-white text-sm font-medium px-6 py-2 rounded-lg transition-colors flex items-center gap-2"
+                className="bg-gradient-teal hover:opacity-90 disabled:opacity-60 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-all shadow-glow-teal flex items-center gap-2"
               >
                 {submitting && (
                   <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                 )}
-                {submitting ? "Submitting…" : "Submit Update"}
+                {submitting ? "Submitting..." : "Submit Update"}
               </button>
             </div>
           </div>
@@ -411,79 +485,48 @@ export default function UpdateCase() {
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 const inputClass =
-  "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white";
+  "w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-all bg-white/80 backdrop-blur-sm";
 
-function FormField({
-  label,
-  children,
-  className = "",
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function InfoField({ icon, label, value, mono, highlight }: { icon: React.ReactNode; label: string; value: string; mono?: boolean; highlight?: boolean }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="text-gray-400 mt-0.5 shrink-0">{icon}</span>
+      <div>
+        <span className="text-xs text-gray-400 uppercase tracking-wide">{label}</span>
+        <p className={`text-sm mt-0.5 ${highlight ? "font-bold text-teal-700" : "text-gray-800"} ${mono ? "font-mono" : ""}`}>
+          {value || "—"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, children, className = "", required }: { label: string; children: React.ReactNode; className?: string; required?: boolean }) {
   return (
     <div className={className}>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-gray-600 mb-1.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
       {children}
     </div>
   );
 }
 
-function SnapField({
-  label,
-  value,
-  mono,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  highlight?: boolean;
-}) {
+function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div>
-      <span className="text-xs text-gray-400 uppercase tracking-wide">{label}</span>
-      <p className={`text-sm mt-0.5 ${highlight ? "font-bold text-teal-700" : "text-gray-800"} ${mono ? "font-mono" : ""}`}>
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function Toggle({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer">
+    <label className="flex items-center gap-3 cursor-pointer group">
       <div
-        className={`w-9 h-5 rounded-full transition-colors ${value ? "bg-teal-600" : "bg-gray-300"} relative`}
+        className={`w-11 h-6 rounded-full transition-all ${value ? "bg-gradient-teal shadow-glow-teal" : "bg-gray-300"} relative`}
         onClick={() => onChange(!value)}
       >
-        <div
-          className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
-            value ? "translate-x-4" : "translate-x-0.5"
-          }`}
-        />
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${value ? "translate-x-5" : "translate-x-1"}`} />
       </div>
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">{label}</span>
     </label>
   );
 }
 
-function DiffColumn({
-  label,
-  hours,
-  risk,
-  stage,
-  dim,
-}: {
+function DiffColumn({ label, hours, risk, stage, dim }: {
   label: string;
   hours: number;
   risk: import("../utils/types").RiskStatus;
@@ -491,13 +534,17 @@ function DiffColumn({
   dim?: boolean;
 }) {
   return (
-    <div className={`space-y-2 ${dim ? "opacity-60" : ""}`}>
+    <div className={`space-y-2 text-center rounded-xl p-3 ${dim ? "opacity-60 bg-gray-100/50" : "bg-teal-50/50 border border-teal-100"}`}>
       <p className={`text-xs font-semibold uppercase tracking-wide ${dim ? "text-gray-400" : "text-teal-700"}`}>
         {label}
       </p>
-      <p className="font-mono text-lg font-bold text-gray-900">{hours}h</p>
-      <RiskBadge risk={risk} showTooltip={false} size="sm" />
-      <StageBadge stage={stage} size="sm" />
+      <p className="font-mono text-2xl font-bold text-gray-900">{hours}h</p>
+      <div className="flex justify-center">
+        <RiskBadge risk={risk} showTooltip={false} size="sm" />
+      </div>
+      <div className="flex justify-center">
+        <StageBadge stage={stage} size="sm" />
+      </div>
     </div>
   );
 }

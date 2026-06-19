@@ -1,101 +1,142 @@
-import { useEffect, useState, useCallback } from "react";
+// src/auth/useAuth.ts
+import { useState, useEffect, useCallback } from "react";
 import { useMsal } from "@azure/msal-react";
-import { AccountInfo, InteractionRequiredAuthError } from "@azure/msal-browser";
-import { loginRequest, graphConfig } from "./msalConfig";
+import { loginRequest } from "./msalConfig";
+import {
+  fetchUserProfile,
+  fetchUserPhotoUrl,
+  checkIsPSUser,
+  UserProfile,
+} from "../api/sharepoint";
 
-export interface UserProfile {
-  displayName: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  jobTitle?: string;
-  department?: string;
+export interface AuthUser extends UserProfile {
+  photoUrl: string | null;
+  isPSUser: boolean;
 }
 
-export function useAuth() {
-  const { instance, accounts, inProgress } = useMsal();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
+interface UseAuthReturn {
+  user: AuthUser | null;
+  profileLoading: boolean;
+  isAuthenticated: boolean;
+  login: () => Promise<void>;
+  logout: () => void;
+  getAccessToken: (scopes?: string[]) => Promise<string>;
+}
 
-  const account: AccountInfo | null = accounts[0] ?? null;
-  const isAuthenticated = !!account;
+export function useAuth(): UseAuthReturn {
+  const { instance, accounts } = useMsal();
+  const isAuthenticated = accounts.length > 0;
+
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const getAccessToken = useCallback(
-    async (scopes: string[]): Promise<string> => {
+    async (scopes: string[] = loginRequest.scopes as string[]) => {
+      const account = accounts[0];
       if (!account) throw new Error("No account signed in");
       try {
-        const response = await instance.acquireTokenSilent({ scopes, account });
-        return response.accessToken;
+        const result = await instance.acquireTokenSilent({ scopes, account });
+        console.log("[useAuth] Access token acquired successfully");
+        return result.accessToken;
       } catch (error) {
-        if (error instanceof InteractionRequiredAuthError) {
-          const response = await instance.acquireTokenPopup({ scopes, account });
-          return response.accessToken;
-        }
-        throw error;
+        console.error("[useAuth] Token acquisition failed:", error);
+        // Try interactive if silent fails
+        const result = await instance.acquireTokenPopup({ scopes, account });
+        return result.accessToken;
       }
     },
-    [instance, account]
+    [instance, accounts]
   );
 
-  const fetchUserProfile = useCallback(async () => {
-    if (!account) return;
-    setProfileLoading(true);
-    setProfileError(null);
-    try {
-      const token = await getAccessToken(loginRequest.scopes as string[]);
-      const response = await fetch(graphConfig.graphMeEndpoint, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Failed to fetch user profile");
-      const data = await response.json();
-      const nameParts = (data.displayName || "").split(" ");
-      setUserProfile({
-        displayName: data.displayName || account.name || "",
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        email: data.mail || data.userPrincipalName || account.username || "",
-        jobTitle: data.jobTitle,
-        department: data.department,
-      });
-    } catch (err) {
-      setProfileError(err instanceof Error ? err.message : "Unknown error");
-      // Fallback to account info
-      const nameParts = (account.name || "").split(" ");
-      setUserProfile({
-        displayName: account.name || "",
-        firstName: nameParts[0] || "",
-        lastName: nameParts.slice(1).join(" ") || "",
-        email: account.username || "",
-      });
-    } finally {
-      setProfileLoading(false);
+  // Load profile + photo + PS role after login
+  useEffect(() => {
+    if (!isAuthenticated) {
+      console.log("[useAuth] Not authenticated, clearing user");
+      setUser(null);
+      return;
     }
-  }, [account, getAccessToken]);
+
+    let cancelled = false;
+
+    (async () => {
+      setProfileLoading(true);
+      console.log("[useAuth] Loading user profile...");
+
+      try {
+        const token = await getAccessToken();
+
+        // Fetch profile, photo, and PS role in parallel
+        const [profile, photoUrl, isPSUser] = await Promise.all([
+          fetchUserProfile(token),
+          fetchUserPhotoUrl(token),
+          checkIsPSUser(token, accounts[0]?.username || ""),
+        ]);
+
+        if (!cancelled) {
+          console.log("[useAuth] Profile loaded:", {
+            displayName: profile.displayName,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            email: profile.email,
+            jobTitle: profile.jobTitle,
+            hasPhoto: !!photoUrl,
+            isPSUser,
+          });
+
+          setUser({
+            id: profile.id,
+            displayName: profile.displayName || "Trainer",
+            email: profile.email || accounts[0]?.username || "",
+            firstName: profile.firstName || "Trainer",
+            lastName: profile.lastName || "",
+            jobTitle: profile.jobTitle || "Trainer",
+            photoUrl,
+            isPSUser,
+          });
+        }
+      } catch (e) {
+        console.error("[useAuth] Profile load error:", e);
+
+        // Fallback: create basic user from MSAL account info
+        if (!cancelled && accounts[0]) {
+          const account = accounts[0];
+          console.log("[useAuth] Creating fallback user from account:", account);
+
+          const displayName = account.name || account.username?.split("@")[0] || "Trainer";
+          const nameParts = displayName.split(" ");
+
+          setUser({
+            id: account.localAccountId || "unknown",
+            displayName,
+            email: account.username || "",
+            firstName: nameParts[0] || "Trainer",
+            lastName: nameParts.slice(1).join(" ") || "",
+            jobTitle: "Trainer",
+            photoUrl: null,
+            isPSUser: false,
+          });
+        }
+      } finally {
+        if (!cancelled) {
+          setProfileLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, getAccessToken, accounts]);
 
   const login = useCallback(async () => {
+    console.log("[useAuth] Initiating login...");
     await instance.loginPopup(loginRequest);
   }, [instance]);
 
   const logout = useCallback(() => {
+    console.log("[useAuth] Logging out...");
     instance.logoutPopup({ postLogoutRedirectUri: window.location.origin });
   }, [instance]);
 
-  useEffect(() => {
-    if (isAuthenticated && !userProfile && inProgress === "none") {
-      fetchUserProfile();
-    }
-  }, [isAuthenticated, userProfile, inProgress, fetchUserProfile]);
-
-  return {
-    isAuthenticated,
-    account,
-    userProfile,
-    profileLoading,
-    profileError,
-    inProgress,
-    login,
-    logout,
-    getAccessToken,
-  };
+  return { user, profileLoading, isAuthenticated, login, logout, getAccessToken };
 }

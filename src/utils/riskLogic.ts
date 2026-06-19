@@ -30,9 +30,9 @@ export function inferLifecycleStage(
   hours: number
 ): LifecycleStage {
   if (riskStatus === "Critical" && hours >= 24) return "Termination Recommended";
-  if (riskStatus === "Critical") return "Final Warning";
-  if (riskStatus === "High Risk") return "Coaching Plan";
-  return "Initial Review";
+  if (riskStatus === "Critical") return "Critical Escalation";
+  if (riskStatus === "High Risk") return "High Risk";
+  return "Monitoring";
 }
 
 export function getRiskColor(risk: RiskStatus): string {
@@ -60,13 +60,20 @@ export function getRiskDotColor(risk: RiskStatus): string {
 export function getStageColor(stage: LifecycleStage): string {
   switch (stage) {
     case "Termination Recommended":
+    case "Workday Action Pending":
+    case "Terminated":
       return "text-red-700 bg-red-50";
-    case "Final Warning":
+    case "Critical Escalation":
       return "text-orange-700 bg-orange-50";
-    case "Coaching Plan":
+    case "High Risk":
+    case "PS Review":
       return "text-amber-700 bg-amber-50";
-    case "Initial Review":
+    case "Under Review":
       return "text-blue-700 bg-blue-50";
+    case "Exit Coordination":
+      return "text-purple-700 bg-purple-50";
+    case "Monitoring":
+      return "text-teal-700 bg-teal-50";
     case "Closed":
       return "text-gray-600 bg-gray-100";
   }
