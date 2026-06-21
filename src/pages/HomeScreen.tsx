@@ -1,43 +1,26 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip as ChartTooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell,
+  AreaChart, Area, XAxis, YAxis, Tooltip as ChartTooltip, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import { useAuth } from "../auth/useAuth";
-import { fetchAttritionCases, fetchCaseUpdates } from "../api/sharepoint";
-import { AttritionCase, CaseUpdate, KpiData } from "../utils/types";
+import { fetchCases, fetchAllCases, fetchCasesByAccount, AttritionCase } from "../api/api";
+import { KpiData } from "../utils/types";
 import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import ErrorBanner from "../components/ErrorBanner";
 import { KpiSkeleton, CaseCardSkeleton, ActivitySkeleton } from "../components/Skeleton";
+import EmptyState from "../components/EmptyState";
 import Tooltip from "../components/Tooltip";
+import CountUp from "../components/CountUp";
+import Sparkline from "../components/Sparkline";
+import InsightStrip from "../components/InsightStrip";
 import { formatDate, formatHours, timeAgo } from "../utils/formatters";
-import { loginRequest } from "../auth/msalConfig";
 import toast from "react-hot-toast";
-import {
-  FolderOpen,
-  AlertTriangle,
-  TrendingUp,
-  Eye,
-  LogOut,
-  Plus,
-  RefreshCw,
-  ChevronDown,
-  ChevronUp,
-  FileText,
-  Clock,
-  Calendar,
-  Activity,
-  HelpCircle,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
-  Zap,
-  Target,
-  Sparkles,
-  ChevronRight,
-} from "lucide-react";
+import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, RefreshCw, FileText, Clock, Calendar, Activity, CircleHelp as HelpCircle, ChevronRight, MoveHorizontal as MoreHorizontal, Minus, Sparkles } from "lucide-react";
+
+const TIME_RANGES = ["Today", "This Week", "This Month"] as const;
+type TimeRange = typeof TIME_RANGES[number];
 
 const WEEKLY_TREND = [
   { week: "Wk 1", critical: 1, highRisk: 2, monitoring: 4, total: 7 },
@@ -45,40 +28,61 @@ const WEEKLY_TREND = [
   { week: "Wk 3", critical: 1, highRisk: 4, monitoring: 3, total: 8 },
   { week: "Wk 4", critical: 3, highRisk: 2, monitoring: 6, total: 11 },
   { week: "Wk 5", critical: 2, highRisk: 5, monitoring: 4, total: 11 },
+  { week: "Wk 6", critical: 1, highRisk: 3, monitoring: 5, total: 9 },
 ];
 
-const PIE_COLORS = ["#0d9488", "#f59e0b", "#ef4444", "#3b82f6"];
-
 export default function HomeScreen() {
-  const { user, getAccessToken } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const hasShownCriticalToast = useRef(false);
 
   const [cases, setCases] = useState<AttritionCase[]>([]);
-  const [updates, setUpdates] = useState<CaseUpdate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCase, setExpandedCase] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>("This Week");
+  const [showInsight, setShowInsight] = useState(true);
+  const [lastSync, setLastSync] = useState<Date>(new Date());
+  const [syncing, setSyncing] = useState(false);
 
   const loadData = useCallback(async () => {
+    if (!user?.email) return;
+    setSyncing(true);
     setLoading(true);
     setError(null);
     try {
-      const token = await getAccessToken(loginRequest.scopes as string[]);
-      const [casesData, updatesData] = await Promise.all([
-        fetchAttritionCases(token, user?.email),
-        fetchCaseUpdates(token),
-      ]);
-      setCases(casesData);
-      setUpdates(updatesData.slice(0, 5));
+      // Role-based case fetching
+      if (user.role === 'PS' || user.role === 'SrManager') {
+        const casesData = await fetchAllCases();
+        setCases(casesData);
+      } else if (user.role === 'Supervisor' || user.role === 'Manager') {
+        // Fetch cases for supervisor's accounts
+        const accountIds = user.supervisorAccounts?.map(a => a.accountId) || [];
+        if (accountIds.length > 0) {
+          const allCases = await Promise.all(
+            accountIds.map(id => fetchCasesByAccount(id))
+          );
+          setCases(allCases.flat());
+        } else {
+          // Fallback to own cases
+          const casesData = await fetchCases(user.email);
+          setCases(casesData);
+        }
+      } else {
+        // Trainer - own cases
+        const casesData = await fetchCases(user.email);
+        setCases(casesData);
+      }
+      setLastSync(new Date());
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load data";
       setError(message);
       toast.error(message);
     } finally {
       setLoading(false);
+      setTimeout(() => setSyncing(false), 600);
     }
-  }, [getAccessToken, user?.email]);
+  }, [user]);
 
   useEffect(() => {
     if (user) loadData();
@@ -88,422 +92,436 @@ export default function HomeScreen() {
     if (!loading && !hasShownCriticalToast.current) {
       const criticalCases = cases.filter(c => c.riskStatus === "Critical" && c.caseStatus !== "Closed");
       if (criticalCases.length > 0) {
-        toast.error(`${criticalCases.length} critical case${criticalCases.length > 1 ? "s" : ""} require${criticalCases.length === 1 ? "s" : ""} immediate attention`, {
-          duration: 6000,
-          icon: "⚠️",
-        });
+        toast.error(`${criticalCases.length} critical case${criticalCases.length > 1 ? "s" : ""} require attention`, { duration: 6000 });
         hasShownCriticalToast.current = true;
       }
     }
   }, [loading, cases]);
 
-  const kpi: KpiData = {
+  const kpi: KpiData = useMemo(() => ({
     activeCases: cases.filter((c) => c.caseStatus !== "Closed").length,
     critical: cases.filter((c) => c.riskStatus === "Critical" && c.caseStatus !== "Closed").length,
     highRisk: cases.filter((c) => c.riskStatus === "High Risk" && c.caseStatus !== "Closed").length,
     monitoring: cases.filter((c) => c.riskStatus === "Monitoring" && c.caseStatus !== "Closed").length,
     terminationRecommended: cases.filter((c) => c.lifecycleStage === "Termination Recommended").length,
-  };
+  }), [cases]);
 
   const activeCases = cases.filter((c) => c.caseStatus !== "Closed");
   const hasCriticalAlert = kpi.critical > 0;
 
-  const pieData = [
-    { name: "Monitoring", value: kpi.monitoring, color: PIE_COLORS[0] },
-    { name: "High Risk", value: kpi.highRisk, color: PIE_COLORS[1] },
-    { name: "Critical", value: kpi.critical, color: PIE_COLORS[2] },
-  ].filter(d => d.value > 0);
+  // SLA compliance gauge value
+  const resolvedCases = cases.filter((c) => c.caseStatus === "Closed").length;
+  const slaCompliance = cases.length > 0 ? Math.round((resolvedCases / Math.max(cases.length, 1)) * 100) : 0;
 
-  // Generate trend indicators (mock - in real app would compare to previous period)
-  const getTrend = (current: number) => {
-    if (current === 0) return { direction: "neutral", value: "0%" };
-    const trend = Math.random() > 0.5 ? "up" : "down";
-    const value = Math.floor(Math.random() * 15) + 1;
-    return { direction: trend, value: `${value}%` };
-  };
+  const insightMessage = useMemo(() => {
+    if (loading) return "";
+    if (kpi.critical > 0) {
+      const acctCount = new Set(cases.filter(c => c.riskStatus === "Critical").map(c => c.account));
+      return `Critical cases are active across ${acctCount.size} account${acctCount.size !== 1 ? "s" : ""} — ${kpi.critical} past the 16h threshold. Escalation recommended.`;
+    }
+    if (kpi.highRisk > 0) {
+      return `${kpi.highRisk} case${kpi.highRisk !== 1 ? "s" : ""} approaching the critical threshold. Proactive coaching advised this ${timeRange.toLowerCase()}.`;
+    }
+    if (kpi.activeCases === 0) {
+      return "No active attrition cases right now. All clear.";
+    }
+    return `${kpi.activeCases} active cases under monitoring. No escalations needed this ${timeRange.toLowerCase()}.`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, kpi, cases, timeRange]);
 
   return (
-    <div className="min-h-screen">
-      <div className="space-y-6 animate-fade-in">
-        {/* Header with elegant gradient card */}
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl p-6 shadow-glass-sm relative overflow-hidden">
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-teal opacity-5 rounded-full blur-2xl" />
-            <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-teal-400 opacity-10 rounded-full blur-xl" />
-
-            <div className="relative">
-              <div className="flex items-center gap-3 mb-2">
-                <Sparkles className="w-5 h-5 text-teal-500 animate-pulse-slow" />
-                <span className="text-xs font-medium text-teal-600 uppercase tracking-wider">Dashboard</span>
-              </div>
-              <h1 className="font-barlow-condensed text-3xl md:text-4xl font-bold text-gray-900 tracking-wide">
-                {getGreeting()}, <span className="text-gradient">{user?.firstName || user?.displayName?.split(" ")[0] || "Team Member"}</span>
-              </h1>
-              <p className="text-gray-500 text-sm mt-2 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-teal-500" />
-                {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-              </p>
+    <div className="space-y-6 animate-fade-in pb-8">
+      {/* ===== Header ===== */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex items-start gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-teal-500" />
+              <span className="text-xs font-medium text-teal-600 uppercase tracking-wider">Dashboard</span>
+              <StatusDot lastSync={lastSync} syncing={syncing} onRefresh={loadData} />
             </div>
-          </div>
-
-          <div className="flex gap-2 flex-wrap">
-            <Tooltip content="Create a new attrition case record" position="bottom">
-              <button
-                onClick={() => navigate("/submit")}
-                className="bg-gradient-teal hover:opacity-90 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all shadow-glow-teal hover:shadow-glow-teal-lg flex items-center gap-2 group"
-              >
-                <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-                Submit Case
-              </button>
-            </Tooltip>
-            <Tooltip content="Update an existing case with new information" position="bottom">
-              <button
-                onClick={() => navigate("/update")}
-                className="glass-card bg-white/90 backdrop-blur-xl hover:bg-white border border-white/30 text-gray-700 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Update Case
-              </button>
-            </Tooltip>
+            <h1 className="font-barlow-condensed text-3xl md:text-4xl font-bold text-navy-900 tracking-wide">
+              {getGreeting()}, <span className="text-gradient">{user?.firstName || user?.displayName?.split(" ")[0] || "Team Member"}</span>
+            </h1>
+            <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-teal-500" />
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              <span className="text-gray-300">·</span>
+              <span className="text-gray-400">{activeCases.length} active cases</span>
+            </p>
           </div>
         </div>
 
-        {/* Critical Alert banner with enhanced design */}
-        {hasCriticalAlert && (
-          <div className="glass-card bg-gradient-to-r from-red-500/10 to-red-600/5 backdrop-blur-xl border border-red-300/30 rounded-xl px-5 py-4 flex items-center gap-4 animate-slide-up shadow-glass-sm relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent" />
-            <div className="relative flex items-center gap-4 w-full">
-              <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center animate-pulse-slow shrink-0">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm text-red-700 font-semibold flex items-center gap-2">
-                  <Zap className="w-4 h-4 animate-pulse" />
-                  {kpi.critical} critical case{kpi.critical !== 1 ? "s" : ""} require immediate attention
-                </p>
-                <p className="text-xs text-red-600/70 mt-0.5">Click to view all critical cases in detail</p>
-              </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Time-range pill group */}
+          <div className="inline-flex bg-gray-100 rounded-xl p-0.5 border border-gray-200">
+            {TIME_RANGES.map((range) => (
               <button
-                onClick={() => navigate("/high-risk")}
-                className="text-xs bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-all shadow-md flex items-center gap-1.5 font-medium"
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
+                  timeRange === range
+                    ? "bg-navy-900 text-white shadow-sm"
+                    : "text-gray-500 hover:text-navy-800"
+                }`}
               >
-                View All
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                {range}
               </button>
+            ))}
+          </div>
+
+          <Tooltip content="Create a new attrition case" position="bottom">
+            <button
+              onClick={() => navigate("/submit")}
+              className="bg-gradient-teal hover:shadow-glow-teal text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              Submit Case
+            </button>
+          </Tooltip>
+          <Tooltip content="Update an existing case" position="bottom">
+            <button
+              onClick={() => navigate("/update")}
+              className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Update Case
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+
+      {/* ===== Insight Strip ===== */}
+      {showInsight && !loading && insightMessage && (
+        <InsightStrip message={insightMessage} onDismiss={() => setShowInsight(false)} />
+      )}
+
+      {/* ===== Critical alert ===== */}
+      {hasCriticalAlert && (
+        <div className="relative overflow-hidden rounded-xl border border-red-200/60 bg-red-50/70 px-4 py-3 flex items-center gap-3 animate-slide-up">
+          <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <p className="flex-1 text-sm text-red-800 font-medium">
+            {kpi.critical} critical case{kpi.critical !== 1 ? "s" : ""} require immediate attention
+          </p>
+          <button
+            onClick={() => navigate("/high-risk")}
+            className="text-xs bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
+          >
+            View All
+          </button>
+        </div>
+      )}
+
+      {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+
+      {/* ===== KPI Row ===== */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {loading ? (
+          Array.from({ length: 5 }).map((_, i) => <KpiSkeleton key={i} />)
+        ) : (
+          <>
+            <KpiCard
+              label="Active Cases"
+              value={kpi.activeCases}
+              total={cases.length}
+              tone="teal"
+              icon={<FolderOpen className="w-5 h-5" />}
+              tooltip="All open cases currently tracked"
+              sparkData={[3, 5, 4, 7, 6, 8, kpi.activeCases]}
+              trend={{ direction: "up", value: "+8%" }}
+              delay={0}
+            />
+            <KpiCard
+              label="Critical"
+              value={kpi.critical}
+              total={kpi.activeCases}
+              tone="red"
+              icon={<AlertTriangle className="w-5 h-5" />}
+              pulse={kpi.critical > 0}
+              tooltip="16+ missed hours — urgent intervention"
+              sparkData={[1, 2, 1, 3, 2, 3, kpi.critical]}
+              trend={{ direction: kpi.critical > 1 ? "up" : "down", value: `${kpi.critical > 0 ? "+12%" : "0%"}` }}
+              onClick={() => navigate("/high-risk")}
+              delay={60}
+            />
+            <KpiCard
+              label="High Risk"
+              value={kpi.highRisk}
+              total={kpi.activeCases}
+              tone="amber"
+              icon={<TrendingUp className="w-5 h-5" />}
+              tooltip="8–15.99 missed hours — coaching plan needed"
+              sparkData={[2, 3, 4, 2, 5, 4, kpi.highRisk]}
+              trend={{ direction: "up", value: "+5%" }}
+              delay={120}
+            />
+            <KpiCard
+              label="Monitoring"
+              value={kpi.monitoring}
+              total={kpi.activeCases}
+              tone="green"
+              icon={<Eye className="w-5 h-5" />}
+              tooltip="Under 8 missed hours — observation phase"
+              sparkData={[5, 5, 3, 6, 4, 5, kpi.monitoring]}
+              trend={{ direction: "down", value: "-3%" }}
+              delay={180}
+            />
+            <KpiCard
+              label="Termination"
+              value={kpi.terminationRecommended}
+              total={kpi.activeCases}
+              tone="purple"
+              icon={<LogOut className="w-5 h-5" />}
+              tooltip="Approved for termination processing"
+              sparkData={[0, 1, 1, 2, 1, 2, kpi.terminationRecommended]}
+              trend={{ direction: "up", value: "+2%" }}
+              onClick={() => navigate("/termination")}
+              delay={240}
+            />
+          </>
+        )}
+      </div>
+
+      {/* ===== Main analytics row (chart + gauge) ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Trend chart */}
+        <div className="lg:col-span-2 glass-card rounded-2xl p-5 hover-lift">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-barlow-condensed font-semibold text-lg text-navy-900 tracking-wide">
+                Case Risk Trend
+              </h2>
+              <p className="text-xs text-gray-400">Weekly distribution by risk severity</p>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <Legend color="bg-red-500" label="Critical" />
+              <Legend color="bg-amber-500" label="High" />
+              <Legend color="bg-teal-500" label="Monitoring" />
             </div>
           </div>
-        )}
-
-        {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
-
-        {/* Enhanced KPI Cards with glass-morphism and animations */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {loading ? (
-            Array.from({ length: 5 }).map((_, i) => <KpiSkeleton key={i} />)
+            <div className="h-64 shimmer-bg rounded-xl opacity-50" />
           ) : (
-            <>
-              <KpiCard
-                label="Active Cases"
-                value={kpi.activeCases}
-                tone="teal"
-                icon={<FolderOpen className="w-5 h-5" />}
-                tooltip="All open cases currently assigned to you"
-                trend={getTrend(kpi.activeCases)}
-                delay={0}
-              />
-              <KpiCard
-                label="Critical"
-                value={kpi.critical}
-                tone="red"
-                icon={<AlertTriangle className="w-5 h-5" />}
-                pulse={kpi.critical > 0}
-                tooltip="Cases requiring urgent intervention within 8-16 hour threshold"
-                trend={getTrend(kpi.critical)}
-                onClick={() => navigate("/high-risk")}
-                delay={100}
-              />
-              <KpiCard
-                label="High Risk"
-                value={kpi.highRisk}
-                tone="amber"
-                icon={<TrendingUp className="w-5 h-5" />}
-                tooltip="Cases trending toward critical status (approaching threshold)"
-                trend={getTrend(kpi.highRisk)}
-                delay={200}
-              />
-              <KpiCard
-                label="Monitoring"
-                value={kpi.monitoring}
-                tone="blue"
-                icon={<Eye className="w-5 h-5" />}
-                tooltip="Cases under active observation with low missed hours"
-                trend={getTrend(kpi.monitoring)}
-                delay={300}
-              />
-              <KpiCard
-                label="Termination"
-                value={kpi.terminationRecommended}
-                tone="navy"
-                icon={<LogOut className="w-5 h-5" />}
-                tooltip="Cases approved for termination processing"
-                trend={getTrend(kpi.terminationRecommended)}
-                onClick={() => navigate("/termination")}
-                delay={400}
-              />
-            </>
+            <ResponsiveContainer width="100%" height={260}>
+              <AreaChart data={WEEKLY_TREND} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="g-critical" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#EF4444" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#EF4444" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="g-high" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#F59E0B" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="g-monitor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0EA89B" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#0EA89B" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis dataKey="week" tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} axisLine={false} tickLine={false} />
+                <ChartTooltip
+                  contentStyle={{ borderRadius: 12, border: "1px solid #e5e7eb", boxShadow: "0 8px 24px -6px rgba(0,61,92,0.15)", fontSize: 12 }}
+                  labelStyle={{ color: "#003D5C", fontWeight: 700 }}
+                />
+                <Area type="monotone" dataKey="monitoring" stroke="#0EA89B" strokeWidth={2} fill="url(#g-monitor)" animationDuration={800} />
+                <Area type="monotone" dataKey="highRisk" stroke="#F59E0B" strokeWidth={2} fill="url(#g-high)" animationDuration={1000} />
+                <Area type="monotone" dataKey="critical" stroke="#EF4444" strokeWidth={2} fill="url(#g-critical)" animationDuration={1200} />
+              </AreaChart>
+            </ResponsiveContainer>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Active Cases Table with enhanced design */}
-          <div className="lg:col-span-2">
-            <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-white/50 to-transparent">
-                <h2 className="font-barlow-condensed font-semibold text-lg text-gray-900 tracking-wide flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                    <FolderOpen className="w-4 h-4 text-teal-600" />
-                  </div>
-                  MY ACTIVE CASES
-                </h2>
-                <span className="text-xs bg-gradient-teal text-white px-3 py-1 rounded-full font-mono font-bold shadow-glow-teal">
-                  {activeCases.length}
-                </span>
-              </div>
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => <CaseCardSkeleton key={i} />)
-              ) : activeCases.length === 0 ? (
-                <div className="px-5 py-16 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-teal-50 flex items-center justify-center mx-auto mb-4">
-                    <FolderOpen className="w-8 h-8 text-teal-400" />
-                  </div>
-                  <p className="text-gray-500 font-medium">No active cases found</p>
-                  <p className="text-gray-400 text-sm mt-1">Click "Submit Case" to create your first case</p>
-                  <button
-                    onClick={() => navigate("/submit")}
-                    className="mt-4 bg-gradient-teal hover:opacity-90 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-all shadow-glow-teal"
-                  >
-                    Submit a case
-                  </button>
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-50">
-                  {activeCases.slice(0, 5).map((c, idx) => (
-                    <React.Fragment key={c.id}>
-                      <div
-                        className="px-5 py-3.5 hover:bg-teal-50/50 cursor-pointer transition-all group animate-fade-in-up"
-                        onClick={() => setExpandedCase(expandedCase === c.id ? null : c.id)}
-                        style={{ animationDelay: `${idx * 50}ms` }}
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="font-mono text-xs text-teal-600 w-24 shrink-0 group-hover:text-teal-700 transition-colors font-bold">
-                            {c.caseNumber}
-                          </span>
-                          <span className="flex-1 text-sm font-medium text-gray-800 truncate">
-                            {c.traineeName}
-                          </span>
-                          <RiskBadge risk={c.riskStatus} size="sm" />
-                          <StageBadge stage={c.lifecycleStage} size="sm" />
-                          <span className="font-mono text-xs text-gray-500 w-16 text-right shrink-0 font-bold">
-                            {formatHours(c.totalMissedHours)}
-                          </span>
-                          {expandedCase === c.id ? (
-                            <ChevronUp className="w-4 h-4 text-teal-600" />
-                          ) : (
-                            <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-teal-600 transition-colors" />
-                          )}
-                        </div>
-                      </div>
-                      {expandedCase === c.id && (
-                        <div className="px-5 py-4 bg-gradient-to-r from-teal-50/80 via-cyan-50/40 to-white border-t border-teal-100 animate-slide-down">
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm mb-3">
-                            <Field label="Oracle ID" value={c.oracleId} mono />
-                            <Field label="Account" value={c.account} />
-                            <Field label="LOB" value={c.lob} />
-                            <Field label="Site" value={c.site} />
-                            <Field label="Incident Date" value={formatDate(c.incidentDate)} icon={<Calendar className="w-3 h-3" />} />
-                            <Field label="Category" value={c.attritionCategory} />
-                            <Field label="Sub-Reason" value={c.subReason} />
-                            <Field label="Severity" value={c.severityLevel} />
-                          </div>
-                          {c.notes && (
-                            <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 border border-teal-100 mb-3 shadow-sm">
-                              <p className="text-xs text-gray-600">{c.notes}</p>
-                            </div>
-                          )}
-                          <div className="flex gap-2 flex-wrap">
-                            <Tooltip content="Update this case with new information" position="top">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); navigate(`/update?case=${c.caseNumber}`); }}
-                                className="bg-gradient-teal hover:opacity-90 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1"
-                              >
-                                <RefreshCw className="w-3 h-3" />
-                                Update
-                              </button>
-                            </Tooltip>
-                            <Tooltip content="View full case history and timeline" position="top">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); navigate(`/timeline?case=${c.caseNumber}`); }}
-                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                              >
-                                <Clock className="w-3 h-3" />
-                                Timeline
-                              </button>
-                            </Tooltip>
-                            {c.escalationRequired && (
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
-                                <AlertTriangle className="w-3 h-3" />
-                                Escalation Required
-                              </span>
-                            )}
-                            {c.documentationRequired && (
-                              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
-                                <FileText className="w-3 h-3" />
-                                Docs Required
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-              {activeCases.length > 5 && (
-                <div className="px-5 py-3 bg-gray-50/50 border-t border-gray-100">
-                  <Tooltip content="View all your cases" position="top">
-                    <button
-                      onClick={() => navigate("/my-cases")}
-                      className="w-full text-center text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center justify-center gap-1"
-                    >
-                      View all {activeCases.length} cases
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </Tooltip>
-                </div>
-              )}
-            </div>
+        {/* SLA compliance gauge */}
+        <div className="glass-card rounded-2xl p-5 hover-lift flex flex-col">
+          <div className="mb-4">
+            <h2 className="font-barlow-condensed font-semibold text-lg text-navy-900 tracking-wide">
+              SLA Compliance
+            </h2>
+            <p className="text-xs text-gray-400">Resolved vs total cases</p>
           </div>
-
-          {/* Right column */}
-          <div className="space-y-6">
-            {/* Risk Distribution Pie with enhanced styling */}
-            {!loading && pieData.length > 0 && (
-              <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass p-5">
-                <h2 className="font-barlow-condensed font-semibold text-lg text-gray-900 tracking-wide mb-4 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                    <Target className="w-4 h-4 text-teal-600" />
-                  </div>
-                  RISK DISTRIBUTION
-                </h2>
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      animationBegin={0}
-                      animationDuration={800}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} stroke="white" strokeWidth={2} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip
-                      formatter={(value: number) => [`${value} cases`, ""]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="flex justify-center gap-4 mt-4 flex-wrap">
-                  {pieData.map((item) => (
-                    <div key={item.name} className="flex items-center gap-1.5">
-                      <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }} />
-                      <span className="text-xs text-gray-600 font-medium">{item.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Activity with enhanced design */}
-            <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-white/50 to-transparent">
-                <h2 className="font-barlow-condensed font-semibold text-lg text-gray-900 tracking-wide flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-blue-600" />
-                  </div>
-                  RECENT ACTIVITY
-                </h2>
-              </div>
-              <div>
-                {loading ? (
-                  Array.from({ length: 3 }).map((_, i) => <ActivitySkeleton key={i} />)
-                ) : updates.length === 0 ? (
-                  <div className="px-5 py-8 text-center">
-                    <Activity className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-400 text-sm">No recent activity</p>
-                  </div>
-                ) : (
-                  updates.map((u, idx) => (
-                    <div
-                      key={u.id}
-                      className="px-5 py-3 hover:bg-gray-50/50 transition-colors border-b border-gray-50 last:border-b-0 animate-fade-in-up"
-                      style={{ animationDelay: `${idx * 50}ms` }}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-gray-800">{u.updateType}</p>
-                          <p className="text-xs text-gray-400 font-mono mt-0.5">{u.caseNumber}</p>
-                        </div>
-                        <span className="text-xs text-teal-600 whitespace-nowrap font-medium">{timeAgo(u.updateDate)}</span>
-                      </div>
-                      {u.updateNotes && (
-                        <p className="text-xs text-gray-500 mt-1 truncate">{u.updateNotes}</p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+          <div className="flex-1 flex items-center justify-center">
+            <RadialGauge value={slaCompliance} loading={loading} />
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-4 text-center">
+            <div className="rounded-lg bg-canvas py-2">
+              <p className="font-mono text-lg font-bold text-navy-900">{resolvedCases}</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wide">Resolved</p>
             </div>
-
-            {/* Weekly Trend Chart */}
-            <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass p-5">
-              <h2 className="font-barlow-condensed font-semibold text-lg text-gray-900 tracking-wide mb-4 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-amber-600" />
-                </div>
-                WEEKLY TRENDS
-              </h2>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={WEEKLY_TREND} barSize={12} barGap={2}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-                  <XAxis dataKey="week" tick={{ fontSize: 10, fill: "#6b7280" }} axisLine={false} tickLine={false} />
-                  <YAxis hide />
-                  <ChartTooltip
-                    contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e5e7eb", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
-                    cursor={{ fill: "#f9fafb" }}
-                  />
-                  <Bar dataKey="critical" fill="#ef4444" radius={[4, 4, 0, 0]} name="Critical" />
-                  <Bar dataKey="highRisk" fill="#f59e0b" radius={[4, 4, 0, 0]} name="High Risk" />
-                  <Bar dataKey="monitoring" fill="#0d9488" radius={[4, 4, 0, 0]} name="Monitoring" />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="rounded-lg bg-canvas py-2">
+              <p className="font-mono text-lg font-bold text-navy-900">{cases.length}</p>
+              <p className="text-[10px] text-gray-500 uppercase tracking-wide">Total</p>
             </div>
           </div>
         </div>
-
-        {/* Help Button */}
-        <Tooltip content="Need help? Click for support resources" position="left">
-          <button className="fixed bottom-6 right-6 w-12 h-12 bg-gradient-teal hover:opacity-90 text-white rounded-full shadow-glow-teal-lg flex items-center justify-center transition-all hover:scale-110 z-50">
-            <HelpCircle className="w-6 h-6" />
-          </button>
-        </Tooltip>
       </div>
+
+      {/* ===== Lower row: Recent Activity + Cases table ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Recent Activity */}
+        <div className="glass-card rounded-2xl overflow-hidden hover-lift">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-barlow-condensed font-semibold text-lg text-navy-900 tracking-wide flex items-center gap-2">
+              <Activity className="w-4 h-4 text-teal-600" />
+              Recent Activity
+            </h2>
+          </div>
+          <div>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => <ActivitySkeleton key={i} />)
+            ) : cases.length === 0 ? (
+              <EmptyState icon={Activity} title="No recent activity" message="Case updates will appear here." />
+            ) : (
+              cases.slice(0, 5).map((c, idx) => (
+                <div
+                  key={c.id}
+                  className="px-5 py-3 hover:bg-canvas transition-colors border-b border-gray-50 last:border-b-0 animate-fade-in-up"
+                  style={{ animationDelay: `${idx * 50}ms` }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-navy-900">{c.traineeName}</p>
+                      <p className="text-xs text-gray-400 font-mono mt-0.5">{c.caseNumber}</p>
+                    </div>
+                    <span className="text-[11px] text-teal-600 whitespace-nowrap font-medium">{timeAgo(c.lastUpdatedDate)}</span>
+                  </div>
+                  {c.notes && (
+                    <p className="text-xs text-gray-500 mt-1 truncate">{c.notes}</p>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Cases table */}
+        <div className="lg:col-span-2 glass-card rounded-2xl overflow-hidden hover-lift">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 className="font-barlow-condensed font-semibold text-lg text-navy-900 tracking-wide flex items-center gap-2">
+              <FolderOpen className="w-4 h-4 text-teal-600" />
+              My Active Cases
+            </h2>
+            <span className="text-xs bg-navy-900 text-white px-2.5 py-1 rounded-full font-mono font-bold">
+              {activeCases.length}
+            </span>
+          </div>
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => <CaseCardSkeleton key={i} />)
+          ) : activeCases.length === 0 ? (
+            <EmptyState
+              icon={FolderOpen}
+              title="No active cases"
+              message="Click 'Submit Case' to create your first case."
+              action={{ label: "Submit a case", onClick: () => navigate("/submit") }}
+            />
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {activeCases.slice(0, 6).map((c, idx) => (
+                <React.Fragment key={c.id}>
+                  <div
+                    className="px-5 py-3 hover:bg-canvas cursor-pointer transition-colors group animate-fade-in-up"
+                    onClick={() => setExpandedCase(expandedCase === c.id ? null : c.id)}
+                    style={{ animationDelay: `${idx * 40}ms` }}
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono text-xs text-teal-600 w-24 shrink-0 font-bold">
+                        {c.caseNumber}
+                      </span>
+                      <span className="flex-1 text-sm font-medium text-gray-800 truncate">
+                        {c.traineeName}
+                      </span>
+                      <RiskBadge risk={c.riskStatus} size="sm" showTooltip={false} />
+                      <StageBadge stage={c.lifecycleStage} size="sm" />
+                      <span className="font-mono text-xs text-gray-600 w-16 text-right shrink-0 font-bold">
+                        {formatHours(c.totalMissedHours)}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); navigate(`/update?case=${c.caseNumber}`); }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-gray-100"
+                        aria-label="More actions"
+                      >
+                        <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                  {expandedCase === c.id && (
+                    <div className="px-5 py-4 bg-canvas border-t border-teal-100 animate-slide-down">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm mb-3">
+                        <Field label="Oracle ID" value={c.oracleId} mono />
+                        <Field label="Account" value={c.account} />
+                        <Field label="LOB" value={c.lob} />
+                        <Field label="Site" value={c.site} />
+                        <Field label="Incident Date" value={formatDate(c.incidentDate)} icon={<Calendar className="w-3 h-3" />} />
+                        <Field label="Category" value={c.attritionCategory} />
+                        <Field label="Sub-Reason" value={c.subReason} />
+                        <Field label="Severity" value={c.severityLevel} />
+                      </div>
+                      {c.notes && (
+                        <div className="bg-white rounded-lg px-3 py-2 border border-gray-200 mb-3">
+                          <p className="text-xs text-gray-600">{c.notes}</p>
+                        </div>
+                      )}
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/update?case=${c.caseNumber}`); }}
+                          className="bg-gradient-teal hover:opacity-90 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-all flex items-center gap-1"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          Update
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/timeline?case=${c.caseNumber}`); }}
+                          className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <Clock className="w-3 h-3" />
+                          Timeline
+                        </button>
+                        {c.escalationRequired && (
+                          <span className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded-full flex items-center gap-1 font-medium border border-red-200">
+                            <AlertTriangle className="w-3 h-3" />
+                            Escalation Required
+                          </span>
+                        )}
+                        {c.documentationRequired && (
+                          <span className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-full flex items-center gap-1 font-medium border border-amber-200">
+                            <FileText className="w-3 h-3" />
+                            Docs Required
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+          )}
+          {activeCases.length > 6 && (
+            <div className="px-5 py-3 bg-canvas border-t border-gray-100">
+              <button
+                onClick={() => navigate("/my-cases")}
+                className="w-full text-center text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center justify-center gap-1"
+              >
+                View all {activeCases.length} cases
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Floating help button */}
+      <Tooltip content="Help & keyboard shortcuts (?)" position="left">
+        <button
+          onClick={() => navigate("/help")}
+          className="fixed bottom-6 right-6 w-12 h-12 bg-gradient-teal hover:shadow-glow-teal-lg text-white rounded-full shadow-glow-teal flex items-center justify-center transition-all hover:scale-110 z-40"
+          aria-label="Help"
+        >
+          <HelpCircle className="w-6 h-6" />
+        </button>
+      </Tooltip>
     </div>
   );
 }
@@ -515,72 +533,181 @@ function getGreeting(): string {
   return "Good evening";
 }
 
+function StatusDot({
+  lastSync,
+  syncing,
+  onRefresh,
+}: {
+  lastSync: Date;
+  syncing: boolean;
+  onRefresh: () => void;
+}) {
+  const [showTip, setShowTip] = useState(false);
+  return (
+    <div className="relative inline-flex items-center gap-1.5" onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
+      <span className="relative flex h-2 w-2">
+        <span className={`absolute inline-flex h-full w-full rounded-full opacity-60 ${syncing ? "bg-teal-400 animate-ping" : "bg-teal-500"}`} />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500" />
+      </span>
+      <span className="text-[10px] text-gray-400">Live</span>
+      <button onClick={onRefresh} className="text-gray-400 hover:text-teal-600 transition-colors" aria-label="Refresh">
+        <RefreshCw className={`w-3 h-3 ${syncing ? "animate-spin" : ""}`} />
+      </button>
+      {showTip && (
+        <div className="absolute top-full left-0 mt-2 z-50 bg-navy-900 text-white text-[11px] rounded-lg px-2.5 py-1.5 shadow-glass-lg whitespace-nowrap animate-fade-in">
+          Last synced {timeAgo(lastSync.toISOString())}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function KpiCard({
   label,
   value,
+  total,
   tone,
   icon,
   pulse,
   onClick,
   tooltip,
+  sparkData,
   trend,
   delay = 0,
 }: {
   label: string;
   value: number;
-  tone: "teal" | "red" | "amber" | "blue" | "navy";
+  total?: number;
+  tone: "teal" | "red" | "amber" | "green" | "purple";
   icon: React.ReactNode;
   pulse?: boolean;
   onClick?: () => void;
   tooltip: string;
+  sparkData: number[];
   trend?: { direction: string; value: string };
   delay?: number;
 }) {
   const toneMap = {
-    teal: { bg: "from-teal-50 to-teal-100/50", icon: "text-teal-600", border: "border-teal-200/50", glow: "hover:shadow-[0_0_20px_rgba(13,148,136,0.2)]" },
-    red: { bg: "from-red-50 to-red-100/50", icon: "text-red-600", border: "border-red-200/50", glow: "hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]" },
-    amber: { bg: "from-amber-50 to-amber-100/50", icon: "text-amber-600", border: "border-amber-200/50", glow: "hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]" },
-    blue: { bg: "from-blue-50 to-blue-100/50", icon: "text-blue-600", border: "border-blue-200/50", glow: "hover:shadow-[0_0_20px_rgba(59,130,246,0.2)]" },
-    navy: { bg: "from-slate-100 to-slate-200/50", icon: "text-slate-700", border: "border-slate-200/50", glow: "hover:shadow-[0_0_20px_rgba(51,65,85,0.2)]" },
+    teal: { chip: "bg-teal-50 text-teal-600 border-teal-100", bar: "from-teal-500 to-teal-400" },
+    red: { chip: "bg-red-50 text-red-600 border-red-100", bar: "from-red-500 to-red-400" },
+    amber: { chip: "bg-amber-50 text-amber-600 border-amber-100", bar: "from-amber-500 to-amber-400" },
+    green: { chip: "bg-green-50 text-green-600 border-green-100", bar: "from-green-500 to-green-400" },
+    purple: { chip: "bg-purple-50 text-purple-600 border-purple-100", bar: "from-purple-500 to-purple-400" },
   };
 
-  const content = (
-    <div
-      className={`glass-card bg-white/90 backdrop-blur-xl border ${toneMap[tone].border} rounded-2xl p-5 shadow-glass-sm transition-all duration-300 animate-fade-in-up ${toneMap[tone].glow} ${
-        onClick ? "cursor-pointer hover:scale-[1.02]" : ""
-      }`}
-      onClick={onClick}
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br ${toneMap[tone].bg} shadow-sm`}>
-          <span className={toneMap[tone].icon}>{icon}</span>
+  const percentage = total && total > 0 ? Math.round((value / total) * 100) : 0;
+
+  return (
+    <Tooltip content={tooltip} position="bottom">
+      <div
+        className={`glass-card rounded-2xl p-5 animate-fade-in-up hover-lift relative overflow-hidden ${onClick ? "cursor-pointer" : ""}`}
+        onClick={onClick}
+        style={{ animationDelay: `${delay}ms` }}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${toneMap[tone].chip}`}>
+            {icon}
+          </div>
+          <button className="text-gray-300 hover:text-gray-500 transition-colors" aria-label="More options">
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
         </div>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-end gap-3 mb-1">
+          <CountUp
+            value={value}
+            duration={400}
+            className={`font-barlow-condensed font-bold text-4xl leading-none ${pulse && value > 0 ? "text-red-600" : "text-navy-900"}`}
+          />
           {trend && (
-            <span className={`flex items-center gap-0.5 text-xs ${
-              trend.direction === "up" ? "text-red-500" : trend.direction === "down" ? "text-green-500" : "text-gray-400"
+            <span className={`flex items-center gap-0.5 text-[11px] font-semibold mb-1 ${
+              trend.direction === "up" ? "text-red-600" : trend.direction === "down" ? "text-teal-600" : "text-gray-400"
             }`}>
-              {trend.direction === "up" ? <ArrowUpRight className="w-3 h-3" /> : trend.direction === "down" ? <ArrowDownRight className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+              {trend.direction === "up" ? <TrendingUp className="w-3 h-3" /> : trend.direction === "down" ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
               {trend.value}
             </span>
           )}
-          {value > 0 && tone === "red" && (
-            <div className={`w-2.5 h-2.5 rounded-full bg-red-500 ${pulse ? "animate-pulse" : ""} shadow-[0_0_8px_rgba(239,68,68,0.5)]`} />
-          )}
         </div>
-      </div>
-      <div className={`text-4xl font-barlow-condensed font-bold leading-none ${pulse && value > 0 ? "text-red-600" : "text-gray-900"}`}>
-        {value}
-      </div>
-      <div className="text-xs text-gray-500 mt-2 font-medium">{label}</div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-gray-500 font-medium">{label}</span>
+          <Sparkline data={sparkData} width={56} height={20} />
+        </div>
 
-      {/* Subtle decorative element */}
-      <div className={`absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-br ${toneMap[tone].bg} rounded-tl-[100%] opacity-30`} />
+        {total !== undefined && total > 0 && (
+          <div className="mt-3 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full bg-gradient-to-r ${toneMap[tone].bar} rounded-full transition-all duration-500`}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        )}
+
+        {pulse && value > 0 && (
+          <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]" />
+        )}
+      </div>
+    </Tooltip>
+  );
+}
+
+function RadialGauge({ value, loading }: { value: number; loading: boolean }) {
+  const reduce = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [animatedValue, setAnimatedValue] = useState(reduce ? value : 0);
+
+  useEffect(() => {
+    if (loading) return;
+    const t = setTimeout(() => setAnimatedValue(value), 100);
+    return () => clearTimeout(t);
+  }, [value, loading]);
+
+  const radius = 72;
+  const strokeWidth = 12;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (animatedValue / 100) * circumference;
+
+  return (
+    <div className="relative w-44 h-44">
+      <svg width="176" height="176" viewBox="0 0 176 176" className="-rotate-90">
+        <defs>
+          <linearGradient id="gauge-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#003D5C" />
+            <stop offset="100%" stopColor="#25E2CC" />
+          </linearGradient>
+        </defs>
+        <circle cx="88" cy="88" r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
+        <circle
+          cx="88"
+          cy="88"
+          r={radius}
+          fill="none"
+          stroke="url(#gauge-grad)"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 800ms cubic-bezier(0.4,0,0.2,1)" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <CountUp
+          value={loading ? 0 : value}
+          duration={800}
+          suffix="%"
+          className="font-barlow-condensed font-bold text-3xl text-navy-900"
+        />
+        <span className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">compliance</span>
+      </div>
     </div>
   );
+}
 
-  return <Tooltip content={tooltip} position="bottom">{content}</Tooltip>;
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className={`w-2 h-2 rounded-full ${color}`} />
+      <span className="text-gray-600">{label}</span>
+    </div>
+  );
 }
 
 function Field({ label, value, mono, icon }: { label: string; value: string; mono?: boolean; icon?: React.ReactNode }) {

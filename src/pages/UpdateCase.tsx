@@ -1,35 +1,15 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { fetchCaseByNumber, fetchEmailThread } from "../api/sharepoint";
-import { triggerUpdateCase } from "../api/powerAutomate";
-import { AttritionCase, EmailThread, LifecycleStage, UpdateCasePayload } from "../utils/types";
+import { fetchCaseByIdentifier, fetchCaseUpdates, updateCase, AttritionCase, CaseUpdate } from "../api/api";
+import { LifecycleStage } from "../utils/types";
 import { calculateRiskStatus, inferLifecycleStage } from "../utils/riskLogic";
 import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import ErrorBanner from "../components/ErrorBanner";
 import Tooltip from "../components/Tooltip";
 import { formatDate, formatDateTime } from "../utils/formatters";
-import { loginRequest } from "../auth/msalConfig";
-import {
-  Search,
-  RefreshCw,
-  Mail,
-  Calendar,
-  Clock,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  Building2,
-  Briefcase,
-  MapPin,
-  Zap,
-  ArrowRight,
-  Check,
-  History,
-  Info,
-} from "lucide-react";
+import { Search, RefreshCw, Mail, Calendar, Clock, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, User, Building2, Briefcase, MapPin, Zap, ArrowRight, Check, History, Info } from "lucide-react";
 
 const UPDATE_TYPES = [
   "Absence Logged",
@@ -98,7 +78,7 @@ export default function UpdateCase() {
   const [query, setQuery] = useState(initialCaseNum);
   const [searching, setSearching] = useState(false);
   const [caseData, setCaseData] = useState<AttritionCase | null>(null);
-  const [emailThread, setEmailThread] = useState<EmailThread | null>(null);
+  const [caseUpdates, setCaseUpdates] = useState<CaseUpdate[]>([]);
   const [form, setForm] = useState<UpdateFormData>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,10 +100,9 @@ export default function UpdateCase() {
       setSearching(true);
       setError(null);
       setCaseData(null);
-      setEmailThread(null);
+      setCaseUpdates([]);
       try {
-        const token = await getAccessToken(loginRequest.scopes as string[]);
-        const found = await fetchCaseByNumber(token, caseRef.trim());
+        const found = await fetchCaseByIdentifier(caseRef.trim());
         if (!found) {
           setError(`No case found for "${caseRef}"`);
         } else {
@@ -133,8 +112,8 @@ export default function UpdateCase() {
             escalationRequired: found.escalationRequired,
             documentationRequired: found.documentationRequired,
           }));
-          const thread = await fetchEmailThread(token, found.caseNumber);
-          setEmailThread(thread);
+          const updates = await fetchCaseUpdates(found.caseNumber);
+          setCaseUpdates(updates);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Search failed");
@@ -142,7 +121,7 @@ export default function UpdateCase() {
         setSearching(false);
       }
     },
-    [getAccessToken]
+    []
   );
 
   useEffect(() => {
@@ -161,22 +140,22 @@ export default function UpdateCase() {
     setError(null);
     setSubmitting(true);
     try {
-      const payload: UpdateCasePayload = {
-        caseId: caseData.id,
+      await updateCase({
+        id: caseData.id,
         caseNumber: caseData.caseNumber,
-        hoursToAdd: form.hoursToAdd,
-        absenceDate: form.absenceDate,
-        absenceType: form.absenceType,
-        updateType: form.updateType,
-        overrideStage: form.overrideStage ? (form.overrideStage as LifecycleStage) : undefined,
+        riskStatus: newRisk || undefined,
+        lifecycleStage: newStage || undefined,
+        totalMissedHours: newHours,
         notes: form.notes,
         escalationRequired: form.escalationRequired,
         documentationRequired: form.documentationRequired,
+        updateType: form.updateType,
         updatedBy: user?.displayName || "",
         updatedByEmail: user?.email || "",
-      };
-      await triggerUpdateCase(payload);
-      setSuccess(`Case ${caseData.caseNumber} updated successfully. Thread reply sent.`);
+        hoursAdded: form.hoursToAdd,
+        updateNotes: form.notes,
+      });
+      setSuccess(`Case ${caseData.caseNumber} updated successfully.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Update failed");
     } finally {
@@ -281,25 +260,25 @@ export default function UpdateCase() {
               <InfoField icon={<Clock className="w-4 h-4" />} label="Total Hours" value={`${caseData.totalMissedHours}h`} mono highlight />
             </div>
 
-            {/* Email Thread Info */}
-            {emailThread ? (
+            {/* Case Updates Info */}
+            {caseUpdates.length > 0 ? (
               <div className="px-5 py-3 border-t border-gray-100 bg-gradient-to-r from-blue-50/50 to-white flex items-center gap-4">
                 <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Mail className="w-4 h-4 text-blue-600" />
+                  <History className="w-4 h-4 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-blue-700 text-sm truncate block">
-                    {emailThread.threadSubject || "Outlook Thread Active"}
+                    {caseUpdates.length} update{caseUpdates.length !== 1 ? "s" : ""} recorded
                   </span>
                   <span className="text-xs text-blue-500">
-                    Last email: {formatDateTime(emailThread.lastEmailDate)} · {emailThread.totalEmailsSent} message{emailThread.totalEmailsSent !== 1 ? "s" : ""}
+                    Last: {caseUpdates[0]?.updateType} by {caseUpdates[0]?.updatedBy}
                   </span>
                 </div>
               </div>
             ) : (
               <div className="px-5 py-2 border-t border-gray-100 bg-gray-50/50 text-xs text-gray-400 flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                No email thread found for this case.
+                <History className="w-4 h-4" />
+                No previous updates found for this case.
               </div>
             )}
           </div>

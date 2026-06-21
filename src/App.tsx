@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
@@ -10,7 +10,9 @@ import SubmitCase from "./pages/SubmitCase";
 import UpdateCase from "./pages/UpdateCase";
 import LoadingSpinner from "./components/LoadingSpinner";
 import SessionTimeoutModal from "./components/SessionTimeoutModal";
+import CommandPalette from "./components/CommandPalette";
 import { useSessionTimeout } from "./hooks/useSessionTimeout";
+import { useAuth } from "./auth/useAuth";
 
 const MyCases = lazy(() => import("./pages/MyCases"));
 const CaseTimeline = lazy(() => import("./pages/CaseTimeline"));
@@ -20,12 +22,30 @@ const TerminationCenter = lazy(() => import("./pages/TerminationCenter"));
 const PSDashboard = lazy(() => import("./pages/PSDashboard"));
 const Investigations = lazy(() => import("./pages/Investigations"));
 const InvestigationDetail = lazy(() => import("./pages/InvestigationDetail"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 
 const PageLoader = () => (
   <div className="flex justify-center py-24">
     <LoadingSpinner size="lg" label="Loading..." />
   </div>
 );
+
+function GlobalShortcuts() {
+  const { logout } = useAuth();
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "Q") {
+        e.preventDefault();
+        logout();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [logout]);
+  return null;
+}
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useIsAuthenticated();
@@ -49,6 +69,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <GlobalShortcuts />
       {children}
       <SessionTimeoutModal
         isOpen={showWarning}
@@ -75,6 +96,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <CommandPalette />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -111,6 +133,9 @@ export default function App() {
         <Route path="/ps-dashboard" element={<AuthenticatedRoute><PSDashboard /></AuthenticatedRoute>} />
         <Route path="/investigations" element={<AuthenticatedRoute><Investigations /></AuthenticatedRoute>} />
         <Route path="/investigations/:id" element={<AuthenticatedRoute><InvestigationDetail /></AuthenticatedRoute>} />
+        <Route path="/profile" element={<AuthenticatedRoute><ProfilePage /></AuthenticatedRoute>} />
+        <Route path="/settings" element={<AuthenticatedRoute><SettingsPage /></AuthenticatedRoute>} />
+        <Route path="/help" element={<AuthenticatedRoute><HelpSupport /></AuthenticatedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

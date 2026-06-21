@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { fetchAccounts, fetchLOBs, fetchSites } from "../api/sharepoint";
-import { triggerCreateCase } from "../api/powerAutomate";
-import { Account, LOB, Site, SeverityLevel, CreateCasePayload } from "../utils/types";
+import { fetchAccounts, fetchLOBs, fetchSites, createCase, Account, LOB, Site, CreateCasePayload } from "../api/api";
+import { SeverityLevel } from "../utils/types";
 import { calculateRiskStatus, inferLifecycleStage } from "../utils/riskLogic";
 import { SUB_REASON_MAP, ATTRITION_CATEGORIES } from "../utils/subReasons";
 import StepIndicator from "../components/StepIndicator";
@@ -11,22 +10,7 @@ import RiskPreview from "../components/RiskPreview";
 import ErrorBanner from "../components/ErrorBanner";
 import LoadingSpinner from "../components/LoadingSpinner";
 import Tooltip from "../components/Tooltip";
-import { loginRequest } from "../auth/msalConfig";
-import {
-  User,
-  Mail,
-  Briefcase,
-  AlertTriangle,
-  FileText,
-  UserCog,
-  ChevronLeft,
-  ChevronRight,
-  Check,
-  Sparkles,
-  Info,
-  Zap,
-  RefreshCw,
-} from "lucide-react";
+import { User, Mail, Briefcase, TriangleAlert as AlertTriangle, FileText, UserCog, ChevronLeft, ChevronRight, Check, Sparkles, Info, Zap, RefreshCw } from "lucide-react";
 
 const STEPS = ["Trainee Info", "Incident Details", "Manager & Notes"];
 
@@ -73,7 +57,7 @@ const INITIAL: FormData = {
 };
 
 export default function SubmitCase() {
-  const { user, getAccessToken } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -93,11 +77,10 @@ export default function SubmitCase() {
   const loadLookups = useCallback(async () => {
     setLoading(true);
     try {
-      const token = await getAccessToken(loginRequest.scopes as string[]);
       const [a, l, s] = await Promise.all([
-        fetchAccounts(token),
-        fetchLOBs(token),
-        fetchSites(token),
+        fetchAccounts(),
+        fetchLOBs(),
+        fetchSites(),
       ]);
       setAccounts(a);
       setLOBs(l);
@@ -107,7 +90,7 @@ export default function SubmitCase() {
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken]);
+  }, []);
 
   useEffect(() => {
     loadLookups();
@@ -187,10 +170,11 @@ export default function SubmitCase() {
         notes: form.notes,
         documentationRequired: form.documentationRequired,
         escalationRequired: form.escalationRequired,
+        openedBy: user?.email || "",
       };
 
-      const result = await triggerCreateCase(payload);
-      setSuccess(result);
+      const result = await createCase(payload);
+      setSuccess({ caseNumber: result.caseNumber, conversationId: "" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed");
     } finally {

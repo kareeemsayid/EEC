@@ -21,15 +21,13 @@ if (!clientId || !tenantId) {
 export const msalConfig: Configuration = {
   auth: {
     clientId,
-    // Use your specific tenant — do NOT use "common" unless you want
-    // users from ANY Microsoft tenant (including Concentrix) to log in.
     authority: `https://login.microsoftonline.com/${tenantId}`,
     redirectUri,
     postLogoutRedirectUri: redirectUri,
     navigateToLoginRequestUrl: true,
   },
   cache: {
-    cacheLocation: "sessionStorage", // safer than localStorage
+    cacheLocation: "sessionStorage",
     storeAuthStateInCookie: false,
   },
   system: {
@@ -48,12 +46,10 @@ export const msalConfig: Configuration = {
   },
 };
 
-// Scopes requested at login
 export const loginRequest = {
-  scopes: ["openid", "profile", "email", "User.Read"],
+  scopes: ["openid", "profile", "email", "User.Read", "User.ReadBasic.All"],
 };
 
-// Graph API endpoint (if you need to call MS Graph later)
 export const graphConfig = {
   graphMeEndpoint: "https://graph.microsoft.com/v1.0/me",
 };

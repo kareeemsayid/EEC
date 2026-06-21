@@ -5,13 +5,39 @@ import { loginRequest } from "./msalConfig";
 import {
   fetchUserProfile,
   fetchUserPhotoUrl,
-  checkIsPSUser,
   UserProfile,
 } from "../api/sharepoint";
+import {
+  fetchUserRole,
+  fetchSupervisorAccounts,
+  UserRole,
+  SupervisorAccount,
+} from "../api/api";
+import toast from "react-hot-toast";
+
+export type { UserRole };
+
+const GRAPH = "https://graph.microsoft.com/v1.0";
+
+export interface ManagerInfo {
+  id: string;
+  displayName: string;
+  mail: string;
+  jobTitle: string;
+  department?: string;
+  photoUrl?: string | null;
+}
 
 export interface AuthUser extends UserProfile {
   photoUrl: string | null;
-  isPSUser: boolean;
+  role: UserRole;
+  supervisorAccounts: SupervisorAccount[];
+  manager?: ManagerInfo | null;
+  manager1?: ManagerInfo | null;
+  manager2?: ManagerInfo | null;
+  directReports?: ManagerInfo[];
+  department?: string;
+  officeLocation?: string;
 }
 
 interface UseAuthReturn {
@@ -21,6 +47,61 @@ interface UseAuthReturn {
   login: () => Promise<void>;
   logout: () => void;
   getAccessToken: (scopes?: string[]) => Promise<string>;
+}
+
+async function fetchManagerOf(token: string, userIdOrMe: string): Promise<ManagerInfo | null> {
+  try {
+    const path = userIdOrMe === "me"
+      ? "/me/manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName"
+      : `/users/${userIdOrMe}/manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName`;
+    const res = await fetch(`${GRAPH}${path}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const photoUrl = data.id ? await fetchUserPhotoById(token, data.id) : null;
+    return {
+      id: data.id || "",
+      displayName: data.displayName || "",
+      mail: data.mail || data.userPrincipalName || "",
+      jobTitle: data.jobTitle || "",
+      department: data.department || "",
+      photoUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchUserPhotoById(token: string, userId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${GRAPH}/users/${userId}/photo/$value`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchDirectReports(token: string): Promise<ManagerInfo[]> {
+  try {
+    const res = await fetch(`${GRAPH}/me/directReports?$select=id,displayName,mail,jobTitle`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.value || []).map((u: any) => ({
+      id: u.id || "",
+      displayName: u.displayName || "",
+      mail: u.mail || u.userPrincipalName || "",
+      jobTitle: u.jobTitle || "",
+    }));
+  } catch {
+    return [];
+  }
 }
 
 export function useAuth(): UseAuthReturn {
@@ -36,11 +117,8 @@ export function useAuth(): UseAuthReturn {
       if (!account) throw new Error("No account signed in");
       try {
         const result = await instance.acquireTokenSilent({ scopes, account });
-        console.log("[useAuth] Access token acquired successfully");
         return result.accessToken;
-      } catch (error) {
-        console.error("[useAuth] Token acquisition failed:", error);
-        // Try interactive if silent fails
+      } catch {
         const result = await instance.acquireTokenPopup({ scopes, account });
         return result.accessToken;
       }
@@ -48,10 +126,9 @@ export function useAuth(): UseAuthReturn {
     [instance, accounts]
   );
 
-  // Load profile + photo + PS role after login
+  // Load profile + photo + role + supervisor accounts + manager chain + direct reports
   useEffect(() => {
     if (!isAuthenticated) {
-      console.log("[useAuth] Not authenticated, clearing user");
       setUser(null);
       return;
     }
@@ -60,51 +137,48 @@ export function useAuth(): UseAuthReturn {
 
     (async () => {
       setProfileLoading(true);
-      console.log("[useAuth] Loading user profile...");
 
       try {
         const token = await getAccessToken();
+        const userEmail = accounts[0]?.username || "";
 
-        // Fetch profile, photo, and PS role in parallel
-        const [profile, photoUrl, isPSUser] = await Promise.all([
+        // Fetch Graph data in parallel: profile, photo, manager1
+        const [profile, photoUrl, manager1] = await Promise.all([
           fetchUserProfile(token),
           fetchUserPhotoUrl(token),
-          checkIsPSUser(token, accounts[0]?.username || ""),
+          fetchManagerOf(token, "me"),
+        ]);
+
+        // Then fetch manager2 and photos in parallel with backend role fetch
+        const [manager2, directReports, roleData, supervisorAccounts] = await Promise.all([
+          manager1?.id ? fetchManagerOf(token, `users/${manager1.id}`) : Promise.resolve(null),
+          fetchDirectReports(token),
+          fetchUserRole(userEmail).catch(() => ({ role: 'Trainer' as UserRole })),
+          fetchSupervisorAccounts(userEmail).catch(() => [] as SupervisorAccount[]),
         ]);
 
         if (!cancelled) {
-          console.log("[useAuth] Profile loaded:", {
-            displayName: profile.displayName,
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            email: profile.email,
-            jobTitle: profile.jobTitle,
-            hasPhoto: !!photoUrl,
-            isPSUser,
-          });
-
           setUser({
             id: profile.id,
             displayName: profile.displayName || "Trainer",
-            email: profile.email || accounts[0]?.username || "",
+            email: profile.email || userEmail,
             firstName: profile.firstName || "Trainer",
             lastName: profile.lastName || "",
             jobTitle: profile.jobTitle || "Trainer",
             photoUrl,
-            isPSUser,
+            role: roleData.role,
+            supervisorAccounts,
+            manager: manager1,
+            manager1,
+            manager2,
+            directReports,
           });
         }
       } catch (e) {
-        console.error("[useAuth] Profile load error:", e);
-
-        // Fallback: create basic user from MSAL account info
         if (!cancelled && accounts[0]) {
           const account = accounts[0];
-          console.log("[useAuth] Creating fallback user from account:", account);
-
           const displayName = account.name || account.username?.split("@")[0] || "Trainer";
           const nameParts = displayName.split(" ");
-
           setUser({
             id: account.localAccountId || "unknown",
             displayName,
@@ -113,28 +187,31 @@ export function useAuth(): UseAuthReturn {
             lastName: nameParts.slice(1).join(" ") || "",
             jobTitle: "Trainer",
             photoUrl: null,
-            isPSUser: false,
+            role: "Trainer",
+            supervisorAccounts: [],
+            manager: null,
+            manager1: null,
+            manager2: null,
+            directReports: [],
           });
         }
       } finally {
-        if (!cancelled) {
-          setProfileLoading(false);
-        }
+        if (!cancelled) setProfileLoading(false);
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [isAuthenticated, getAccessToken, accounts]);
 
   const login = useCallback(async () => {
-    console.log("[useAuth] Initiating login...");
     await instance.loginPopup(loginRequest);
   }, [instance]);
 
   const logout = useCallback(() => {
-    console.log("[useAuth] Logging out...");
+    // Clear all persisted session data
+    localStorage.clear();
+    sessionStorage.clear();
+    toast.success("Signed out successfully", { duration: 2000 });
     instance.logoutPopup({ postLogoutRedirectUri: window.location.origin });
   }, [instance]);
 

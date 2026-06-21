@@ -34,11 +34,11 @@ if (!process.env.REACT_APP_SHAREPOINT_SITE_URL) {
 
 // Possible list name variations to try when a list is not found
 const LIST_NAME_ALIASES: Record<string, string[]> = {
-  "AttritionCases": ["AttritionCases", "Attrition Case", "Attrition_Cases", "Cases", "EEC Cases"],
-  "Accounts": ["Accounts", "Account", "Client", "Clients", "Account List"],
-  "LOBs": ["LOBs", "LOB", "Lines of Business", "LineOfBusiness", "LinesOfBusiness"],
-  "Sites": ["Sites", "Site", "Site List", "Locations", "Locations List"],
-  "PSUsers": ["PSUsers", "PS Users", "PS_Users", "People Solutions Users", "PeopleSolutionsUsers"],
+  "AttritionCases": ["AttritionCases", "Attrition Case", "Attrition_Cases", "Cases", "EEC Cases", "EEC Attrition Cases"],
+  "Accounts": ["Accounts", "Account", "Client", "Clients", "Account List", "EEC Accounts"],
+  "LOBs": ["LOBs", "LOB", "Lines of Business", "LineOfBusiness", "LinesOfBusiness", "EEC LOBs"],
+  "Sites": ["Sites", "Site", "Site List", "Locations", "Locations List", "EEC Sites", "SiteList"],
+  "PSUsers": ["PSUsers", "PS Users", "PS_Users", "People Solutions Users", "PeopleSolutionsUsers", "EEC PS Users"],
   "CaseUpdates": ["CaseUpdates", "Case Updates", "Case_Updates", "Updates", "EEC Case Updates"],
   "EmailThreadTracking": ["EmailThreadTracking", "Email Thread Tracking", "EmailThread", "ThreadTracking", "Email Threads"],
   "AttendanceHistory": ["AttendanceHistory", "Attendance History", "Attendance_History", "Attendance", "Attendance Log"],
@@ -48,6 +48,46 @@ const LIST_NAME_ALIASES: Record<string, string[]> = {
   "InvestigationAttachments": ["InvestigationAttachments", "Investigation Attachments", "Investigation_Attachments", "Attachments"],
   "InvestigationUpdates": ["InvestigationUpdates", "Investigation Updates", "Investigation_Updates"],
 };
+
+// ─── Fallback Mock Data (used when SharePoint lists are unavailable) ─────────
+const FALLBACK_ACCOUNTS: Account[] = [
+  { id: "acc-1", title: "Amazon", warningHours: 8, criticalHours: 16, documentGraceHours: 48 },
+  { id: "acc-2", title: "Google", warningHours: 8, criticalHours: 16, documentGraceHours: 48 },
+  { id: "acc-3", title: "Microsoft", warningHours: 8, criticalHours: 16, documentGraceHours: 48 },
+  { id: "acc-4", title: "Apple", warningHours: 8, criticalHours: 16, documentGraceHours: 48 },
+  { id: "acc-5", title: "Meta", warningHours: 8, criticalHours: 16, documentGraceHours: 48 },
+  { id: "acc-6", title: "Netflix", warningHours: 8, criticalHours: 16, documentGraceHours: 48 },
+];
+
+const FALLBACK_LOBS: LOB[] = [
+  { id: "lob-1", title: "Customer Service", accountId: "acc-1" },
+  { id: "lob-2", title: "Technical Support", accountId: "acc-1" },
+  { id: "lob-3", title: "Sales", accountId: "acc-1" },
+  { id: "lob-4", title: "Customer Support", accountId: "acc-2" },
+  { id: "lob-5", title: "Cloud Support", accountId: "acc-3" },
+  { id: "lob-6", title: "Retail Support", accountId: "acc-4" },
+  { id: "lob-7", title: "Ads Support", accountId: "acc-5" },
+  { id: "lob-8", title: "Streaming Support", accountId: "acc-6" },
+];
+
+const FALLBACK_SITES: Site[] = [
+  { id: "site-1", title: "Manila - BGC", region: "APAC" },
+  { id: "site-2", title: "Manila - Eastwood", region: "APAC" },
+  { id: "site-3", title: "Cebu", region: "APAC" },
+  { id: "site-4", title: "Bangalore", region: "APAC" },
+  { id: "site-5", title: "Managua", region: "LATAM" },
+  { id: "site-6", title: "San Salvador", region: "LATAM" },
+  { id: "site-7", title: "Bucharest", region: "EMEA" },
+  { id: "site-8", title: "Warsaw", region: "EMEA" },
+];
+
+const FALLBACK_PSUSERS: PSUser[] = [
+  { id: "ps-1", email: "hr@concentrix.com", title: "HR Team" },
+  { id: "ps-2", email: "people.solutions@concentrix.com", title: "People Solutions" },
+];
+
+// Track which lists are using fallback data
+const usingFallback: Set<string> = new Set();
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -381,6 +421,67 @@ export async function fetchUserPhotoUrl(token: string): Promise<string | null> {
   }
 }
 
+// ─── Manager Chain (2-level: direct manager + skip-level) ─────────────────────
+// Reading /me/manager needs only User.Read; reading your manager's manager
+// requires User.Read.All — admin-consented on the Azure AD app registration.
+// If consent is missing, the skip-level silently returns null (graceful omit).
+
+export interface ChainManagerInfo {
+  id: string;
+  displayName: string;
+  email: string;
+  jobTitle: string;
+  department: string;
+  photoUrl: string | null;
+}
+
+export interface ManagerChain {
+  manager: ChainManagerInfo | null;
+  skipLevelManager: ChainManagerInfo | null;
+}
+
+async function fetchUserPhotoUrlById(token: string, userId: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${GRAPH}/users/${userId}/photo/$value`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchManagerOf(token: string, userIdOrMe: string): Promise<ChainManagerInfo | null> {
+  try {
+    const path = userIdOrMe === "me"
+      ? "/me/manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName"
+      : `/${userIdOrMe}/manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName`;
+    const data = await graphFetch<any>(token, path);
+    const photoUrl = data.id ? await fetchUserPhotoUrlById(token, data.id) : null;
+    return {
+      id: data.id || "",
+      displayName: data.displayName || "",
+      email: data.mail || data.userPrincipalName || "",
+      jobTitle: data.jobTitle || "",
+      department: data.department || "",
+      photoUrl,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchManagerChain(token: string): Promise<ManagerChain> {
+  const manager = await fetchManagerOf(token, "me");
+  if (!manager) return { manager: null, skipLevelManager: null };
+  const skipLevelManager = manager.id
+    ? await fetchManagerOf(token, `users/${manager.id}`)
+    : null;
+  return { manager, skipLevelManager };
+}
+
 // ─── Attrition Cases ──────────────────────────────────────────────────────────
 
 function mapCase(f: any): AttritionCase {
@@ -611,44 +712,65 @@ export async function createCaseUpdate(
 export async function fetchAccounts(token: string): Promise<Account[]> {
   try {
     const items = await getListItems<any>(token, "Accounts");
-    return items.map((f) => ({
-      id: f.id,
-      title: f.Title || "",
-      warningHours: Number(f.WarningHours) || 8,
-      criticalHours: Number(f.CriticalHours) || 16,
-      documentGraceHours: Number(f.DocumentGraceHours) || 48,
-    }));
+    if (items.length > 0) {
+      return items.map((f) => ({
+        id: f.id,
+        title: f.Title || "",
+        warningHours: Number(f.WarningHours) || 8,
+        criticalHours: Number(f.CriticalHours) || 16,
+        documentGraceHours: Number(f.DocumentGraceHours) || 48,
+      }));
+    }
+    // If empty, use fallback
+    console.warn("[fetchAccounts] No items returned, using fallback data");
+    usingFallback.add("Accounts");
+    return FALLBACK_ACCOUNTS;
   } catch (error) {
-    console.error("[fetchAccounts] Error:", error);
-    return [];
+    console.warn("[fetchAccounts] Error fetching accounts, using fallback data:", error);
+    usingFallback.add("Accounts");
+    return FALLBACK_ACCOUNTS;
   }
 }
 
 export async function fetchLOBs(token: string): Promise<LOB[]> {
   try {
     const items = await getListItems<any>(token, "LOBs");
-    return items.map((f) => ({
-      id: f.id,
-      title: f.Title || "",
-      accountId: f.AccountLookupId || "",
-    }));
+    if (items.length > 0) {
+      return items.map((f) => ({
+        id: f.id,
+        title: f.Title || "",
+        accountId: f.AccountLookupId || "",
+      }));
+    }
+    // If empty, use fallback
+    console.warn("[fetchLOBs] No items returned, using fallback data");
+    usingFallback.add("LOBs");
+    return FALLBACK_LOBS;
   } catch (error) {
-    console.error("[fetchLOBs] Error:", error);
-    return [];
+    console.warn("[fetchLOBs] Error fetching LOBs, using fallback data:", error);
+    usingFallback.add("LOBs");
+    return FALLBACK_LOBS;
   }
 }
 
 export async function fetchSites(token: string): Promise<Site[]> {
   try {
     const items = await getListItems<any>(token, "Sites");
-    return items.map((f) => ({
-      id: f.id,
-      title: f.Title || "",
-      region: f.Region || "",
-    }));
+    if (items.length > 0) {
+      return items.map((f) => ({
+        id: f.id,
+        title: f.Title || "",
+        region: f.Region || "",
+      }));
+    }
+    // If empty, use fallback
+    console.warn("[fetchSites] No items returned, using fallback data");
+    usingFallback.add("Sites");
+    return FALLBACK_SITES;
   } catch (error) {
-    console.error("[fetchSites] Error:", error);
-    return [];
+    console.warn("[fetchSites] Error fetching sites, using fallback data:", error);
+    usingFallback.add("Sites");
+    return FALLBACK_SITES;
   }
 }
 
@@ -657,14 +779,21 @@ export async function fetchSites(token: string): Promise<Site[]> {
 export async function fetchPSUsers(token: string): Promise<PSUser[]> {
   try {
     const items = await getListItems<any>(token, "PSUsers");
-    return items.map((f) => ({
-      id: f.id,
-      email: (f.Email || "").toLowerCase(),
-      title: f.Title || "",
-    }));
+    if (items.length > 0) {
+      return items.map((f) => ({
+        id: f.id,
+        email: (f.Email || "").toLowerCase(),
+        title: f.Title || "",
+      }));
+    }
+    // If empty, use fallback
+    console.warn("[fetchPSUsers] No items returned, using fallback data");
+    usingFallback.add("PSUsers");
+    return FALLBACK_PSUSERS;
   } catch (error) {
-    console.error("[fetchPSUsers] Error:", error);
-    return [];
+    console.warn("[fetchPSUsers] Error fetching PS users, using fallback data:", error);
+    usingFallback.add("PSUsers");
+    return FALLBACK_PSUSERS;
   }
 }
 

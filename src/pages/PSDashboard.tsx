@@ -1,15 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
-import { fetchAttritionCases, fetchAccounts, fetchLOBs, fetchSites } from "../api/sharepoint";
-import { AttritionCase, Account, LOB, Site } from "../utils/types";
+import { fetchAllCases, fetchAccounts, fetchLOBs, fetchSites, Account, LOB, Site, AttritionCase } from "../api/api";
 import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBanner from "../components/ErrorBanner";
 import Tooltip from "../components/Tooltip";
 import { formatDate, formatHours, timeAgo } from "../utils/formatters";
-import { loginRequest } from "../auth/msalConfig";
 import {
   Download,
   Search,
@@ -33,7 +30,6 @@ type SortKey = "traineeName" | "totalMissedHours" | "caseOpenedDate" | "lastUpda
 type SortDir = "asc" | "desc";
 
 export default function PSDashboard() {
-  const { getAccessToken } = useAuth();
   const navigate = useNavigate();
 
   const [cases, setCases] = useState<AttritionCase[]>([]);
@@ -60,12 +56,11 @@ export default function PSDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const token = await getAccessToken(loginRequest.scopes as string[]);
       const [casesData, accountsData, lobsData, sitesData] = await Promise.all([
-        fetchAttritionCases(token),
-        fetchAccounts(token),
-        fetchLOBs(token),
-        fetchSites(token),
+        fetchAllCases(),
+        fetchAccounts(),
+        fetchLOBs(),
+        fetchSites(),
       ]);
       setCases(casesData);
       setAccounts(accountsData);
@@ -76,7 +71,7 @@ export default function PSDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken]);
+  }, []);
 
   useEffect(() => {
     loadData();
