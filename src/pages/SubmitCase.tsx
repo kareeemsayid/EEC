@@ -70,7 +70,7 @@ export default function SubmitCase() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ caseNumber: string; conversationId: string } | null>(null);
 
-  const filteredLOBs = lobs.filter((l) => l.accountId === form.accountId);
+  const filteredLOBs = lobs.filter((l) => l.accountId === Number(form.accountId));
   const riskStatus = calculateRiskStatus(form.totalMissedHours, form.severityLevel);
   const lifecycleStage = inferLifecycleStage(riskStatus, form.totalMissedHours);
 

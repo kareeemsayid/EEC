@@ -13,7 +13,7 @@ import {
   UserRole,
   SupervisorAccount,
 } from "../api/api";
-import toast from "react-hot-toast";
+
 
 export type { UserRole };
 
@@ -32,6 +32,8 @@ export interface AuthUser extends UserProfile {
   photoUrl: string | null;
   role: UserRole;
   supervisorAccounts: SupervisorAccount[];
+  assignedLOBs?: string[];
+  assignedAccounts?: string[];
   manager?: ManagerInfo | null;
   manager1?: ManagerInfo | null;
   manager2?: ManagerInfo | null;
@@ -142,12 +144,15 @@ export function useAuth(): UseAuthReturn {
         const token = await getAccessToken();
         const userEmail = accounts[0]?.username || "";
 
-        // Fetch Graph data in parallel: profile, photo, manager1
-        const [profile, photoUrl, manager1] = await Promise.all([
+        // Fetch Graph data in parallel: profile, photo, manager1, department
+        const [profile, photoUrl, manager1, meGraphRaw] = await Promise.all([
           fetchUserProfile(token),
           fetchUserPhotoUrl(token),
           fetchManagerOf(token, "me"),
+          fetch(`${GRAPH}/me?$select=department,officeLocation`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok ? r.json() : {}),
         ]);
+
+        const meGraph = meGraphRaw as any;
 
         // Then fetch manager2 and photos in parallel with backend role fetch
         const [manager2, directReports, roleData, supervisorAccounts] = await Promise.all([
@@ -165,6 +170,8 @@ export function useAuth(): UseAuthReturn {
             firstName: profile.firstName || "Trainer",
             lastName: profile.lastName || "",
             jobTitle: profile.jobTitle || "Trainer",
+            department: meGraph?.department || "",
+            officeLocation: meGraph?.officeLocation || "",
             photoUrl,
             role: roleData.role,
             supervisorAccounts,
@@ -208,11 +215,25 @@ export function useAuth(): UseAuthReturn {
   }, [instance]);
 
   const logout = useCallback(() => {
-    // Clear all persisted session data
+    // Clear all MSAL cache and session data
     localStorage.clear();
     sessionStorage.clear();
-    toast.success("Signed out successfully", { duration: 2000 });
-    instance.logoutPopup({ postLogoutRedirectUri: window.location.origin });
+    // Remove all MSAL-specific keys
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('msal.')) localStorage.removeItem(key);
+    });
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('msal.')) sessionStorage.removeItem(key);
+    });
+    // Use logoutPopup to avoid the account picker page, then force redirect
+    instance.logoutPopup({
+      postLogoutRedirectUri: window.location.origin + '/login',
+    }).catch(() => {
+      // Fallback: force navigate to login if popup fails
+      window.location.href = window.location.origin + '/login';
+    }).finally(() => {
+      window.location.href = window.location.origin + '/login';
+    });
   }, [instance]);
 
   return { user, profileLoading, isAuthenticated, login, logout, getAccessToken };

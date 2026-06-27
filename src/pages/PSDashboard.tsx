@@ -1,33 +1,26 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { fetchAllCases, fetchAccounts, fetchLOBs, fetchSites, Account, LOB, Site, AttritionCase } from "../api/api";
 import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBanner from "../components/ErrorBanner";
-import Tooltip from "../components/Tooltip";
 import { formatDate, formatHours, timeAgo } from "../utils/formatters";
 import {
-  Download,
-  Search,
-  BarChart3,
-  Users,
-  TriangleAlert as AlertTriangle,
-  TrendingUp,
-  Eye,
-  Clock,
-  Mail,
-  FileText,
-  X,
-  Filter,
-  RefreshCw,
-  Briefcase,
-  MapPin,
-  FileSearch,
+  Download, Search, BarChart3, TriangleAlert as AlertTriangle,
+  Eye, Clock, Mail, FileText, X, Filter, RefreshCw,
+  FileSearch, Shield,
 } from "lucide-react";
 
 type SortKey = "traineeName" | "totalMissedHours" | "caseOpenedDate" | "lastUpdatedDate" | "riskStatus";
 type SortDir = "asc" | "desc";
+
+const RISK_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  "Critical":   { bg: "rgba(239,68,68,0.08)", text: "#ef4444", border: "rgba(239,68,68,0.2)" },
+  "High Risk":  { bg: "rgba(245,158,11,0.08)", text: "#f59e0b", border: "rgba(245,158,11,0.2)" },
+  "Monitoring": { bg: "rgba(34,197,94,0.08)", text: "#22c55e", border: "rgba(34,197,94,0.2)" },
+};
 
 export default function PSDashboard() {
   const navigate = useNavigate();
@@ -48,19 +41,15 @@ export default function PSDashboard() {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("lastUpdatedDate");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  // Detail modal state
   const [selectedCase, setSelectedCase] = useState<AttritionCase | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [casesData, accountsData, lobsData, sitesData] = await Promise.all([
-        fetchAllCases(),
-        fetchAccounts(),
-        fetchLOBs(),
-        fetchSites(),
+        fetchAllCases(), fetchAccounts(), fetchLOBs(), fetchSites(),
       ]);
       setCases(casesData);
       setAccounts(accountsData);
@@ -73,21 +62,15 @@ export default function PSDashboard() {
     }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("desc");
-    }
+    if (sortKey === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("desc"); }
   }
 
   const filtered = cases
-    .filter((c) => {
+    .filter(c => {
       if (filterAccount !== "all" && c.account !== filterAccount) return false;
       if (filterLOB !== "all" && c.lob !== filterLOB) return false;
       if (filterSite !== "all" && c.site !== filterSite) return false;
@@ -96,601 +79,323 @@ export default function PSDashboard() {
       if (filterStage !== "all" && c.lifecycleStage !== filterStage) return false;
       if (search) {
         const q = search.toLowerCase();
-        return (
-          c.traineeName.toLowerCase().includes(q) ||
-          c.caseNumber.toLowerCase().includes(q) ||
-          c.oracleId.toLowerCase().includes(q) ||
-          c.account.toLowerCase().includes(q) ||
-          c.trainerName.toLowerCase().includes(q)
-        );
+        return c.traineeName.toLowerCase().includes(q) || c.caseNumber.toLowerCase().includes(q) ||
+          c.oracleId.toLowerCase().includes(q) || c.account.toLowerCase().includes(q) || c.trainerName.toLowerCase().includes(q);
       }
       return true;
     })
     .sort((a, b) => {
-      let aVal: any = a[sortKey];
-      let bVal: any = b[sortKey];
-      if (sortKey === "caseOpenedDate" || sortKey === "lastUpdatedDate") {
-        aVal = new Date(aVal).getTime();
-        bVal = new Date(bVal).getTime();
-      }
-      if (sortKey === "riskStatus") {
-        const order: Record<string, number> = {
-          Critical: 0,
-          "High Risk": 1,
-          Monitoring: 2,
-        };
-        aVal = order[aVal] ?? 3;
-        bVal = order[bVal] ?? 3;
-      }
-      if (typeof aVal === "string") {
-        aVal = aVal.toLowerCase();
-        bVal = (bVal as string).toLowerCase();
-      }
-      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
-      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      let av: any = a[sortKey], bv: any = b[sortKey];
+      if (sortKey === "caseOpenedDate" || sortKey === "lastUpdatedDate") { av = new Date(av).getTime(); bv = new Date(bv).getTime(); }
+      if (sortKey === "riskStatus") { const o: Record<string, number> = { Critical: 0, "High Risk": 1, Monitoring: 2 }; av = o[av] ?? 3; bv = o[bv] ?? 3; }
+      if (typeof av === "string") { av = av.toLowerCase(); bv = (bv as string).toLowerCase(); }
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
 
   const totalCases = cases.length;
-  const activeCases = cases.filter((c) => c.caseStatus === "Active").length;
-  const criticalCases = cases.filter((c) => c.riskStatus === "Critical").length;
-  const highRiskCases = cases.filter((c) => c.riskStatus === "High Risk").length;
-  const slaBreached = cases.filter((c) => c.totalMissedHours >= 16).length;
+  const activeCases = cases.filter(c => c.caseStatus === "Active").length;
+  const criticalCases = cases.filter(c => c.riskStatus === "Critical").length;
+  const highRiskCases = cases.filter(c => c.riskStatus === "High Risk").length;
+  const slaBreached = cases.filter(c => c.totalMissedHours >= 16).length;
 
-  const uniqueLOBs = Array.from(new Set(lobs.map(l => l.title)));
   const uniqueStages = Array.from(new Set(cases.map(c => c.lifecycleStage)));
-
-  const exportToCSV = () => {
-    const headers = [
-      "Case #",
-      "Trainee",
-      "Oracle ID",
-      "Risk",
-      "Stage",
-      "Hours Missed",
-      "Account",
-      "LOB",
-      "Site",
-      "Trainer",
-      "Status",
-      "Opened",
-      "Updated",
-    ];
-    const rows = filtered.map((c) => [
-      c.caseNumber,
-      c.traineeName,
-      c.oracleId,
-      c.riskStatus,
-      c.lifecycleStage,
-      c.totalMissedHours,
-      c.account,
-      c.lob,
-      c.site,
-      c.trainerName,
-      c.caseStatus,
-      formatDate(c.caseOpenedDate),
-      formatDate(c.lastUpdatedDate),
-    ]);
-    const csv = [headers, ...rows].map((r) => r.map(cell => `"${cell}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `eec-ps-dashboard-${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const clearFilters = () => {
-    setFilterAccount("all");
-    setFilterLOB("all");
-    setFilterSite("all");
-    setFilterStatus("all");
-    setFilterRisk("all");
-    setFilterStage("all");
-    setSearch("");
-  };
-
   const hasFilters = filterAccount !== "all" || filterLOB !== "all" || filterSite !== "all" || filterStatus !== "all" || filterRisk !== "all" || filterStage !== "all" || search;
 
-  const SortIcon = ({ col }: { col: SortKey }) => (
-    <span className={`ml-1 ${sortKey === col ? "text-teal-500" : "text-gray-300"}`}>
-      {sortKey === col ? (sortDir === "asc" ? "↑" : "↓") : "↕"}
-    </span>
-  );
+  const clearFilters = () => { setFilterAccount("all"); setFilterLOB("all"); setFilterSite("all"); setFilterStatus("all"); setFilterRisk("all"); setFilterStage("all"); setSearch(""); };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16">
-        <LoadingSpinner size="lg" label="Loading dashboard..." />
-      </div>
-    );
-  }
+  const exportCSV = () => {
+    const headers = ["Case #", "Trainee", "Oracle ID", "Risk", "Stage", "Hours", "Account", "LOB", "Site", "Trainer", "Status", "Opened", "Updated"];
+    const rows = filtered.map(c => [c.caseNumber, c.traineeName, c.oracleId, c.riskStatus, c.lifecycleStage, c.totalMissedHours, c.account, c.lob, c.site, c.trainerName, c.caseStatus, formatDate(c.caseOpenedDate), formatDate(c.lastUpdatedDate)]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `ps-dashboard-${new Date().toISOString().split("T")[0]}.csv`; a.click(); URL.revokeObjectURL(url);
+  };
+
+  if (loading) return <div className="flex justify-center py-24"><LoadingSpinner size="lg" label="Loading PS Dashboard..." /></div>;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl p-5 shadow-glass-sm">
-          <div className="flex items-center gap-2 mb-1">
-            <Users className="w-5 h-5 text-teal-500" />
-            <span className="text-xs font-medium text-teal-600 uppercase tracking-wider">People Solutions</span>
+    <div className="space-y-6">
+      {/* ── Header ── */}
+      <div className="relative rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, #0B1E35 0%, #0D2D4A 100%)", padding: "24px 28px" }}>
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-12 -right-16 w-56 h-56 rounded-full opacity-10" style={{ background: "radial-gradient(circle, #fb923c 0%, transparent 70%)" }} />
+        </div>
+        <div className="relative flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
+                style={{ background: "rgba(251,146,60,0.15)", color: "#fb923c", border: "1px solid rgba(251,146,60,0.2)" }}>
+                <Shield className="w-3 h-3" />
+                People Solutions
+              </span>
+            </div>
+            <h1 className="font-barlow-condensed font-bold text-white leading-none mb-1" style={{ fontSize: "clamp(1.6rem, 2.5vw, 2.2rem)" }}>
+              PS Command Center
+            </h1>
+            <p className="text-white/40 text-sm">{filtered.length} of {cases.length} cases displayed</p>
           </div>
-          <h1 className="font-barlow-condensed text-3xl font-bold text-gray-900 tracking-wide">
-            PS DASHBOARD
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Monitor all attrition cases across the organisation
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Tooltip content="View HR Investigation cases" position="bottom">
-            <button
-              onClick={() => navigate("/investigations")}
-              className="glass-card bg-white/90 backdrop-blur-xl hover:bg-white border border-white/30 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl transition-all flex items-center gap-2"
-            >
-              <FileSearch className="w-4 h-4" />
-              Investigations
+          <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => navigate("/investigations")}
+              className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <FileSearch className="w-4 h-4" />Investigations
             </button>
-          </Tooltip>
-          <Tooltip content="Refresh data from SharePoint" position="bottom">
-            <button
-              onClick={loadData}
-              className="glass-card bg-white/90 backdrop-blur-xl hover:bg-white border border-white/30 text-gray-700 text-sm font-medium px-4 py-2 rounded-xl transition-all flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
+            <button onClick={loadData}
+              className="flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", border: "1px solid rgba(255,255,255,0.12)" }}>
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
             </button>
-          </Tooltip>
-          <Tooltip content="Export filtered cases to CSV file" position="bottom">
-            <button
-              onClick={exportToCSV}
-              className="bg-gradient-teal hover:opacity-90 text-white text-sm font-medium px-4 py-2 rounded-xl transition-all shadow-glow-teal flex items-center gap-2"
-            >
+            <button onClick={exportCSV}
+              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl"
+              style={{ background: "#fb923c", color: "#0B1E35" }}>
               <Download className="w-4 h-4" />
-              Export CSV ({filtered.length})
+              Export ({filtered.length})
             </button>
-          </Tooltip>
+          </div>
         </div>
-      </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <KPICard
-          label="Total Cases"
-          value={totalCases}
-          icon={<BarChart3 className="w-5 h-5" />}
-          color="teal"
-        />
-        <KPICard
-          label="Active Cases"
-          value={activeCases}
-          icon={<Users className="w-5 h-5" />}
-          color="blue"
-        />
-        <KPICard
-          label="Critical"
-          value={criticalCases}
-          icon={<AlertTriangle className="w-5 h-5" />}
-          color="red"
-          pulse={criticalCases > 0}
-        />
-        <KPICard
-          label="High Risk"
-          value={highRiskCases}
-          icon={<TrendingUp className="w-5 h-5" />}
-          color="amber"
-        />
-        <KPICard
-          label="SLA Breached"
-          value={slaBreached}
-          icon={<Clock className="w-5 h-5" />}
-          color="red"
-        />
+        {/* KPI Strip */}
+        <div className="relative grid grid-cols-2 md:grid-cols-5 gap-3 mt-5">
+          {[
+            { label: "Total", value: totalCases, color: "#00C9B1" },
+            { label: "Active", value: activeCases, color: "#38bdf8" },
+            { label: "Critical", value: criticalCases, color: "#ef4444", pulse: criticalCases > 0 },
+            { label: "High Risk", value: highRiskCases, color: "#f59e0b" },
+            { label: "SLA Breach", value: slaBreached, color: "#f87171" },
+          ].map(({ label, value, color, pulse }) => (
+            <div key={label} className="rounded-xl p-3 flex items-center gap-2.5"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div>
+                <p className="font-barlow-condensed font-black text-2xl text-white leading-none" style={{ color: value > 0 && (label === "Critical" || label === "SLA Breach") ? color : "white" }}>{value}</p>
+                <p className="text-[11px] text-white/40 mt-0.5">{label}</p>
+              </div>
+              {pulse && value > 0 && <span className="ml-auto w-2 h-2 rounded-full animate-ping flex-shrink-0" style={{ background: color }} />}
+            </div>
+          ))}
+        </div>
       </div>
 
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-      {/* Enhanced Filter Bar */}
-      <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl p-4 shadow-glass-sm">
-        <div className="flex flex-wrap gap-3 items-center">
-          <Filter className="w-4 h-4 text-gray-400 shrink-0" />
-
-          {/* Search */}
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
+      {/* ── Filter Bar ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card">
+        <div className="flex items-center gap-3 px-4 py-3.5">
+          <div className="relative flex-1 max-w-sm">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search name, case #, Oracle ID..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition-all"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <input type="text" placeholder="Search name, case #, Oracle ID, trainer..." value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white transition-all" />
           </div>
-
-          <select
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-            value={filterAccount}
-            onChange={(e) => setFilterAccount(e.target.value)}
-          >
-            <option value="all">All Accounts</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.title}>
-                {a.title}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-            value={filterLOB}
-            onChange={(e) => setFilterLOB(e.target.value)}
-          >
-            <option value="all">All LOBs</option>
-            {uniqueLOBs.map((lob) => (
-              <option key={lob} value={lob}>
-                {lob}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-            value={filterSite}
-            onChange={(e) => setFilterSite(e.target.value)}
-          >
-            <option value="all">All Sites</option>
-            {sites.map((s) => (
-              <option key={s.id} value={s.title}>
-                {s.title}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-            value={filterRisk}
-            onChange={(e) => setFilterRisk(e.target.value as any)}
-          >
-            <option value="all">All Risk</option>
-            <option value="Critical">Critical</option>
-            <option value="High Risk">High Risk</option>
-            <option value="Monitoring">Monitoring</option>
-          </select>
-
-          <select
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-            value={filterStage}
-            onChange={(e) => setFilterStage(e.target.value)}
-          >
-            <option value="all">All Stages</option>
-            {uniqueStages.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-
+          <button onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+            style={showFilters ? { background: "#0B1E35", color: "white" } : { background: "#f8fafc", color: "#374151", border: "1px solid #e5e7eb" }}>
+            <Filter className="w-4 h-4" />
+            Filters {hasFilters && <span className="w-2 h-2 rounded-full bg-orange-400 ml-0.5" />}
+          </button>
           {hasFilters && (
-            <button
-              onClick={clearFilters}
-              className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1 font-medium"
-            >
-              <X className="w-3 h-3" />
-              Clear filters
+            <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-red-500 hover:text-red-600 font-medium">
+              <X className="w-3 h-3" />Clear
             </button>
           )}
-
-          <span className="text-xs text-gray-400 ml-auto font-mono">
-            {filtered.length} of {cases.length} cases
-          </span>
+          <span className="ml-auto text-xs font-mono text-gray-400">{filtered.length}/{cases.length}</span>
         </div>
+
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
+              className="overflow-hidden">
+              <div className="px-4 pb-4 flex flex-wrap gap-2 pt-1" style={{ borderTop: "1px solid #f3f4f6" }}>
+                {[
+                  { label: "Account", value: filterAccount, setter: setFilterAccount, options: accounts.map(a => ({ v: a.title, l: a.title })) },
+                  { label: "LOB", value: filterLOB, setter: setFilterLOB, options: Array.from(new Set(lobs.map(l => l.title))).map(t => ({ v: t, l: t })) },
+                  { label: "Site", value: filterSite, setter: setFilterSite, options: sites.map(s => ({ v: s.title, l: s.title })) },
+                  { label: "Status", value: filterStatus, setter: setFilterStatus as any, options: [{ v: "Active", l: "Active" }, { v: "Closed", l: "Closed" }] },
+                  { label: "Risk", value: filterRisk, setter: setFilterRisk as any, options: [{ v: "Critical", l: "Critical" }, { v: "High Risk", l: "High Risk" }, { v: "Monitoring", l: "Monitoring" }] },
+                  { label: "Stage", value: filterStage, setter: setFilterStage, options: uniqueStages.map(s => ({ v: s, l: s })) },
+                ].map(({ label, value, setter, options }) => (
+                  <select key={label} value={value} onChange={e => setter(e.target.value as any)}
+                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 cursor-pointer">
+                    <option value="all">All {label}s</option>
+                    {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                  </select>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Enhanced Table */}
-      <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-glass overflow-hidden">
+      {/* ── Cases Table ── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="py-20 text-center">
             <BarChart3 className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-400 text-sm">No cases match your filters</p>
-            {hasFilters && (
-              <button onClick={clearFilters} className="mt-2 text-teal-600 text-sm hover:underline">
-                Clear all filters
-              </button>
-            )}
+            <p className="text-gray-400">No cases match your filters</p>
+            {hasFilters && <button onClick={clearFilters} className="mt-2 text-sm font-medium" style={{ color: "#00C9B1" }}>Clear filters</button>}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-100 bg-gradient-to-r from-gray-50/80 to-transparent">
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Case #
-                  </th>
-                  <th
-                    className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors"
-                    onClick={() => toggleSort("traineeName")}
-                  >
-                    <span className="flex items-center gap-1">
-                      Trainee <SortIcon col="traineeName" />
-                    </span>
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Trainer
-                  </th>
-                  <th
-                    className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors"
-                    onClick={() => toggleSort("riskStatus")}
-                  >
-                    <span className="flex items-center gap-1">
-                      Risk <SortIcon col="riskStatus" />
-                    </span>
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Stage
-                  </th>
-                  <th
-                    className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors"
-                    onClick={() => toggleSort("totalMissedHours")}
-                  >
-                    <span className="flex items-center gap-1">
-                      Hours <SortIcon col="totalMissedHours" />
-                    </span>
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Account / LOB
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Site
-                  </th>
-                  <th
-                    className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:text-gray-700 transition-colors"
-                    onClick={() => toggleSort("lastUpdatedDate")}
-                  >
-                    <span className="flex items-center gap-1">
-                      Updated <SortIcon col="lastUpdatedDate" />
-                    </span>
-                  </th>
-                  <th className="text-left px-5 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Actions
-                  </th>
+                <tr style={{ background: "#f8fafc", borderBottom: "1px solid #f3f4f6" }}>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">Case #</th>
+                  <SortTh col="traineeName" current={sortKey} dir={sortDir} onSort={toggleSort}>Trainee</SortTh>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">Trainer</th>
+                  <SortTh col="riskStatus" current={sortKey} dir={sortDir} onSort={toggleSort}>Risk</SortTh>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">Stage</th>
+                  <SortTh col="totalMissedHours" current={sortKey} dir={sortDir} onSort={toggleSort}>Hours</SortTh>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">Account / LOB</th>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">Site</th>
+                  <SortTh col="lastUpdatedDate" current={sortKey} dir={sortDir} onSort={toggleSort}>Updated</SortTh>
+                  <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filtered.map((c, idx) => (
-                  <tr
-                    key={c.id}
-                    className="hover:bg-teal-50/40 transition-colors cursor-pointer animate-fade-in-up group"
-                    style={{ animationDelay: `${idx * 20}ms` }}
-                    onClick={() => setSelectedCase(c)}
-                  >
-                    <td className="px-5 py-3">
-                      <span className="font-mono text-xs text-teal-700 font-bold">
-                        {c.caseNumber}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-800 group-hover:text-teal-700 transition-colors">
-                          {c.traineeName}
-                        </p>
-                        <p className="text-xs text-gray-400 font-mono">
-                          {c.oracleId}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div>
+              <tbody>
+                {filtered.map((c, idx) => {
+                  const riskStyle = RISK_STYLES[c.riskStatus] || RISK_STYLES.Monitoring;
+                  return (
+                    <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.02 }}
+                      className="cursor-pointer group" style={{ borderBottom: "1px solid #f9fafb" }}
+                      onClick={() => setSelectedCase(c)}
+                      onMouseEnter={e => (e.currentTarget.style.background = "#f8fffe")}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono text-xs font-bold" style={{ color: "#00C9B1" }}>{c.caseNumber}</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-sm font-medium text-gray-800 group-hover:text-teal-700 transition-colors">{c.traineeName}</p>
+                        <p className="text-xs text-gray-400 font-mono mt-0.5">{c.oracleId}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
                         <p className="text-xs font-medium text-gray-700">{c.trainerName}</p>
-                        <p className="text-xs text-gray-400">{c.trainerEmail}</p>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <RiskBadge risk={c.riskStatus} size="sm" />
-                    </td>
-                    <td className="px-5 py-3">
-                      <StageBadge stage={c.lifecycleStage} size="sm" />
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className={`font-mono text-sm font-bold ${
-                        c.totalMissedHours >= 16 ? "text-red-600" :
-                        c.totalMissedHours >= 8 ? "text-amber-600" : "text-gray-700"
-                      }`}>
-                        {formatHours(c.totalMissedHours)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1">
-                        <Briefcase className="w-3 h-3 text-gray-400 shrink-0" />
-                        <div>
-                          <p className="text-xs text-gray-700 font-medium">{c.account}</p>
-                          <p className="text-xs text-gray-400">{c.lob}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-600">{c.site}</span>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="text-xs text-gray-400">
-                        {timeAgo(c.lastUpdatedDate)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <Tooltip content="View case details" position="left">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedCase(c); }}
-                          className="text-xs bg-teal-50 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded transition-colors font-medium flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3" />
-                          View
+                        <p className="text-[11px] text-gray-400">{c.trainerEmail}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+                          style={{ background: riskStyle.bg, color: riskStyle.text, border: `1px solid ${riskStyle.border}` }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: riskStyle.text }} />
+                          {c.riskStatus}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5"><StageBadge stage={c.lifecycleStage} size="sm" /></td>
+                      <td className="px-5 py-3.5">
+                        <span className={`font-mono text-sm font-bold ${c.totalMissedHours >= 16 ? "text-red-600" : c.totalMissedHours >= 8 ? "text-amber-600" : "text-gray-700"}`}>
+                          {formatHours(c.totalMissedHours)}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-xs font-medium text-gray-700">{c.account}</p>
+                        <p className="text-[11px] text-gray-400">{c.lob}</p>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="text-xs text-gray-500">{c.site}</span>
+                      </td>
+                      <td className="px-5 py-3.5"><span className="text-xs text-gray-400">{timeAgo(c.lastUpdatedDate)}</span></td>
+                      <td className="px-5 py-3.5">
+                        <button onClick={e => { e.stopPropagation(); setSelectedCase(c); }}
+                          className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors"
+                          style={{ background: "rgba(0,201,177,0.08)", color: "#00C9B1" }}>
+                          <Eye className="w-3 h-3" />View
                         </button>
-                      </Tooltip>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Case Detail Modal */}
-      {selectedCase && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSelectedCase(null)} />
-          <div className="relative glass-card bg-white/95 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-teal-50/50 to-transparent">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold text-teal-700">{selectedCase.caseNumber}</span>
-                <RiskBadge risk={selectedCase.riskStatus} />
-                <StageBadge stage={selectedCase.lifecycleStage} />
-              </div>
-              <button
-                onClick={() => setSelectedCase(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 space-y-4">
-              {/* Trainee Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <InfoCard label="Trainee" value={selectedCase.traineeName} />
-                <InfoCard label="Oracle ID" value={selectedCase.oracleId} mono />
-                <InfoCard label="Email (Work)" value={selectedCase.workEmail} />
-                <InfoCard label="Email (Personal)" value={selectedCase.personalEmail} />
-              </div>
-
-              <div className="border-t border-gray-100 pt-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Assignment Details</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <InfoCard label="Account" value={selectedCase.account} />
-                  <InfoCard label="LOB" value={selectedCase.lob} />
-                  <InfoCard label="Site" value={selectedCase.site} />
-                  <InfoCard label="Wave" value={selectedCase.wave} />
-                  <InfoCard label="Trainer" value={selectedCase.trainerName} />
-                  <InfoCard label="Manager" value={selectedCase.trainingManager} />
+      {/* ── Case Detail Modal ── */}
+      <AnimatePresence>
+        {selectedCase && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0" style={{ background: "rgba(7,14,23,0.7)", backdropFilter: "blur(8px)" }}
+              onClick={() => setSelectedCase(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.97, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ duration: 0.18 }}
+              className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[88vh] overflow-y-auto"
+              style={{ border: "1px solid rgba(0,201,177,0.15)" }}>
+              <div className="px-6 py-4 flex items-center justify-between"
+                style={{ borderBottom: "1px solid #f3f4f6", background: "linear-gradient(135deg, rgba(0,201,177,0.04), transparent)" }}>
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-base font-bold" style={{ color: "#00C9B1" }}>{selectedCase.caseNumber}</span>
+                  <RiskBadge risk={selectedCase.riskStatus} />
+                  <StageBadge stage={selectedCase.lifecycleStage} />
                 </div>
+                <button onClick={() => setSelectedCase(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="border-t border-gray-100 pt-4">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Case Details</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <InfoCard label="Category" value={selectedCase.attritionCategory} />
-                  <InfoCard label="Sub-Reason" value={selectedCase.subReason} />
-                  <InfoCard label="Severity" value={selectedCase.severityLevel} />
-                  <InfoCard label="Total Hours" value={`${selectedCase.totalMissedHours}h`} highlight />
-                  <InfoCard label="Incident Date" value={formatDate(selectedCase.incidentDate)} />
-                  <InfoCard label="Status" value={selectedCase.caseStatus} />
+              <div className="p-6 space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  {[["Trainee", selectedCase.traineeName, false], ["Oracle ID", selectedCase.oracleId, true], ["Work Email", selectedCase.workEmail, false], ["Personal Email", selectedCase.personalEmail, false]].map(([l, v, m]) => (
+                    <div key={String(l)}><p className="text-[10px] text-gray-400 uppercase tracking-wide">{l}</p><p className={`text-sm mt-0.5 font-medium text-gray-800 ${m ? "font-mono" : ""}`}>{String(v) || "—"}</p></div>
+                  ))}
                 </div>
-              </div>
-
-              {selectedCase.notes && (
-                <div className="border-t border-gray-100 pt-4">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Notes</h3>
-                  <p className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">{selectedCase.notes}</p>
-                </div>
-              )}
-
-              {selectedCase.outlookConversationId && (
-                <div className="border-t border-gray-100 pt-4">
-                  <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 rounded-lg px-3 py-2">
-                    <Mail className="w-4 h-4" />
-                    <span className="font-mono text-xs">Thread: {selectedCase.outlookConversationId}</span>
+                <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16 }}>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Assignment</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    {[["Account", selectedCase.account], ["LOB", selectedCase.lob], ["Site", selectedCase.site], ["Wave", selectedCase.wave], ["Trainer", selectedCase.trainerName], ["Manager", selectedCase.trainingManager]].map(([l, v]) => (
+                      <div key={l}><p className="text-[10px] text-gray-400 uppercase tracking-wide">{l}</p><p className="text-sm mt-0.5 font-medium text-gray-800">{v || "—"}</p></div>
+                    ))}
                   </div>
                 </div>
-              )}
-
-              {/* Flags */}
-              <div className="flex gap-2 flex-wrap">
-                {selectedCase.documentationRequired && (
-                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
-                    <FileText className="w-3 h-3" />
-                    Documentation Required
-                  </span>
+                <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16 }}>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Case Details</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    {[["Category", selectedCase.attritionCategory], ["Sub-Reason", selectedCase.subReason], ["Severity", selectedCase.severityLevel], ["Total Hours", `${selectedCase.totalMissedHours}h`], ["Incident Date", formatDate(selectedCase.incidentDate)], ["Status", selectedCase.caseStatus]].map(([l, v]) => (
+                      <div key={l}><p className="text-[10px] text-gray-400 uppercase tracking-wide">{l}</p>
+                        <p className="text-sm mt-0.5 font-medium" style={l === "Total Hours" ? { color: "#00C9B1", fontWeight: 700 } : { color: "#1f2937" }}>{v || "—"}</p></div>
+                    ))}
+                  </div>
+                </div>
+                {selectedCase.notes && (
+                  <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 16 }}>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Notes</p>
+                    <p className="text-sm text-gray-600 bg-gray-50 rounded-xl p-3">{selectedCase.notes}</p>
+                  </div>
                 )}
-                {selectedCase.escalationRequired && (
-                  <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full flex items-center gap-1 font-medium">
-                    <AlertTriangle className="w-3 h-3" />
-                    Escalation Required
-                  </span>
-                )}
+                <div className="flex gap-2 flex-wrap">
+                  {selectedCase.documentationRequired && <span className="text-xs px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(245,158,11,0.1)", color: "#f59e0b", border: "1px solid rgba(245,158,11,0.2)" }}><FileText className="w-3 h-3" />Documentation Required</span>}
+                  {selectedCase.escalationRequired && <span className="text-xs px-2.5 py-1 rounded-full flex items-center gap-1" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}><AlertTriangle className="w-3 h-3" />Escalation Required</span>}
+                </div>
               </div>
-            </div>
 
-            {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 flex gap-2 justify-end bg-gray-50/50">
-              <Tooltip content="View full case timeline and history" position="top">
-                <button
-                  onClick={() => { setSelectedCase(null); navigate(`/timeline?case=${selectedCase.caseNumber}`); }}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Clock className="w-4 h-4" />
-                  View Timeline
+              <div className="px-6 py-4 flex gap-2 justify-end" style={{ borderTop: "1px solid #f3f4f6", background: "#f8fafc" }}>
+                <button onClick={() => { setSelectedCase(null); navigate(`/timeline?case=${selectedCase.caseNumber}`); }}
+                  className="flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                  <Clock className="w-4 h-4" />Timeline
                 </button>
-              </Tooltip>
-              <Tooltip content="Send email notification to trainer" position="top">
-                <button className="bg-gradient-teal hover:opacity-90 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all shadow-glow-teal flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Notify Trainer
+                <button className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl text-[#0B1E35]" style={{ background: "#00C9B1" }}>
+                  <Mail className="w-4 h-4" />Notify Trainer
                 </button>
-              </Tooltip>
-            </div>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function KPICard({
-  label,
-  value,
-  icon,
-  color,
-  pulse,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  color: "teal" | "blue" | "red" | "amber";
-  pulse?: boolean;
-}) {
-  const colorMap = {
-    teal: "from-teal-50 to-teal-100/50 text-teal-600 border-teal-200/50",
-    blue: "from-blue-50 to-blue-100/50 text-blue-600 border-blue-200/50",
-    red: "from-red-50 to-red-100/50 text-red-600 border-red-200/50",
-    amber: "from-amber-50 to-amber-100/50 text-amber-600 border-amber-200/50",
-  };
-
-  return (
-    <div className={`glass-card bg-gradient-to-br ${colorMap[color]} border rounded-xl p-4 shadow-glass-sm`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="opacity-70">{icon}</span>
-        {pulse && value > 0 && (
-          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
         )}
-      </div>
-      <div className="text-2xl font-barlow-condensed font-bold text-gray-900">{value}</div>
-      <div className="text-xs text-gray-600 mt-0.5">{label}</div>
+      </AnimatePresence>
     </div>
   );
 }
 
-function InfoCard({ label, value, mono, highlight }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
+function SortTh({ col, current, dir, onSort, children }: {
+  col: SortKey; current: SortKey; dir: SortDir; onSort: (k: SortKey) => void; children: React.ReactNode;
+}) {
+  const isActive = col === current;
   return (
-    <div>
-      <span className="text-xs text-gray-400 uppercase tracking-wide">{label}</span>
-      <p className={`text-sm mt-0.5 ${highlight ? "font-bold text-teal-700" : "text-gray-800"} ${mono ? "font-mono" : "font-medium"}`}>
-        {value || "—"}
-      </p>
-    </div>
+    <th className="text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-wide cursor-pointer select-none transition-colors"
+      style={{ color: isActive ? "#00C9B1" : "#9ca3af" }}
+      onClick={() => onSort(col)}>
+      <span className="flex items-center gap-1">
+        {children}
+        <span className="text-[10px] ml-0.5">{isActive ? (dir === "asc" ? "↑" : "↓") : "↕"}</span>
+      </span>
+    </th>
   );
 }

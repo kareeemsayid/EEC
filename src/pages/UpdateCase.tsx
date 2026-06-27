@@ -8,8 +8,8 @@ import RiskBadge from "../components/RiskBadge";
 import StageBadge from "../components/StageBadge";
 import ErrorBanner from "../components/ErrorBanner";
 import Tooltip from "../components/Tooltip";
-import { formatDate, formatDateTime } from "../utils/formatters";
-import { Search, RefreshCw, Mail, Calendar, Clock, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, User, Building2, Briefcase, MapPin, Zap, ArrowRight, Check, History, Info } from "lucide-react";
+import { formatDate } from "../utils/formatters";
+import { Search, RefreshCw, Calendar, Clock, TriangleAlert as AlertTriangle, ChevronLeft, ChevronRight, User, Building2, Briefcase, MapPin, Zap, ArrowRight, Check, History, Info } from "lucide-react";
 
 const UPDATE_TYPES = [
   "Absence Logged",
@@ -70,7 +70,7 @@ const INITIAL_FORM: UpdateFormData = {
 };
 
 export default function UpdateCase() {
-  const { user, getAccessToken } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialCaseNum = searchParams.get("case") || "";

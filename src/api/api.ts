@@ -3,7 +3,7 @@
 
 import { RiskStatus, SeverityLevel, LifecycleStage, CaseStatus } from "../utils/types";
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
 // Types
 export interface Account {
@@ -17,7 +17,7 @@ export interface Account {
 export interface LOB {
   id: string;
   title: string;
-  accountId: string;
+  accountId: number;   // ✅ matches the API response
 }
 
 export interface Site {
@@ -87,11 +87,32 @@ export interface CaseUpdate {
   emailSent: boolean;
 }
 
-export type UserRole = 'Trainer' | 'Supervisor' | 'Manager' | 'PS' | 'SrManager';
+export type UserRole = 'Trainer' | 'Supervisor' | 'Manager' | 'PS' | 'TA' | 'SrManager' | 'Admin';
 
 export interface SupervisorAccount {
   accountId: string;
   accountName: string;
+}
+
+// Paginated response wrapper
+interface PaginatedResponse<T> {
+  success: boolean;
+  data: {
+    cases: T[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// Helper to cast case fields
+function castCaseFields(item: any): any {
+  if (item.severityLevel) item.severityLevel = item.severityLevel as SeverityLevel;
+  if (item.riskStatus) item.riskStatus = item.riskStatus as RiskStatus;
+  if (item.lifecycleStage) item.lifecycleStage = item.lifecycleStage as LifecycleStage;
+  if (item.caseStatus) item.caseStatus = item.caseStatus as CaseStatus;
+  return item;
 }
 
 // Helper
@@ -113,23 +134,26 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
   const data = await res.json();
 
+  // Handle paginated case responses
+  if (data && data.success && data.data && Array.isArray(data.data.cases)) {
+    data.data.cases = data.data.cases.map(castCaseFields);
+    return data as T;
+  }
+
+  // Handle single case response wrapped in success/data
+  if (data && data.success && data.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+    castCaseFields(data.data);
+    return data as T;
+  }
+
   // Cast string types to proper literal types for AttritionCase arrays
   if (Array.isArray(data)) {
-    return data.map((item: any) => {
-      if (item.severityLevel) item.severityLevel = item.severityLevel as SeverityLevel;
-      if (item.riskStatus) item.riskStatus = item.riskStatus as RiskStatus;
-      if (item.lifecycleStage) item.lifecycleStage = item.lifecycleStage as LifecycleStage;
-      if (item.caseStatus) item.caseStatus = item.caseStatus as CaseStatus;
-      return item;
-    }) as T;
+    return data.map(castCaseFields) as T;
   }
 
   // Handle single AttritionCase
   if (data && typeof data === 'object') {
-    if (data.severityLevel) data.severityLevel = data.severityLevel as SeverityLevel;
-    if (data.riskStatus) data.riskStatus = data.riskStatus as RiskStatus;
-    if (data.lifecycleStage) data.lifecycleStage = data.lifecycleStage as LifecycleStage;
-    if (data.caseStatus) data.caseStatus = data.caseStatus as CaseStatus;
+    castCaseFields(data);
   }
 
   return data as T;
@@ -161,19 +185,48 @@ export async function fetchSupervisorAccounts(email: string): Promise<Supervisor
   return apiFetch<SupervisorAccount[]>(`/supervisorAccounts?email=${encodeURIComponent(email)}`);
 }
 
-// Cases - Trainer's own cases
-export async function fetchCases(trainerEmail: string): Promise<AttritionCase[]> {
-  return apiFetch<AttritionCase[]>(`/cases?trainerEmail=${encodeURIComponent(trainerEmail)}`);
+// Cases - List with optional filters (backend handles role-based filtering)
+export async function fetchCases(options?: {
+  filter?: 'critical' | 'monitoring';
+  status?: string;
+  account?: string;
+  lob?: string;
+  site?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ cases: AttritionCase[]; total: number; page: number; totalPages: number }> {
+  const params = new URLSearchParams();
+  if (options?.filter) params.set('filter', options.filter);
+  if (options?.status) params.set('status', options.status);
+  if (options?.account) params.set('account', options.account);
+  if (options?.lob) params.set('lob', options.lob);
+  if (options?.site) params.set('site', options.site);
+  if (options?.search) params.set('search', options.search);
+  if (options?.page) params.set('page', String(options.page));
+  if (options?.limit) params.set('limit', String(options.limit));
+
+  const query = params.toString();
+  const result = await apiFetch<PaginatedResponse<AttritionCase>>(`/cases${query ? `?${query}` : ''}`);
+  return result.data;
 }
 
-// Cases - All cases (PS/SrManager)
-export async function fetchAllCases(): Promise<AttritionCase[]> {
-  return apiFetch<AttritionCase[]>('/cases/all');
+// Cases - Trainer's own cases (convenience function)
+export async function fetchTrainerCases(page: number = 1, limit: number = 100): Promise<{ cases: AttritionCase[]; total: number }> {
+  const result = await apiFetch<PaginatedResponse<AttritionCase>>(`/cases?page=${page}&limit=${limit}`);
+  return { cases: result.data.cases, total: result.data.total };
 }
 
-// Cases - By Account (Supervisor/Manager)
-export async function fetchCasesByAccount(accountId: string): Promise<AttritionCase[]> {
-  return apiFetch<AttritionCase[]>(`/cases/account?accountId=${encodeURIComponent(accountId)}`);
+// Cases - All cases (PS/SrManager/TA) - convenience for fetching all
+export async function fetchAllCases(limit: number = 500): Promise<AttritionCase[]> {
+  const result = await apiFetch<PaginatedResponse<AttritionCase>>(`/cases?limit=${limit}`);
+  return result.data.cases;
+}
+
+// Cases - By Account name (Supervisor/Manager)
+export async function fetchCasesByAccount(accountName: string): Promise<AttritionCase[]> {
+  const result = await apiFetch<PaginatedResponse<AttritionCase>>(`/cases?account=${encodeURIComponent(accountName)}&limit=500`);
+  return result.data.cases;
 }
 
 // Case - By identifier
@@ -185,9 +238,10 @@ export async function fetchCaseByIdentifier(identifier: string): Promise<Attriti
   }
 }
 
-// Case Updates
-export async function fetchCaseUpdates(caseNumber: string): Promise<CaseUpdate[]> {
-  return apiFetch<CaseUpdate[]>(`/case-updates/${encodeURIComponent(caseNumber)}`);
+// Case Updates (Timeline)
+export async function fetchCaseUpdates(caseId: string): Promise<CaseUpdate[]> {
+  const result = await apiFetch<{ success: boolean; data: CaseUpdate[] }>(`/cases/${encodeURIComponent(caseId)}/timeline`);
+  return result.data;
 }
 
 // Create Case
@@ -226,10 +280,11 @@ export async function createCase(data: CreateCasePayload): Promise<{
   caseNumber: string;
   message: string;
 }> {
-  return apiFetch('/cases/create', {
+  const result = await apiFetch<{ success: boolean; id: string; caseNumber: string; message: string }>('/cases/create', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return result;
 }
 
 // Update Case
@@ -253,6 +308,8 @@ export interface UpdateCasePayload {
   updatedBy?: string;
   updatedByEmail?: string;
   hoursAdded?: number;
+  previousTotalHours?: number;
+  newTotalHours?: number;
   updateNotes?: string;
   emailSent?: boolean;
 }
@@ -262,8 +319,9 @@ export async function updateCase(data: UpdateCasePayload): Promise<{
   caseNumber: string;
   message: string;
 }> {
-  return apiFetch('/cases/update', {
+  const result = await apiFetch<{ success: boolean; caseNumber: string; message: string }>('/cases/update', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return result;
 }

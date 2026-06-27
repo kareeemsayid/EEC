@@ -1,0 +1,15 @@
+{
+  "name": "eec-backend-function",
+  "version": "1.0.0",
+  "description": "EEC backend as Azure Function",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "mssql": "^9.1.1"
+  },
+  "devDependencies": {
+    "@azure/functions": "^3.5.0"
+  }
+}

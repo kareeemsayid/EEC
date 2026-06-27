@@ -2,10 +2,10 @@
   "name": "eec-backend",
   "version": "1.0.0",
   "description": "EEC Employee Exit Command Center Backend API",
-  "main": "server.js",
+  "main": "app.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node app.js",
+    "dev": "node app.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

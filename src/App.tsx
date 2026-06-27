@@ -1,18 +1,17 @@
 import React, { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useIsAuthenticated, useMsal } from "@azure/msal-react";
-import { InteractionStatus } from "@azure/msal-browser";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { AnimatePresence } from "framer-motion";
 import Layout from "./components/Layout";
 import LoginPage from "./pages/LoginPage";
 import HomeScreen from "./pages/HomeScreen";
 import SubmitCase from "./pages/SubmitCase";
 import UpdateCase from "./pages/UpdateCase";
 import LoadingSpinner from "./components/LoadingSpinner";
-import SessionTimeoutModal from "./components/SessionTimeoutModal";
-import CommandPalette from "./components/CommandPalette";
-import { useSessionTimeout } from "./hooks/useSessionTimeout";
-import { useAuth } from "./auth/useAuth";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth, UserRole } from "./auth/useAuth";
+import { UserProvider } from "./context/UserContext";
+import { SessionExpiryProvider } from "./components/SessionExpiry";
 
 const MyCases = lazy(() => import("./pages/MyCases"));
 const CaseTimeline = lazy(() => import("./pages/CaseTimeline"));
@@ -25,6 +24,15 @@ const InvestigationDetail = lazy(() => import("./pages/InvestigationDetail"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
+const Relocations = lazy(() => import("./pages/relocations/Relocations"));
+const SubmitRelocation = lazy(() => import("./pages/relocations/SubmitRelocation"));
+const RelocationDetail = lazy(() => import("./pages/relocations/RelocationDetail"));
+const TrainerDashboard = lazy(() => import("./pages/trainer/Dashboard"));
+const SupervisorDashboard = lazy(() => import("./pages/supervisor/Dashboard"));
+const ManagerDashboard = lazy(() => import("./pages/manager/Dashboard"));
+const TADashboard = lazy(() => import("./pages/TADashboard"));
+const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
+const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 
 const PageLoader = () => (
   <div className="flex justify-center py-24">
@@ -47,97 +55,278 @@ function GlobalShortcuts() {
   return null;
 }
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useIsAuthenticated();
-  const { inProgress } = useMsal();
-  const { showWarning, timeRemaining, staySignedIn, logout } = useSessionTimeout({
-    timeoutMinutes: 15,
-    warningMinutes: 1,
-  });
-
-  if (inProgress !== InteractionStatus.None) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-mesh">
-        <LoadingSpinner size="lg" label="Signing in..." />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
+function AuthenticatedRoute({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode;
+  allowedRoles?: UserRole[];
+}) {
   return (
-    <>
+    <ProtectedRoute allowedRoles={allowedRoles}>
       <GlobalShortcuts />
-      {children}
-      <SessionTimeoutModal
-        isOpen={showWarning}
-        timeRemaining={timeRemaining}
-        onStaySignedIn={staySignedIn}
-        onLogout={logout}
-      />
-    </>
-  );
-}
-
-function AuthenticatedRoute({ children }: { children: React.ReactNode }) {
-  return (
-    <RequireAuth>
       <Layout>
         <Suspense fallback={<PageLoader />}>{children}</Suspense>
       </Layout>
-    </RequireAuth>
+    </ProtectedRoute>
   );
 }
 
 export default function App() {
-  const isAuthenticated = useIsAuthenticated();
-
   return (
     <BrowserRouter>
-      <CommandPalette />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: "#fff",
-            color: "#1f2937",
-            border: "1px solid #e5e7eb",
-            borderRadius: "12px",
-            fontSize: "13px",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-          },
-          success: {
-            iconTheme: { primary: "#0d9488", secondary: "#fff" },
-          },
-          error: {
-            iconTheme: { primary: "#ef4444", secondary: "#fff" },
-          },
-        }}
-      />
-      <Routes>
+      <UserProvider>
+        <SessionExpiryProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: "#fff",
+                color: "#1f2937",
+                border: "1px solid #e5e7eb",
+                borderRadius: "12px",
+                fontSize: "13px",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+              },
+              success: {
+                iconTheme: { primary: "#0d9488", secondary: "#fff" },
+              },
+              error: {
+                iconTheme: { primary: "#ef4444", secondary: "#fff" },
+              },
+            }}
+          />
+          <AppRoutes />
+        </SessionExpiryProvider>
+      </UserProvider>
+    </BrowserRouter>
+  );
+}
+
+function AppRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {/* Public routes */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Home - accessible by all authenticated users */}
         <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+          path="/"
+          element={
+            <AuthenticatedRoute>
+              <HomeScreen />
+            </AuthenticatedRoute>
+          }
         />
-        <Route path="/" element={<AuthenticatedRoute><HomeScreen /></AuthenticatedRoute>} />
-        <Route path="/submit" element={<AuthenticatedRoute><SubmitCase /></AuthenticatedRoute>} />
-        <Route path="/update" element={<AuthenticatedRoute><UpdateCase /></AuthenticatedRoute>} />
-        <Route path="/my-cases" element={<AuthenticatedRoute><MyCases /></AuthenticatedRoute>} />
-        <Route path="/timeline" element={<AuthenticatedRoute><CaseTimeline /></AuthenticatedRoute>} />
-        <Route path="/attendance" element={<AuthenticatedRoute><AttendanceLog /></AuthenticatedRoute>} />
-        <Route path="/high-risk" element={<AuthenticatedRoute><HighRiskDashboard /></AuthenticatedRoute>} />
-        <Route path="/termination" element={<AuthenticatedRoute><TerminationCenter /></AuthenticatedRoute>} />
-        <Route path="/ps-dashboard" element={<AuthenticatedRoute><PSDashboard /></AuthenticatedRoute>} />
-        <Route path="/investigations" element={<AuthenticatedRoute><Investigations /></AuthenticatedRoute>} />
-        <Route path="/investigations/:id" element={<AuthenticatedRoute><InvestigationDetail /></AuthenticatedRoute>} />
-        <Route path="/profile" element={<AuthenticatedRoute><ProfilePage /></AuthenticatedRoute>} />
-        <Route path="/settings" element={<AuthenticatedRoute><SettingsPage /></AuthenticatedRoute>} />
-        <Route path="/help" element={<AuthenticatedRoute><HelpSupport /></AuthenticatedRoute>} />
+
+        {/* Trainer routes */}
+        <Route
+          path="/dashboard/trainer"
+          element={
+            <AuthenticatedRoute allowedRoles={["Trainer"]}>
+              <TrainerDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Supervisor routes */}
+        <Route
+          path="/dashboard/supervisor"
+          element={
+            <AuthenticatedRoute allowedRoles={["Supervisor"]}>
+              <SupervisorDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Manager routes */}
+        <Route
+          path="/dashboard/manager"
+          element={
+            <AuthenticatedRoute allowedRoles={["Manager", "SrManager"]}>
+              <ManagerDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* TA Dashboard */}
+        <Route
+          path="/dashboard/ta"
+          element={
+            <AuthenticatedRoute allowedRoles={["TA"]}>
+              <TADashboard />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* PS/TA/SrManager routes */}
+        <Route
+          path="/ps-dashboard"
+          element={
+            <AuthenticatedRoute allowedRoles={["PS", "TA", "SrManager"]}>
+              <PSDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Case management - accessible by all */}
+        <Route
+          path="/submit"
+          element={
+            <AuthenticatedRoute>
+              <SubmitCase />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/update"
+          element={
+            <AuthenticatedRoute>
+              <UpdateCase />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/my-cases"
+          element={
+            <AuthenticatedRoute>
+              <MyCases />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/timeline"
+          element={
+            <AuthenticatedRoute>
+              <CaseTimeline />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Relocation routes */}
+        <Route
+          path="/relocations"
+          element={
+            <AuthenticatedRoute>
+              <Relocations />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/relocations/submit"
+          element={
+            <AuthenticatedRoute>
+              <SubmitRelocation />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/relocations/:id"
+          element={
+            <AuthenticatedRoute>
+              <RelocationDetail />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* PS/TA/Manager routes */}
+        <Route
+          path="/termination"
+          element={
+            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager"]}>
+              <TerminationCenter />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/investigations"
+          element={
+            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager"]}>
+              <Investigations />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/investigations/:id"
+          element={
+            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager"]}>
+              <InvestigationDetail />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Analytics routes */}
+        <Route
+          path="/high-risk"
+          element={
+            <AuthenticatedRoute allowedRoles={["TA", "PS", "SrManager", "Manager", "Supervisor"]}>
+              <HighRiskDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <AuthenticatedRoute allowedRoles={["TA", "PS", "SrManager", "Manager"]}>
+              <AnalyticsDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <AuthenticatedRoute allowedRoles={["TA", "PS", "SrManager", "Manager"]}>
+              <AttendanceLog />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Admin routes */}
+        <Route
+          path="/admin"
+          element={
+            <AuthenticatedRoute allowedRoles={["Admin"]}>
+              <AdminPanel />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Profile & Settings - accessible by all */}
+        <Route
+          path="/profile"
+          element={
+            <AuthenticatedRoute>
+              <ProfilePage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AuthenticatedRoute>
+              <SettingsPage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/help"
+          element={
+            <AuthenticatedRoute>
+              <HelpSupport />
+            </AuthenticatedRoute>
+          }
+        />
+
+        {/* Legacy redirect paths */}
+        <Route path="/request-investigation" element={<Navigate to="/investigations" replace />} />
+
+        {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </AnimatePresence>
   );
 }

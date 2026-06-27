@@ -1,21 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import Tooltip from "../components/Tooltip";
-import {
-  ChevronLeft,
-  Settings as SettingsIcon,
-  Palette,
-  Bell,
-  Monitor,
-  Shield,
-  RotateCcw,
-  Sun,
-  Moon,
-  Volume2,
-  VolumeX,
-  Check,
-} from "lucide-react";
+import { ChevronLeft, Settings as SettingsIcon, Palette, Bell, Monitor, Shield, RotateCcw, Sun, Moon, Volume2, VolumeX, Check, Keyboard, Save } from "lucide-react";
 
 type SettingsTab = "appearance" | "notifications" | "display" | "privacy" | "reset";
 
@@ -28,6 +14,9 @@ interface Settings {
   compactMode: boolean;
   showOnlineStatus: boolean;
   allowDataCollection: boolean;
+  keyboardShortcuts: boolean;
+  autoSave: boolean;
+  language: string;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -39,6 +28,9 @@ const DEFAULT_SETTINGS: Settings = {
   compactMode: false,
   showOnlineStatus: true,
   allowDataCollection: false,
+  keyboardShortcuts: true,
+  autoSave: true,
+  language: "en",
 };
 
 const TABS: { id: SettingsTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -50,17 +42,25 @@ const TABS: { id: SettingsTab; label: string; icon: React.ComponentType<{ classN
 ];
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = localStorage.getItem("eec-settings");
-    return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    try {
+      const saved = localStorage.getItem("eec-settings");
+      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
   });
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("eec-settings", JSON.stringify(settings));
+    try {
+      localStorage.setItem("eec-settings", JSON.stringify(settings));
+    } catch {
+      /* no-op */
+    }
   }, [settings]);
 
   const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
@@ -213,7 +213,7 @@ function NotificationsTab({ settings, updateSetting }: { settings: Settings; upd
       />
       <ToggleRow
         label="Sound effects"
-        description="Play sound for notifications"
+        description="Play sound for notifications and interactions"
         value={settings.soundEffects}
         onChange={v => updateSetting("soundEffects", v)}
         icon={settings.soundEffects ? Volume2 : VolumeX}
@@ -232,6 +232,20 @@ function DisplayTab({ settings, updateSetting }: { settings: Settings; updateSet
         value={settings.compactMode}
         onChange={v => updateSetting("compactMode", v)}
       />
+      <ToggleRow
+        label="Keyboard shortcuts"
+        description="Enable keyboard shortcuts for quick navigation"
+        value={settings.keyboardShortcuts}
+        onChange={v => updateSetting("keyboardShortcuts", v)}
+        icon={Keyboard}
+      />
+      <ToggleRow
+        label="Auto-save"
+        description="Automatically save form data"
+        value={settings.autoSave}
+        onChange={v => updateSetting("autoSave", v)}
+        icon={Save}
+      />
     </div>
   );
 }
@@ -242,7 +256,7 @@ function PrivacyTab({ settings, updateSetting }: { settings: Settings; updateSet
       <h3 className="font-barlow-condensed font-semibold text-lg text-gray-900 tracking-wide mb-4">Privacy</h3>
       <ToggleRow
         label="Show online status"
-        description="Let others see when you're online"
+        description="Let others see when you are online"
         value={settings.showOnlineStatus}
         onChange={v => updateSetting("showOnlineStatus", v)}
       />
@@ -258,7 +272,11 @@ function PrivacyTab({ settings, updateSetting }: { settings: Settings; updateSet
 
 function ResetTab({ settings, updateSetting }: { settings: Settings; updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void }) {
   const handleReset = () => {
-    localStorage.removeItem("eec-settings");
+    try {
+      localStorage.removeItem("eec-settings");
+    } catch {
+      /* no-op */
+    }
     Object.keys(DEFAULT_SETTINGS).forEach(key => {
       updateSetting(key as keyof Settings, DEFAULT_SETTINGS[key as keyof Settings]);
     });

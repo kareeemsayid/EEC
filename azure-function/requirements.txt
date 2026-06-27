@@ -1,0 +1,4 @@
+# Azure Functions Python runtime dependencies.
+# Azure Functions Python runtime dependencies.
+azure-functions
+pyodbc==5.1.0
