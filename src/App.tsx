@@ -7,7 +7,7 @@ import LoginPage from "./pages/LoginPage";
 import HomeScreen from "./pages/HomeScreen";
 import SubmitCase from "./pages/SubmitCase";
 import UpdateCase from "./pages/UpdateCase";
-import LoadingSpinner from "./components/LoadingSpinner";
+import LoadingScreen from "./components/LoadingScreen";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth, UserRole } from "./auth/useAuth";
 import { UserProvider } from "./context/UserContext";
@@ -34,11 +34,7 @@ const TADashboard = lazy(() => import("./pages/TADashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 
-const PageLoader = () => (
-  <div className="flex justify-center py-24">
-    <LoadingSpinner size="lg" label="Loading..." />
-  </div>
-);
+const PageLoader = () => <LoadingScreen subtitle="Loading" />;
 
 function GlobalShortcuts() {
   const { logout } = useAuth();

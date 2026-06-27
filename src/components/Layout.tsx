@@ -203,26 +203,20 @@ export default function Layout({ children }: LayoutProps) {
         ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         transition-transform duration-300`}
         style={{
-          background: "#FFFFFF",
-          borderRight: "1px solid #F1F5F9",
-          boxShadow: "4px 0 24px rgba(30,58,95,0.04)",
+          background: "linear-gradient(180deg, #0D2B45 0%, #071C2E 100%)",
+          boxShadow: "4px 0 24px rgba(0,0,0,0.15)",
         }}>
 
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5" style={{ borderBottom: "1px solid #F1F5F9", height: 72 }}>
+        {/* Concentrix Logo */}
+        <div className="flex items-center justify-center px-5 py-5" style={{ borderBottom: "1px solid rgba(0,196,180,0.2)", height: 72 }}>
           <button onClick={() => navigate("/")}
-            className="flex items-center gap-3 w-full group">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)" }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M10 2L3 6V10C3 13.87 6.13 17.5 10 18C13.87 17.5 17 13.87 17 10V6L10 2Z" fill="white" fillOpacity="0.9"/>
-                <path d="M7 10L9 12L13 8" stroke="#1E3A5F" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <div className="text-left">
-              <div className="font-bold text-[17px] leading-none" style={{ color: "#0F172A" }}>EEC</div>
-              <div className="text-[10px] mt-0.5 font-medium tracking-wider uppercase" style={{ color: "#94A3B8" }}>Concentrix</div>
-            </div>
+            className="flex items-center justify-center w-full group">
+            <img
+              src="/assets/images/concentrix-mark.png"
+              alt="Concentrix"
+              className="h-10 w-auto transition-transform duration-200 group-hover:scale-105"
+              style={{ filter: "brightness(0) invert(1)" }}
+            />
           </button>
         </div>
 
@@ -231,7 +225,7 @@ export default function Layout({ children }: LayoutProps) {
           {visibleGroups.map((group, gi) => (
             <div key={group.label} className={gi > 0 ? "mt-4" : ""}>
               <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest"
-                style={{ color: "#94A3B8", letterSpacing: "0.1em" }}>
+                style={{ color: "rgba(0,196,180,0.5)", letterSpacing: "0.1em" }}>
                 {group.label}
               </p>
               <div className="space-y-0.5">
@@ -254,7 +248,7 @@ export default function Layout({ children }: LayoutProps) {
           {/* My Dashboard shortcut */}
           {roleDashboard !== "/" && (
             <div className="mt-4">
-              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#94A3B8" }}>Dashboard</p>
+              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "rgba(0,196,180,0.5)" }}>Dashboard</p>
               <SidebarItem
                 item={{ to: roleDashboard, label: "My Dashboard", icon: Activity }}
                 isActive={location.pathname === roleDashboard}
@@ -265,18 +259,21 @@ export default function Layout({ children }: LayoutProps) {
         </nav>
 
         {/* Bottom section */}
-        <div style={{ borderTop: "1px solid #F1F5F9" }}>
+        <div style={{ borderTop: "1px solid rgba(0,196,180,0.2)" }}>
           {/* User card */}
           <button onClick={() => navigate("/profile")}
-            className="w-full flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-              style={{ background: `linear-gradient(135deg, ${roleColors.bg}, ${roleColors.bg}CC)` }}>
+            className="w-full flex items-center gap-3 px-4 py-3 transition-colors"
+            style={{ background: "transparent" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(0,196,180,0.1)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
+              style={{ background: "linear-gradient(135deg, #00C4B4, #00A89C)", color: "#0D2B45" }}>
               {initials}
             </div>
             <div className="flex-1 text-left min-w-0">
-              <p className="text-sm font-semibold truncate" style={{ color: "#0F172A" }}>{user?.displayName || "User"}</p>
+              <p className="text-sm font-semibold truncate" style={{ color: "#FFFFFF" }}>{user?.displayName || "User"}</p>
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full"
-                style={{ background: roleColors.light, color: roleColors.text }}>
+                style={{ background: "rgba(0,196,180,0.2)", color: "#00C4B4" }}>
                 {roleLabel}
               </span>
             </div>
@@ -294,8 +291,8 @@ export default function Layout({ children }: LayoutProps) {
       {/* Mobile hamburger */}
       <button onClick={() => setMobileOpen(!mobileOpen)}
         className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-xl shadow-md"
-        style={{ background: "white", border: "1px solid #E2E8F0" }}>
-        {mobileOpen ? <X className="w-5 h-5" style={{ color: "#0F172A" }} /> : <Menu className="w-5 h-5" style={{ color: "#0F172A" }} />}
+        style={{ background: "#0D2B45", border: "1px solid rgba(0,196,180,0.3)" }}>
+        {mobileOpen ? <X className="w-5 h-5" style={{ color: "#00C4B4" }} /> : <Menu className="w-5 h-5" style={{ color: "#00C4B4" }} />}
       </button>
 
       {/* Main content area */}
@@ -422,28 +419,28 @@ function SidebarItem({ item, isActive, onNavigate }: {
       className="w-full flex items-center gap-3 px-3 rounded-xl transition-all duration-150 text-left"
       style={{
         height: 44,
-        background: isActive ? "#2563EB" : "transparent",
-        color: isActive ? "#FFFFFF" : "#64748B",
+        background: isActive ? "#00C4B4" : "transparent",
+        color: isActive ? "#FFFFFF" : "rgba(255,255,255,0.6)",
         fontWeight: isActive ? 600 : 500,
         fontSize: 14,
       }}
       onMouseEnter={e => {
         if (!isActive) {
-          e.currentTarget.style.background = "#F8FAFF";
-          e.currentTarget.style.color = "#1E3A5F";
+          e.currentTarget.style.background = "rgba(0,196,180,0.15)";
+          e.currentTarget.style.color = "#00C4B4";
         }
       }}
       onMouseLeave={e => {
         if (!isActive) {
           e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.color = "#64748B";
+          e.currentTarget.style.color = "rgba(255,255,255,0.6)";
         }
       }}>
-      <item.icon className="w-5 h-5 shrink-0" style={{ color: isActive ? "white" : "#94A3B8" }} />
+      <item.icon className="w-5 h-5 shrink-0" style={{ color: isActive ? "white" : "rgba(0,196,180,0.7)" }} />
       <span className="flex-1 truncate">{item.label}</span>
       {item.badge && (
         <span className="text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center"
-          style={{ background: isActive ? "rgba(255,255,255,0.25)" : "#FEE2E2", color: isActive ? "white" : "#EF4444" }}>
+          style={{ background: isActive ? "rgba(255,255,255,0.25)" : "#EF4444", color: "white" }}>
           {item.badge}
         </span>
       )}
@@ -461,14 +458,14 @@ function BottomAction({ icon: Icon, label, onClick, danger }: {
   return (
     <button onClick={onClick}
       className="w-full flex items-center gap-3 px-3 rounded-xl transition-all duration-150 text-left"
-      style={{ height: 40, color: danger ? "#94A3B8" : "#94A3B8", fontSize: 13, fontWeight: 500 }}
+      style={{ height: 40, color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: 500 }}
       onMouseEnter={e => {
-        e.currentTarget.style.background = danger ? "#FEF2F2" : "#F8FAFF";
-        e.currentTarget.style.color = danger ? "#EF4444" : "#1E3A5F";
+        e.currentTarget.style.background = danger ? "rgba(239,68,68,0.15)" : "rgba(0,196,180,0.15)";
+        e.currentTarget.style.color = danger ? "#EF4444" : "#00C4B4";
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = "transparent";
-        e.currentTarget.style.color = "#94A3B8";
+        e.currentTarget.style.color = "rgba(255,255,255,0.6)";
       }}>
       <Icon className="w-4 h-4 shrink-0" />
       <span>{label}</span>
