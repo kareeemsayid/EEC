@@ -203,7 +203,7 @@ export default function Layout({ children }: LayoutProps) {
   const userRole = user?.role as UserRole | undefined;
   const roleLabel = ROLE_LABELS[userRole || ""] || userRole || "User";
   const roleColors = ROLE_COLORS[userRole || ""] || ROLE_COLORS.Trainer;
-  const roleDashboard = getRoleDashboard(userRole);
+  // ❌ Removed unused variable: roleDashboard
 
   const initials = useMemo(() => {
     if (!user?.displayName) return "?";
