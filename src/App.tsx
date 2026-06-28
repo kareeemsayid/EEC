@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth, UserRole } from "./auth/useAuth";
 import { UserProvider } from "./context/UserContext";
 import { SessionExpiryProvider } from "./components/SessionExpiry";
+import { LoadingProvider } from "./hooks/useLoading";
 
 const MyCases = lazy(() => import("./pages/MyCases"));
 const CaseTimeline = lazy(() => import("./pages/CaseTimeline"));
@@ -21,9 +22,12 @@ const TerminationCenter = lazy(() => import("./pages/TerminationCenter"));
 const PSDashboard = lazy(() => import("./pages/PSDashboard"));
 const Investigations = lazy(() => import("./pages/Investigations"));
 const InvestigationDetail = lazy(() => import("./pages/InvestigationDetail"));
+const RequestInvestigation = lazy(() => import("./pages/RequestInvestigation"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const HelpSupport = lazy(() => import("./pages/HelpSupport"));
+const HelpPage = lazy(() => import("./pages/HelpPage"));
+const SupportPage = lazy(() => import("./pages/SupportPage"));
 const Relocations = lazy(() => import("./pages/relocations/Relocations"));
 const SubmitRelocation = lazy(() => import("./pages/relocations/SubmitRelocation"));
 const RelocationDetail = lazy(() => import("./pages/relocations/RelocationDetail"));
@@ -34,7 +38,7 @@ const TADashboard = lazy(() => import("./pages/TADashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
 
-const PageLoader = () => <LoadingScreen subtitle="Loading" />;
+const PageLoader = () => <LoadingScreen subtitle="Loading your workspace" />;
 
 function GlobalShortcuts() {
   const { logout } = useAuth();
@@ -73,27 +77,29 @@ export default function App() {
     <BrowserRouter>
       <UserProvider>
         <SessionExpiryProvider>
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: "#fff",
-                color: "#1f2937",
-                border: "1px solid #e5e7eb",
-                borderRadius: "12px",
-                fontSize: "13px",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-              },
-              success: {
-                iconTheme: { primary: "#0d9488", secondary: "#fff" },
-              },
-              error: {
-                iconTheme: { primary: "#ef4444", secondary: "#fff" },
-              },
-            }}
-          />
-          <AppRoutes />
+          <LoadingProvider>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: "#fff",
+                  color: "#1f2937",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "12px",
+                  fontSize: "13px",
+                  boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                },
+                success: {
+                  iconTheme: { primary: "#00C4B4", secondary: "#fff" },
+                },
+                error: {
+                  iconTheme: { primary: "#ef4444", secondary: "#fff" },
+                },
+              }}
+            />
+            <AppRoutes />
+          </LoadingProvider>
         </SessionExpiryProvider>
       </UserProvider>
     </BrowserRouter>
@@ -241,15 +247,23 @@ function AppRoutes() {
         <Route
           path="/investigations"
           element={
-            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager"]}>
+            <AuthenticatedRoute>
               <Investigations />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/investigations/new"
+          element={
+            <AuthenticatedRoute>
+              <RequestInvestigation />
             </AuthenticatedRoute>
           }
         />
         <Route
           path="/investigations/:id"
           element={
-            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager"]}>
+            <AuthenticatedRoute>
               <InvestigationDetail />
             </AuthenticatedRoute>
           }
@@ -310,6 +324,22 @@ function AppRoutes() {
         />
         <Route
           path="/help"
+          element={
+            <AuthenticatedRoute>
+              <HelpPage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/support"
+          element={
+            <AuthenticatedRoute>
+              <SupportPage />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/help-support"
           element={
             <AuthenticatedRoute>
               <HelpSupport />

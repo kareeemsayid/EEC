@@ -237,6 +237,7 @@ export default function RelocationDetail() {
                   <InfoItem label="OID" value={relocation.oid || relocation.oracleId} mono />
                   <InfoItem label="Reachable Number" value={relocation.reachableNumber} />
                   <InfoItem label="Language" value={relocation.language} />
+                  <InfoItem label="Hire Date" value={relocation.hireDate ? formatDate(relocation.hireDate) : undefined} />
                   <InfoItem label="Site" value={relocation.siteName || relocation.site} />
                   <InfoItem label="LOB" value={relocation.lobName || relocation.lob} />
                   <InfoItem label="Account" value={relocation.account} />
@@ -266,6 +267,7 @@ export default function RelocationDetail() {
                     <InfoItem label="Relocation Reason" value={relocation.relocationReason} />
                     <InfoItem label="Release Date" value={formatDate(relocation.releaseDate)} />
                     <InfoItem label="Attendance & Adherence" value={relocation.attendanceAdherence} />
+                    <InfoItem label="Job Requisition (JR#)" value={relocation.jobRequisitionNumber} mono />
                     <InfoItem label="Disciplinary Notes" value={relocation.disciplinaryNotes} />
                     <InfoItem label="Additional Notes" value={relocation.additionalNotes} />
                   </div>

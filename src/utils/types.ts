@@ -149,6 +149,7 @@ export interface CreateCasePayload {
   lob: string;
   site: string;
   wave: string;
+  hireDate: string;
   trainerName: string;
   trainerEmail: string;
   trainingManager: string;
@@ -163,6 +164,7 @@ export interface CreateCasePayload {
   notes: string;
   documentationRequired: boolean;
   escalationRequired: boolean;
+  openedBy?: string;
 }
 
 export interface UpdateCasePayload {

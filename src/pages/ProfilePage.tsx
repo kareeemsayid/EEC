@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { ChevronLeft, Mail, Briefcase, Building2, User, MapPin, Shield, Sparkles, GitBranch, Clock, Award, Fingerprint, Layers, Globe, CalendarDays, ChevronRight, KeyRound, Activity, Lock, Clock as Unlock, Copy, CircleCheck as CheckCircle2 } from "lucide-react";
+import { Mail, Briefcase, Building2, User, MapPin, Shield, Sparkles, GitBranch, Clock, Fingerprint, Layers, CalendarDays, ChevronRight, KeyRound, Lock, Unlock, Copy, CircleCheck as CheckCircle2, Phone, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"overview" | "security" | "activity">("overview");
   const [copied, setCopied] = useState<string | null>(null);
 
   if (!user) {
@@ -41,99 +41,108 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-5 h-5 text-teal-500" />
-            <span className="text-xs font-medium text-teal-600 uppercase tracking-wider">Your Profile</span>
-          </div>
-          <h1 className="font-barlow-condensed text-3xl font-bold text-gray-900 tracking-wide">
-            MY PROFILE
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">Your identity, reporting line, and access within Concentrix</p>
-        </div>
+      {/* Header with creative wording */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         <button
           onClick={() => navigate(-1)}
-          className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center gap-1 transition-colors"
+          className="flex items-center gap-1 text-sm font-medium mb-4 transition-colors hover:opacity-80"
+          style={{ color: "#64748B" }}
         >
-          <ChevronLeft className="w-4 h-4" />
-          Back
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
         </button>
-      </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <User className="w-5 h-5" style={{ color: "#00C4B4" }} />
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#00C4B4" }}>
+                Your Identity & Access
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold" style={{ color: "#0D2B45", letterSpacing: "0.02em" }}>
+              MY PROFILE
+            </h1>
+            <p className="text-sm mt-1" style={{ color: "#64748B" }}>
+              Hello, <span className="font-semibold" style={{ color: "#0D2B45" }}>{user.displayName?.split(" ")[0] || "User"}</span> – you're in charge here.
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Hero Card */}
       <ProfileHero user={user} initials={initials} roleColor={roleColor} roleLabel={roleLabel} />
 
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-1 p-1 bg-gray-100/80 rounded-xl w-fit">
-        {(["overview", "security", "activity"] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === tab
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {tab === "overview" ? "Overview" : tab === "security" ? "Security" : "Activity"}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab Content */}
-      {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <DetailsCard user={user} onCopy={handleCopy} copied={copied} />
-            <ManagerChain userProfile={user} />
-          </div>
-          <div className="space-y-6">
-            <QuickStatsCard user={user} />
-            <AccessCard user={user} />
-          </div>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - 2/3 width */}
+        <div className="lg:col-span-2 space-y-6">
+          <DetailsCard user={user} onCopy={handleCopy} copied={copied} />
+          <ManagerChain userProfile={user} />
         </div>
-      )}
 
-      {activeTab === "security" && <SecurityTab user={user} onCopy={handleCopy} copied={copied} />}
-      {activeTab === "activity" && <ActivityTab />}
+        {/* Right Column - 1/3 width */}
+        <div className="space-y-6">
+          <QuickStatsCard user={user} />
+          <AccessCard user={user} />
+          <LastLoginCard user={user} />
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ─── Hero Card ──────────────────────────────────────────── */
+/* ─── Hero Card with Avatar ─────────────────────────────────── */
 function ProfileHero({ user, initials, roleColor, roleLabel }: {
   user: any; initials: string; roleColor: string; roleLabel: string;
 }) {
   return (
-    <div className="relative rounded-3xl overflow-hidden shadow-lg border border-white/20">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="relative rounded-3xl overflow-hidden shadow-lg"
+      style={{ border: "1px solid rgba(0,196,180,0.2)" }}
+    >
       {/* Animated gradient background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${roleColor}`} />
       <div
         className="absolute inset-0 opacity-20"
         style={{
           background: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15), transparent 50%)",
-          animation: "pulse 4s ease-in-out infinite",
         }}
       />
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-        backgroundSize: "20px 20px",
-      }} />
 
       <div className="relative px-8 py-10 flex flex-col md:flex-row items-center gap-6">
-        {/* Avatar */}
+        {/* Avatar with pulse ring */}
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-2xl bg-white/20 blur-xl" />
-          <div className="relative w-28 h-28 rounded-2xl bg-white/10 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-bold overflow-hidden ring-4 ring-white/20 shadow-2xl">
+          <style>{`
+            @keyframes avatar-pulse {
+              0%, 100% { transform: scale(1); opacity: 0.4; }
+              50% { transform: scale(1.1); opacity: 0.2; }
+            }
+          `}</style>
+          <div
+            className="absolute -inset-2 rounded-2xl"
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              animation: "avatar-pulse 2s ease-in-out infinite",
+            }}
+          />
+          <div className="relative w-28 h-28 rounded-2xl overflow-hidden ring-4 ring-white/20 shadow-2xl">
             {user.photoUrl ? (
               <img src={user.photoUrl} alt={user.displayName} className="w-full h-full object-cover" />
             ) : (
-              initials
+              <div className="w-full h-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-bold">
+                {initials}
+              </div>
             )}
           </div>
-          <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-emerald-500 border-4 border-white flex items-center justify-center">
+          <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#00C4B4", border: "4px solid #0D2B45" }}>
             <Shield className="w-3.5 h-3.5 text-white" />
           </div>
         </div>
@@ -158,32 +167,21 @@ function ProfileHero({ user, initials, roleColor, roleLabel }: {
                 {user.officeLocation}
               </span>
             )}
-            <span className={`px-3 py-1 rounded-full text-xs font-bold border bg-white/15 text-white border-white/20 backdrop-blur-sm`}>
-              {roleLabel}
-            </span>
           </div>
         </div>
 
-        {/* Quick info pills */}
+        {/* Role badge */}
         <div className="flex flex-col gap-2 shrink-0">
-          <InfoPill icon={CalendarDays} label="Member Since" value="2023" />
-          <InfoPill icon={Activity} label="Status" value="Active" />
-          <InfoPill icon={Shield} label="Auth" value="Azure AD" />
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20">
+            <KeyRound className="w-4 h-4 text-white/80" />
+            <div>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider">Role</p>
+              <p className="text-sm font-semibold text-white">{roleLabel}</p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function InfoPill({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-      <Icon className="w-3.5 h-3.5 text-white/60" />
-      <div>
-        <p className="text-[9px] text-white/40 uppercase tracking-wider">{label}</p>
-        <p className="text-xs font-semibold text-white">{value}</p>
-      </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -197,14 +195,21 @@ function DetailsCard({ user, onCopy, copied }: { user: any; onCopy: (text: strin
     { icon: Briefcase, label: "Job Title", value: user.jobTitle, key: "jobTitle" },
     { icon: Building2, label: "Department", value: user.department, key: "department" },
     { icon: MapPin, label: "Office Location", value: user.officeLocation, key: "officeLocation" },
-    { icon: Globe, label: "Domain", value: user.email?.split("@")[1], key: "domain" },
+    { icon: Phone, label: "Phone", value: user.mobilePhone || user.businessPhones?.[0], key: "phone", copyable: true },
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-        <User className="w-4 h-4 text-teal-600" />
-        <h3 className="font-barlow-condensed font-bold text-gray-800 text-sm uppercase tracking-wide">Personal Information</h3>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1, duration: 0.4 }}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+    >
+      <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+        <User className="w-4 h-4" style={{ color: "#00C4B4" }} />
+        <h3 className="font-semibold text-sm uppercase tracking-wide" style={{ color: "#0D2B45" }}>
+          Personal Information
+        </h3>
       </div>
       <div className="p-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -225,13 +230,13 @@ function DetailsCard({ user, onCopy, copied }: { user: any; onCopy: (text: strin
         {/* Supervisor accounts */}
         {user.supervisorAccounts && user.supervisorAccounts.length > 0 && (
           <div className="mt-5 pt-4 border-t border-gray-100">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <h4 className="text-xs font-semibold uppercase tracking-wide mb-3 flex items-center gap-2" style={{ color: "#64748B" }}>
               <Layers className="w-4 h-4" />
               Assigned Accounts
             </h4>
             <div className="flex flex-wrap gap-2">
               {user.supervisorAccounts.map((acc: any, i: number) => (
-                <span key={i} className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-lg text-sm font-medium border border-teal-100 hover:bg-teal-100 transition-colors">
+                <span key={i} className="px-3 py-1.5 rounded-lg text-sm font-medium border" style={{ background: "rgba(0,196,180,0.08)", color: "#00C4B4", borderColor: "rgba(0,196,180,0.2)" }}>
                   {acc.accountName}
                 </span>
               ))}
@@ -239,7 +244,7 @@ function DetailsCard({ user, onCopy, copied }: { user: any; onCopy: (text: strin
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -249,21 +254,22 @@ function DetailField({ icon: Icon, label, value, mono, copyable, onCopy, copied 
 }) {
   return (
     <div className="flex items-start gap-3 group">
-      <span className="text-gray-300 mt-0.5 shrink-0 group-hover:text-teal-500 transition-colors">
+      <span className="mt-0.5 shrink-0" style={{ color: "#94A3B8" }}>
         <Icon className="w-4 h-4" />
       </span>
       <div className="flex-1 min-w-0">
-        <span className="text-xs text-gray-400 uppercase tracking-wide">{label}</span>
+        <span className="text-xs uppercase tracking-wide" style={{ color: "#94A3B8" }}>{label}</span>
         <div className="flex items-center gap-2">
-          <p className={`text-sm mt-0.5 text-gray-800 ${mono ? "font-mono text-xs" : "font-medium"} truncate`}>
+          <p className={`text-sm mt-0.5 truncate ${mono ? "font-mono text-xs" : "font-medium"}`} style={{ color: "#0D2B45" }}>
             {value || "—"}
           </p>
           {copyable && value && (
             <button
               onClick={onCopy}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-teal-600"
+              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ color: copied ? "#22C55E" : "#94A3B8" }}
             >
-              {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             </button>
           )}
         </div>
@@ -272,39 +278,42 @@ function DetailField({ icon: Icon, label, value, mono, copyable, onCopy, copied 
   );
 }
 
-/* ─── Quick Stats Sidebar ────────────────────────────────── */
+/* ─── Quick Stats Card ────────────────────────────────── */
 function QuickStatsCard({ user }: { user: any }) {
   const directReportCount = user.directReports?.length || 0;
   const managerChainDepth = (user.manager1 ? 1 : 0) + (user.manager2 ? 1 : 0);
 
   const stats = [
-    { icon: Shield, label: "Access Level", value: user.role, color: "text-teal-600", bg: "bg-teal-50", ring: "ring-teal-200" },
-    { icon: GitBranch, label: "Reporting Depth", value: `${managerChainDepth} level${managerChainDepth !== 1 ? "s" : ""}`, color: "text-blue-600", bg: "bg-blue-50", ring: "ring-blue-200" },
-    { icon: User, label: "Direct Reports", value: directReportCount.toString(), color: "text-amber-600", bg: "bg-amber-50", ring: "ring-amber-200" },
-    { icon: Building2, label: "Domain", value: user.email?.split("@")[1]?.split(".")[0] || "concentrix", color: "text-violet-600", bg: "bg-violet-50", ring: "ring-violet-200" },
+    { icon: Shield, label: "Access Level", value: user.role, color: "#00C4B4" },
+    { icon: GitBranch, label: "Reporting", value: `${managerChainDepth} level${managerChainDepth !== 1 ? "s" : ""}`, color: "#2563EB" },
+    { icon: User, label: "Direct Reports", value: directReportCount.toString(), color: "#F59E0B" },
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, duration: 0.4 }}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+    >
       <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-teal-600" />
-        <h3 className="font-barlow-condensed font-bold text-gray-800 text-sm uppercase tracking-wide">At a Glance</h3>
+        <Sparkles className="w-4 h-4" style={{ color: "#00C4B4" }} />
+        <h3 className="font-semibold text-xs uppercase tracking-wide" style={{ color: "#0D2B45" }}>At a Glance</h3>
       </div>
-      <div className="p-5 grid grid-cols-2 gap-4">
-        {stats.map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <div key={i} className={`rounded-xl border border-gray-100 p-3 hover:border-teal-200 hover:shadow-sm transition-all group ring-1 ${s.ring} ring-opacity-0 hover:ring-opacity-100`}>
-              <div className={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
-                <Icon className={`w-4 h-4 ${s.color}`} />
-              </div>
-              <p className="text-lg font-bold text-gray-800 font-barlow-condensed leading-none">{s.value}</p>
-              <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-1">{s.label}</p>
+      <div className="p-4 space-y-3">
+        {stats.map((s, i) => (
+          <div key={i} className="flex items-center gap-3 p-3 rounded-xl transition-colors" style={{ background: "rgba(0,0,0,0.02)" }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${s.color}15` }}>
+              <s.icon className="w-4 h-4" style={{ color: s.color }} />
             </div>
-          );
-        })}
+            <div className="flex-1">
+              <p className="text-xs" style={{ color: "#94A3B8" }}>{s.label}</p>
+              <p className="text-sm font-semibold" style={{ color: "#0D2B45" }}>{s.value}</p>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -316,26 +325,30 @@ function AccessCard({ user }: { user: any }) {
     { label: "View All Cases", granted: user.role === "PS" || user.role === "SrManager" || user.role === "Admin" },
     { label: "Approve Terminations", granted: user.role === "PS" || user.role === "SrManager" || user.role === "Admin" },
     { label: "Manage Relocations", granted: user.role === "PS" || user.role === "TA" || user.role === "SrManager" || user.role === "Admin" },
-    { label: "HR Investigations", granted: user.role === "PS" || user.role === "SrManager" || user.role === "Manager" || user.role === "Admin" },
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2, duration: 0.4 }}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+    >
       <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-        <KeyRound className="w-4 h-4 text-teal-600" />
-        <h3 className="font-barlow-condensed font-bold text-gray-800 text-sm uppercase tracking-wide">Access Permissions</h3>
+        <KeyRound className="w-4 h-4" style={{ color: "#00C4B4" }} />
+        <h3 className="font-semibold text-xs uppercase tracking-wide" style={{ color: "#0D2B45" }}>Access Permissions</h3>
       </div>
-      <div className="p-5 space-y-2.5">
+      <div className="p-4 space-y-2">
         {permissions.map((perm, i) => (
           <div key={i} className="flex items-center justify-between py-1.5">
-            <span className="text-sm text-gray-700">{perm.label}</span>
+            <span className="text-sm" style={{ color: "#374151" }}>{perm.label}</span>
             {perm.granted ? (
-              <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(34,197,94,0.1)", color: "#22C55E" }}>
                 <Unlock className="w-3 h-3" />
                 Granted
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "rgba(100,116,139,0.1)", color: "#94A3B8" }}>
                 <Lock className="w-3 h-3" />
                 Restricted
               </span>
@@ -343,32 +356,59 @@ function AccessCard({ user }: { user: any }) {
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
+  );
+}
+
+/* ─── Last Login Card ───────────────────────────────────── */
+function LastLoginCard({ user }: { user: any }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25, duration: 0.4 }}
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+    >
+      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+        <Clock className="w-4 h-4" style={{ color: "#00C4B4" }} />
+        <h3 className="font-semibold text-xs uppercase tracking-wide" style={{ color: "#0D2B45" }}>Session Info</h3>
+      </div>
+      <div className="p-4">
+        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "rgba(0,196,180,0.05)" }}>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(0,196,180,0.15)" }}>
+            <CalendarDays className="w-4 h-4" style={{ color: "#00C4B4" }} />
+          </div>
+          <div>
+            <p className="text-xs" style={{ color: "#94A3B8" }}>Last Login</p>
+            <p className="text-sm font-semibold" style={{ color: "#0D2B45" }}>Today, {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
 /* ─── Manager Chain ──────────────────────────────────────── */
-interface ManagerChainPerson {
-  label: string;
-  data: any;
-  isYou: boolean;
-}
-
 function ManagerChain({ userProfile }: { userProfile: any }) {
-  const people: ManagerChainPerson[] = [
+  const people = [
     { label: "You", data: { displayName: userProfile.displayName, email: userProfile.email, jobTitle: userProfile.jobTitle, photoUrl: userProfile.photoUrl, department: userProfile.department }, isYou: true },
     ...(userProfile.manager1 ? [{ label: "Direct Manager", data: userProfile.manager1, isYou: false }] : []),
     ...(userProfile.manager2 ? [{ label: "Senior Manager", data: userProfile.manager2, isYou: false }] : []),
   ];
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm">
-      <div className="px-5 py-3.5 bg-gradient-to-r from-slate-800 to-slate-700 flex items-center justify-between">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.4 }}
+      className="rounded-2xl overflow-hidden border border-gray-100 bg-white shadow-sm"
+    >
+      <div className="px-5 py-3.5 flex items-center justify-between" style={{ background: "#0D2B45" }}>
         <div className="flex items-center gap-2">
-          <GitBranch size={15} className="text-teal-400" />
+          <GitBranch size={15} style={{ color: "#00C4B4" }} />
           <h3 className="text-white font-semibold text-sm tracking-wide">Reporting Line</h3>
         </div>
-        <span className="text-teal-300/50 text-[10px] uppercase tracking-widest">{people.length - 1} level{people.length !== 2 ? "s" : ""} up</span>
+        <span className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>{people.length - 1} level{people.length !== 2 ? "s" : ""} up</span>
       </div>
 
       <div className="p-5">
@@ -378,155 +418,64 @@ function ManagerChain({ userProfile }: { userProfile: any }) {
               <PersonCard person={person} levelIndex={i} total={people.length} />
               {i < people.length - 1 && (
                 <div className="flex sm:flex-col items-center justify-center px-2 py-2 sm:py-0 sm:px-0 sm:pt-8">
-                  <div className="hidden sm:block w-px h-4 bg-gradient-to-b from-teal-400/40 to-teal-400/10" />
-                  <div className="sm:hidden h-px w-8 bg-gradient-to-r from-teal-400/40 to-teal-400/10" />
-                  <div className="w-5 h-5 rounded-full bg-teal-50 border border-teal-200 flex items-center justify-center">
-                    <ChevronRight size={10} className="text-teal-500 sm:rotate-90" />
+                  <div className="hidden sm:block w-px h-4" style={{ background: "linear-gradient(to bottom, rgba(0,196,180,0.4), transparent)" }} />
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: "rgba(0,196,180,0.1)", border: "1px solid rgba(0,196,180,0.3)" }}>
+                    <ChevronRight size={10} style={{ color: "#00C4B4" }} className="sm:rotate-90" />
                   </div>
-                  <div className="hidden sm:block text-[8px] text-gray-400 uppercase tracking-wider mt-1">reports to</div>
-                  <div className="hidden sm:block w-px h-4 bg-gradient-to-b from-teal-400/10 to-transparent" />
+                  <div className="hidden sm:block text-[8px] uppercase tracking-wider mt-1" style={{ color: "#94A3B8" }}>reports to</div>
                 </div>
               )}
             </React.Fragment>
           ))}
 
           {people.length === 1 && (
-            <p className="text-gray-400 text-sm italic mt-4 ml-2">No manager information found in the directory.</p>
+            <p className="text-sm italic mt-4 ml-2" style={{ color: "#94A3B8" }}>No manager information found in the directory.</p>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-function PersonCard({ person, levelIndex, total }: { person: ManagerChainPerson; levelIndex: number; total: number }) {
+function PersonCard({ person, levelIndex, total }: { person: any; levelIndex: number; total: number }) {
   const initials = person.data.displayName?.split(" ").map((p: string) => p[0]).join("").toUpperCase().slice(0, 2) || "?";
   const levelColors = [
-    { ring: "ring-teal-400/40", badge: "bg-teal-500/15 text-teal-700 border-teal-200", gradient: "from-teal-500 to-teal-700" },
-    { ring: "ring-blue-400/40",  badge: "bg-blue-50 text-blue-700 border-blue-200",    gradient: "from-blue-500 to-blue-700" },
-    { ring: "ring-amber-400/40", badge: "bg-amber-50 text-amber-700 border-amber-200", gradient: "from-amber-500 to-amber-600" },
+    { ring: "rgba(0,196,180,0.4)", bg: "rgba(0,196,180,0.08)" },
+    { ring: "rgba(37,99,235,0.4)", bg: "rgba(37,99,235,0.08)" },
+    { ring: "rgba(245,158,11,0.4)", bg: "rgba(245,158,11,0.08)" },
   ];
   const col = levelColors[Math.min(levelIndex, levelColors.length - 1)];
 
   return (
-    <div className={`flex-1 min-w-0 rounded-xl border p-4 ${person.isYou ? "border-teal-300/40 bg-teal-50/40" : "border-gray-100 bg-gray-50/40"} hover:border-gray-200 hover:shadow-md transition-all group`}>
+    <div className={`flex-1 min-w-0 rounded-xl border p-4 transition-all hover:shadow-md ${person.isYou ? "border-teal-200" : "border-gray-100"}`} style={{ background: col.bg }}>
       <div className="flex items-start gap-3">
-        <div className={`w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden ring-2 ${col.ring} shadow-sm`}>
+        <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0" style={{ boxShadow: `0 0 0 2px ${col.ring}` }}>
           {person.data.photoUrl ? (
             <img src={person.data.photoUrl} alt="" className="w-full h-full object-cover" />
           ) : (
-            <div className={`w-full h-full bg-gradient-to-br ${col.gradient} flex items-center justify-center text-white font-bold text-base`}>
+            <div className="w-full h-full flex items-center justify-center text-white font-bold" style={{ background: "linear-gradient(135deg, #0D2B45, #1E3A5F)" }}>
               {initials}
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-gray-900 text-sm truncate">{person.data.displayName}</span>
+            <span className="font-semibold text-sm truncate" style={{ color: "#0D2B45" }}>{person.data.displayName}</span>
             {person.isYou && (
-              <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md border ${col.badge}`}>You</span>
+              <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md" style={{ background: "#00C4B4", color: "white" }}>You</span>
             )}
           </div>
-          <p className="text-teal-700 text-xs font-semibold mt-0.5 truncate">
+          <p className="text-xs font-semibold mt-0.5 truncate" style={{ color: "#00C4B4" }}>
             {person.data.jobTitle || "No title on record"}
           </p>
-          {person.data.department && (
-            <p className="text-gray-500 text-[11px] mt-0.5 flex items-center gap-1 truncate">
-              <Building2 className="w-3 h-3 shrink-0" />
-              {person.data.department}
-            </p>
-          )}
           {person.data.email && (
-            <p className="text-gray-400 text-[10px] font-mono mt-1 truncate">{person.data.email}</p>
+            <p className="text-[10px] font-mono mt-1 truncate" style={{ color: "#94A3B8" }}>{person.data.email}</p>
           )}
         </div>
       </div>
       <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center gap-1.5">
-        <Briefcase className="w-3 h-3 text-gray-400" />
-        <span className="text-[10px] text-gray-400 uppercase tracking-widest font-medium">{person.label}</span>
-        {levelIndex === total - 1 && total > 1 && (
-          <span className="ml-auto text-[9px] text-gray-300 italic">top of chain</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Security Tab ───────────────────────────────────────── */
-function SecurityTab({ user, onCopy, copied }: { user: any; onCopy: (text: string, label: string) => void; copied: string | null }) {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-teal-600" />
-          <h3 className="font-barlow-condensed font-bold text-gray-800 text-sm uppercase tracking-wide">Authentication</h3>
-        </div>
-        <div className="p-5 space-y-4">
-          <SecurityRow icon={Shield} label="Provider" value="Microsoft Azure AD" status="active" />
-          <SecurityRow icon={KeyRound} label="Method" value="OAuth 2.0 / OpenID Connect" status="active" />
-          <SecurityRow icon={Clock} label="Session" value="Active" status="active" />
-          <SecurityRow icon={Fingerprint} label="User ID" value={user.id} status="neutral" mono copyable onCopy={() => onCopy(user.id, "userid")} copied={copied === "userid"} />
-        </div>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-          <Award className="w-4 h-4 text-teal-600" />
-          <h3 className="font-barlow-condensed font-bold text-gray-800 text-sm uppercase tracking-wide">Role & Permissions</h3>
-        </div>
-        <div className="p-5 space-y-4">
-          <SecurityRow icon={Shield} label="Current Role" value={user.role} status="active" />
-          <SecurityRow icon={Building2} label="Department" value={user.department || "Not set"} status={user.department ? "active" : "warning"} />
-          <SecurityRow icon={Briefcase} label="Job Title" value={user.jobTitle || "Not set"} status={user.jobTitle ? "active" : "warning"} />
-          <SecurityRow icon={Layers} label="Assigned Accounts" value={`${user.supervisorAccounts?.length || 0} accounts`} status="neutral" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SecurityRow({ icon: Icon, label, value, status, mono, copyable, onCopy, copied }: {
-  icon: any; label: string; value: string; status: "active" | "warning" | "neutral";
-  mono?: boolean; copyable?: boolean; onCopy?: () => void; copied?: boolean;
-}) {
-  const statusConfig = {
-    active: { dot: "bg-emerald-500", text: "text-emerald-600" },
-    warning: { dot: "bg-amber-500", text: "text-amber-600" },
-    neutral: { dot: "bg-gray-300", text: "text-gray-500" },
-  };
-  const cfg = statusConfig[status];
-
-  return (
-    <div className="flex items-center justify-between py-1">
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-gray-400" />
-        <span className="text-sm text-gray-600">{label}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className={`text-sm font-medium ${mono ? "font-mono text-xs" : ""} text-gray-800`}>{value}</span>
-        {copyable && (
-          <button onClick={onCopy} className="text-gray-400 hover:text-teal-600 transition-colors">
-            {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-          </button>
-        )}
-        <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Activity Tab ───────────────────────────────────────── */
-function ActivityTab() {
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
-        <Activity className="w-4 h-4 text-teal-600" />
-        <h3 className="font-barlow-condensed font-bold text-gray-800 text-sm uppercase tracking-wide">Recent Activity</h3>
-      </div>
-      <div className="p-8 text-center">
-        <Clock className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">Activity tracking coming soon</p>
-        <p className="text-gray-400 text-sm mt-1">Your recent actions and case updates will appear here.</p>
+        <Briefcase className="w-3 h-3" style={{ color: "#94A3B8" }} />
+        <span className="text-[10px] uppercase tracking-widest font-medium" style={{ color: "#94A3B8" }}>{person.label}</span>
       </div>
     </div>
   );

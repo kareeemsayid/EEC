@@ -13,8 +13,9 @@ import {
   Clock,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { createInvestigation, InvestigationType, InvestigationPriority } from "../api/api";
 
-const INVESTIGATION_TYPES = [
+const INVESTIGATION_TYPES: InvestigationType[] = [
   "Employee Complaint",
   "Manager Escalation",
   "Policy Violation",
@@ -22,14 +23,14 @@ const INVESTIGATION_TYPES = [
   "Performance Concern",
   "Client Complaint",
   "Other",
-] as const;
+];
 
-const PRIORITIES = [
+const PRIORITIES: { value: InvestigationPriority; label: string; color: string }[] = [
   { value: "Low", label: "Low", color: "bg-green-500" },
   { value: "Medium", label: "Medium", color: "bg-amber-500" },
   { value: "High", label: "High", color: "bg-orange-500" },
   { value: "Critical", label: "Critical", color: "bg-red-500" },
-] as const;
+];
 
 export default function RequestInvestigation() {
   const navigate = useNavigate();
@@ -39,8 +40,8 @@ export default function RequestInvestigation() {
     traineeName: "",
     oracleId: "",
     caseNumber: "",
-    investigationType: "Employee Complaint",
-    priority: "Medium",
+    investigationType: "Employee Complaint" as InvestigationType,
+    priority: "Medium" as InvestigationPriority,
     summary: "",
     details: "",
     assignedTo: "",
@@ -55,18 +56,29 @@ export default function RequestInvestigation() {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const result = await createInvestigation({
+        traineeName: form.traineeName,
+        oracleId: form.oracleId,
+        caseNumber: form.caseNumber || undefined,
+        investigationType: form.investigationType,
+        priority: form.priority,
+        summary: form.summary,
+        details: form.details,
+        assignedTo: form.assignedTo,
+        assignedToEmail: form.assignedToEmail,
+        dueDate: form.dueDate,
+      });
       playSound("success");
       toast.success(
         <div>
-          <div className="font-bold">Investigation request sent!</div>
-          <div className="text-xs mt-1">HR team has been notified via email</div>
+          <div className="font-bold">Investigation request created!</div>
+          <div className="text-xs mt-1">Reference: {result.investigationNumber}</div>
         </div>,
         { duration: 5000 }
       );
       navigate("/investigations");
-    } catch {
-      toast.error("Failed to send request. Please try again.");
+    } catch (err) {
+      toast.error("Failed to create investigation. Please try again.");
       playSound("error");
     } finally {
       setLoading(false);

@@ -23,6 +23,7 @@ interface FormData {
   lobId: string;
   siteId: string;
   wave: string;
+  hireDate: string;
   attritionCategory: string;
   subReason: string;
   severityLevel: SeverityLevel;
@@ -44,6 +45,7 @@ const INITIAL: FormData = {
   lobId: "",
   siteId: "",
   wave: "",
+  hireDate: "",
   attritionCategory: "",
   subReason: "",
   severityLevel: "Low",
@@ -114,6 +116,7 @@ export default function SubmitCase() {
       if (!form.accountId) return "Account is required";
       if (!form.lobId) return "LOB is required";
       if (!form.siteId) return "Site is required";
+      if (!form.hireDate) return "Hire date is required";
     }
     if (step === 2) {
       if (!form.attritionCategory) return "Attrition category is required";
@@ -156,6 +159,7 @@ export default function SubmitCase() {
         lob: lobTitle,
         site: siteTitle,
         wave: form.wave,
+        hireDate: form.hireDate,
         trainerName: user?.displayName || "",
         trainerEmail: user?.email || "",
         trainingManager: form.trainingManager,
@@ -331,6 +335,16 @@ export default function SubmitCase() {
                     value={form.wave}
                     onChange={(e) => update("wave", e.target.value)}
                     placeholder="e.g. 2024-Q3-01"
+                  />
+                </FormField>
+              </Tooltip>
+              <Tooltip content="Employee hire date for tenure tracking" position="top">
+                <FormField label="Hire Date" required>
+                  <input
+                    type="date"
+                    className={inputClass}
+                    value={form.hireDate}
+                    onChange={(e) => update("hireDate", e.target.value)}
                   />
                 </FormField>
               </Tooltip>

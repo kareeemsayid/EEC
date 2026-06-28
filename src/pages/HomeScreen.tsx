@@ -13,13 +13,31 @@ import EmptyState from "../components/EmptyState";
 import CountUp from "../components/CountUp";
 import { formatHours, timeAgo } from "../utils/formatters";
 import toast from "react-hot-toast";
-import {
-  FolderOpen, AlertTriangle, TrendingUp, TrendingDown,
-  Eye, LogOut, Plus, RefreshCw, Calendar, Activity,
-  ChevronRight, ChevronDown, MapPin, Shield,
-  ArrowUpRight, Minus, UserCheck, Building2,
-} from "lucide-react";
+import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, RefreshCw, Calendar, Activity, ChevronRight, ChevronDown, Shield, ArrowUpRight, Minus, Building2, Scale, UserCheck, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
+
+// Dynamic greeting based on time of day with creative messaging
+function getGreeting(): { main: string; sub: string } {
+  const hour = new Date().getHours();
+  const day = new Date().getDay();
+  const isMonday = day === 1;
+  const isFriday = day === 5;
+  const isWeekend = day === 0 || day === 6;
+
+  if (hour < 12) {
+    if (isMonday) return { main: "Happy Monday", sub: "Fresh start energy — let's make this week count" };
+    if (isWeekend) return { main: "Rise & Shine", sub: "Even on weekends, excellence never sleeps" };
+    return { main: "Rise & Grind", sub: "The early bird catches the wins — let's make today legendary" };
+  }
+  if (hour < 17) {
+    if (isFriday) return { main: "Friday Fuel", sub: "One final push before the weekend — finish strong!" };
+    return { main: "Power Through", sub: "Peak performance hours — let's turn challenges into victories" };
+  }
+  if (hour < 21) {
+    return { main: "Evening Drive", sub: "Wrapping up with purpose — every action counts" };
+  }
+  return { main: "Night Owl Mode", sub: "Burning the midnight oil — dedication defines you" };
+}
 
 const WEEKLY_TREND = [
   { week: "Wk 1", critical: 1, highRisk: 2, monitoring: 4, resolved: 2 },
@@ -79,16 +97,110 @@ export default function HomeScreen() {
     terminationRecommended: cases.filter(c => c.lifecycleStage === "Termination Recommended").length,
   }), [cases]);
 
-  const activeCases = cases.filter(c => c.caseStatus !== "Closed");
   const resolvedCases = cases.filter(c => c.caseStatus === "Closed").length;
   const relocationRequests = 12;
   const psClearanceSLA = 87;
   const taClearanceSLA = 94;
   const relocationRate = 68;
+  const activeCases = cases.filter(c => c.caseStatus !== "Closed");
+
+  const { main: greetingMain, sub: greetingSub } = getGreeting();
 
   return (
     <div className="space-y-6 pb-8 animate-fade-in">
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
+
+      {/* Welcome Section - Enhanced Creative Design */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="relative overflow-hidden rounded-2xl p-6"
+        style={{
+          background: "linear-gradient(135deg, #0D2B45 0%, #1E3A5F 50%, #0D2B45 100%)",
+        }}
+      >
+        {/* Animated background particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <motion.div
+            animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20"
+            style={{ background: "radial-gradient(circle, #00C4B4 0%, transparent 70%)" }}
+          />
+          <motion.div
+            animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full opacity-15"
+            style={{ background: "radial-gradient(circle, #2563EB 0%, transparent 70%)" }}
+          />
+        </div>
+
+        <div className="relative z-10">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="flex items-center gap-3 mb-2"
+          >
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.2)" }}>
+              <Shield className="w-6 h-6" style={{ color: "#00C4B4" }} />
+            </div>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="text-3xl md:text-4xl font-bold mb-2"
+            style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}
+          >
+            {greetingMain},{" "}
+            <span className="relative inline-block">
+              <span style={{ color: "#00C4B4" }}>{user?.displayName?.split(" ")[0] || "Champion"}</span>
+              <motion.span
+                className="absolute -bottom-1 left-0 h-0.5 bg-teal-400"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
+              />
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.4 }}
+            className="text-sm md:text-base max-w-xl"
+            style={{ color: "rgba(255,255,255,0.7)" }}
+          >
+            {greetingSub}
+          </motion.p>
+
+          {/* Quick Stats Row */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+            className="flex flex-wrap gap-4 mt-5"
+          >
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-xs font-medium text-white/90">{kpi.activeCases} Active Cases</span>
+            </div>
+            {kpi.critical > 0 && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(239,68,68,0.2)" }}>
+                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                <span className="text-xs font-medium text-red-300">{kpi.critical} Critical</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(0,196,180,0.15)" }}>
+              <TrendingUp className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
+              <span className="text-xs font-medium" style={{ color: "#00C4B4" }}>{resolvedCases} Resolved</span>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
 
       {/* Main Grid: Hero (65%) + Right Stack (35%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -246,6 +358,28 @@ export default function HomeScreen() {
                 <span className="flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Submit New Case
+                </span>
+                <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
+              </button>
+              <button
+                onClick={() => navigate("/relocations/submit")}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-teal-600 hover:text-white"
+                style={{ background: "rgba(0,196,180,0.08)", color: "#00C4B4" }}
+              >
+                <span className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Request Relocation
+                </span>
+                <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
+              </button>
+              <button
+                onClick={() => navigate("/investigations/new")}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-teal-600 hover:text-white"
+                style={{ background: "rgba(0,196,180,0.08)", color: "#00C4B4" }}
+              >
+                <span className="flex items-center gap-2">
+                  <Scale className="w-4 h-4" />
+                  Request Investigation
                 </span>
                 <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
               </button>

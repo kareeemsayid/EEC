@@ -5,13 +5,15 @@ interface TooltipProps {
   children: React.ReactNode;
   position?: "top" | "bottom" | "left" | "right";
   delay?: number;
+  maxWidth?: number;
 }
 
 export default function Tooltip({
   content,
   children,
   position = "top",
-  delay = 200,
+  delay = 300,
+  maxWidth = 240,
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -40,10 +42,10 @@ export default function Tooltip({
   };
 
   const arrowClasses = {
-    top: "top-full left-1/2 -translate-x-1/2 border-t-gray-800 border-x-transparent border-b-transparent",
-    bottom: "bottom-full left-1/2 -translate-x-1/2 border-b-gray-800 border-x-transparent border-t-transparent",
-    left: "left-full top-1/2 -translate-y-1/2 border-l-gray-800 border-y-transparent border-r-transparent",
-    right: "right-full top-1/2 -translate-y-1/2 border-r-gray-800 border-y-transparent border-l-transparent",
+    top: "top-full left-1/2 -translate-x-1/2 border-t-white border-x-transparent border-b-transparent",
+    bottom: "bottom-full left-1/2 -translate-x-1/2 border-b-white border-x-transparent border-t-transparent",
+    left: "left-full top-1/2 -translate-y-1/2 border-l-white border-y-transparent border-r-transparent",
+    right: "right-full top-1/2 -translate-y-1/2 border-r-white border-y-transparent border-l-transparent",
   };
 
   return (
@@ -58,9 +60,18 @@ export default function Tooltip({
       {isVisible && (
         <div
           ref={tooltipRef}
-          className={`absolute ${positionClasses[position]} z-[60] pointer-events-none animate-fade-in-up`}
+          className={`absolute ${positionClasses[position]} z-[60] pointer-events-none`}
+          style={{
+            animation: "fadeInUp 200ms ease-out both",
+          }}
         >
-          <div className="bg-gray-800/95 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap max-w-xs border border-white/10">
+          <div
+            className="bg-white text-gray-900 text-xs px-3 py-2.5 rounded-lg shadow-xl border border-gray-100"
+            style={{
+              maxWidth,
+              boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,196,180,0.1)",
+            }}
+          >
             {content}
           </div>
           <div

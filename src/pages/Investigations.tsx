@@ -1,38 +1,18 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
 import {
   fetchInvestigations,
-  fetchInvestigationKpis,
-} from "../api/sharepoint";
-import {
-  HRInvestigation,
+  fetchInvestigationCounts,
+  Investigation,
   InvestigationStatus,
   InvestigationPriority,
   InvestigationType,
-  InvestigationKpiData,
-} from "../utils/types";
+  InvestigationKpis,
+} from "../api/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorBanner from "../components/ErrorBanner";
 import Tooltip from "../components/Tooltip";
-import { loginRequest } from "../auth/msalConfig";
-import {
-  Search,
-  FileSearch,
-  AlertTriangle,
-  Clock,
-  XCircle,
-  Calendar,
-  User,
-  RefreshCw,
-  Plus,
-  Filter,
-  ChevronRight,
-  ArrowUpDown,
-  TrendingUp,
-  AlertCircle,
-  Inbox,
-} from "lucide-react";
+import { Search, FileSearch, TriangleAlert as AlertTriangle, Clock, Circle as XCircle, Calendar, User, RefreshCw, Plus, Filter, ChevronRight, ArrowUpDown, TrendingUp, CircleAlert as AlertCircle, Inbox } from "lucide-react";
 
 const INVESTIGATION_TYPES: InvestigationType[] = [
   "Employee Complaint",
@@ -60,11 +40,10 @@ const PRIORITY_COLORS: Record<InvestigationPriority, string> = {
 };
 
 export default function Investigations() {
-  const { getAccessToken } = useAuth();
   const navigate = useNavigate();
 
-  const [investigations, setInvestigations] = useState<HRInvestigation[]>([]);
-  const [kpis, setKpis] = useState<InvestigationKpiData | null>(null);
+  const [investigations, setInvestigations] = useState<Investigation[]>([]);
+  const [kpis, setKpis] = useState<InvestigationKpis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,26 +54,25 @@ export default function Investigations() {
   const [search, setSearch] = useState("");
 
   // Sort
-  const [sortKey, setSortKey] = useState<"createdDate" | "dueDate" | "priority">("createdDate");
+  const [sortKey, setSortKey] = useState<"createdAt" | "dueDate" | "priority">("createdAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = await getAccessToken(loginRequest.scopes as string[]);
       const [investigationsData, kpisData] = await Promise.all([
-        fetchInvestigations(token),
-        fetchInvestigationKpis(token),
+        fetchInvestigations(),
+        fetchInvestigationCounts(),
       ]);
-      setInvestigations(investigationsData);
+      setInvestigations(investigationsData.investigations || investigationsData as any);
       setKpis(kpisData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load investigations");
     } finally {
       setLoading(false);
     }
-  }, [getAccessToken]);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -109,7 +87,7 @@ export default function Investigations() {
         const q = search.toLowerCase();
         return (
           inv.investigationNumber.toLowerCase().includes(q) ||
-          inv.caseNumber.toLowerCase().includes(q) ||
+          (inv.caseNumber && inv.caseNumber.toLowerCase().includes(q)) ||
           inv.traineeName.toLowerCase().includes(q) ||
           inv.oracleId.toLowerCase().includes(q) ||
           inv.assignedTo.toLowerCase().includes(q)
@@ -120,7 +98,7 @@ export default function Investigations() {
     .sort((a, b) => {
       let aVal: any = a[sortKey];
       let bVal: any = b[sortKey];
-      if (sortKey === "createdDate" || sortKey === "dueDate") {
+      if (sortKey === "createdAt" || sortKey === "dueDate") {
         aVal = new Date(aVal || 0).getTime();
         bVal = new Date(bVal || 0).getTime();
       }
@@ -136,7 +114,7 @@ export default function Investigations() {
       return 0;
     });
 
-  const toggleSort = (key: "createdDate" | "dueDate" | "priority") => {
+  const toggleSort = (key: "createdAt" | "dueDate" | "priority") => {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -154,8 +132,9 @@ export default function Investigations() {
 
   const hasFilters = filterStatus !== "all" || filterPriority !== "all" || filterType !== "all" || search;
 
-  const isOverdue = (inv: HRInvestigation) => {
+  const isOverdue = (inv: Investigation) => {
     if (inv.status === "Closed" || inv.status === "Cancelled") return false;
+    if (!inv.dueDate) return false;
     return new Date(inv.dueDate) < new Date();
   };
 
@@ -210,35 +189,34 @@ export default function Investigations() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <KpiCard
             label="Total"
-            value={kpis.totalInvestigations}
+            value={kpis.total}
             icon={<FileSearch className="w-5 h-5" />}
             color="teal"
           />
           <KpiCard
             label="Open"
-            value={kpis.openInvestigations}
+            value={kpis.open}
             icon={<Inbox className="w-5 h-5" />}
             color="blue"
           />
           <KpiCard
             label="In Progress"
-            value={kpis.inProgressInvestigations}
+            value={kpis.inProgress}
             icon={<TrendingUp className="w-5 h-5" />}
             color="amber"
           />
           <KpiCard
-            label="High Priority"
-            value={kpis.highPriorityInvestigations}
+            label="Critical"
+            value={kpis.critical}
             icon={<AlertTriangle className="w-5 h-5" />}
             color="red"
-            pulse={kpis.highPriorityInvestigations > 0}
+            pulse={kpis.critical > 0}
           />
           <KpiCard
-            label="Overdue"
-            value={kpis.overdueInvestigations}
+            label="Closed"
+            value={kpis.closed}
             icon={<Clock className="w-5 h-5" />}
-            color="red"
-            pulse={kpis.overdueInvestigations > 0}
+            color="green"
           />
         </div>
       )}
@@ -394,7 +372,7 @@ export default function Investigations() {
                     </td>
                     <td className="px-5 py-3">
                       <div>
-                        <p className="text-xs text-gray-400 font-mono">{inv.caseNumber}</p>
+                        <p className="text-xs text-gray-400 font-mono">{inv.caseNumber || '-'}</p>
                         <p className="text-sm font-medium text-gray-800">{inv.traineeName}</p>
                       </div>
                     </td>
@@ -457,7 +435,7 @@ function KpiCard({
   label: string;
   value: number;
   icon: React.ReactNode;
-  color: "teal" | "blue" | "amber" | "red";
+  color: "teal" | "blue" | "amber" | "red" | "green";
   pulse?: boolean;
 }) {
   const colorMap = {
@@ -465,6 +443,7 @@ function KpiCard({
     blue: "from-blue-50 to-blue-100/50 text-blue-600 border-blue-200/50",
     amber: "from-amber-50 to-amber-100/50 text-amber-600 border-amber-200/50",
     red: "from-red-50 to-red-100/50 text-red-600 border-red-200/50",
+    green: "from-green-50 to-green-100/50 text-green-600 border-green-200/50",
   };
 
   return (

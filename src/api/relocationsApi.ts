@@ -53,6 +53,8 @@ export interface RelocationRequest {
   remindTA: boolean;
   remindTADate: string;
   lastUpdatedDate: string;
+  hireDate?: string;
+  jobRequisitionNumber?: string;
 }
 
 export interface RelocationUpdate {
@@ -83,6 +85,7 @@ export interface CreateRelocationPayload {
   oid: string;
   reachableNumber: string;
   language: string;
+  hireDate: string;
   currentSite: string;
   currentLOB: string;
   currentAccount: string;
@@ -98,6 +101,7 @@ export interface CreateRelocationPayload {
   attendanceAdherence: string;
   disciplinaryNotes: string;
   additionalNotes: string;
+  jobRequisitionNumber?: string;
   trainingSupervisorName: string;
   trainingSupervisorEmail: string;
   trainingManagerName: string;

@@ -41,6 +41,10 @@ interface FormData {
   attendanceAdherence: string;
   disciplinaryNotes: string;
   additionalNotes: string;
+  jobRequisitionNumber: string;
+  targetSite: string;
+  targetLOB: string;
+  targetAccount: string;
   trainingSupervisorName: string;
   trainingSupervisorEmail: string;
   trainingManagerName: string;
@@ -52,7 +56,8 @@ const INITIAL_DATA: FormData = {
   currentSite: "", currentLOB: "", currentAccount: "", siteId: "", lobId: "", accountId: "",
   wave: "", vertical: "", currentMSA: "",
   preferredSiteArea: [], relocationReason: "", releaseDate: "", attendanceAdherence: "",
-  disciplinaryNotes: "", additionalNotes: "",
+  disciplinaryNotes: "", additionalNotes: "", jobRequisitionNumber: "",
+  targetSite: "", targetLOB: "", targetAccount: "",
   trainingSupervisorName: "", trainingSupervisorEmail: "", trainingManagerName: "", trainingManagerEmail: "",
 };
 
@@ -348,6 +353,9 @@ export default function SubmitRelocation() {
               </Field>
               <Field label="Release Date / Compliance" icon={Calendar} error={errors.releaseDate} required>
                 <input type="date" value={data.releaseDate} onChange={e => update('releaseDate', e.target.value)} className={inputClass(errors.releaseDate)} />
+              </Field>
+              <Field label="Job Requisition Number (JR#)" icon={FileText}>
+                <input type="text" value={data.jobRequisitionNumber} onChange={e => update('jobRequisitionNumber', e.target.value)} className={inputClass()} placeholder="Optional JR number" />
               </Field>
             </div>
             <Field label="Attendance & Adherence" icon={ShieldCheck} error={errors.attendanceAdherence} required>

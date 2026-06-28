@@ -352,21 +352,23 @@ router.post('/', async (req, res) => {
     request.input('status', 'Submitted');
     request.input('lastUpdatedDate', now);
     request.input('overdueFlag', 0);
+    request.input('jobRequisitionNumber', data.jobRequisitionNumber || null);
+    request.input('hireDate', data.hireDate || null);
 
     const insertResult = await request.query(`
       INSERT INTO RelocationRequests (
-        requestId, employeeName, oid, oracleId, reachableNumber, language,
+        requestId, employeeName, oid, oracleId, reachableNumber, language, hireDate,
         preferredSiteArea, relocationReason, releaseDate, releaseDateCompliance,
-        attendanceAdherence, disciplinaryNotes, additionalNotes,
+        attendanceAdherence, disciplinaryNotes, additionalNotes, jobRequisitionNumber,
         wave, vertical, currentMSA, account, lob, site, siteId, lobId, accountId,
         trainingSupervisor, trainingManager, trainingManagerEmail, supervisorEmail,
         submittedByEmail, submittedByName, submittedDate, status, lastUpdatedDate, overdueFlag
       )
       OUTPUT INSERTED.id
       VALUES (
-        @requestId, @employeeName, @oid, @oracleId, @reachableNumber, @language,
+        @requestId, @employeeName, @oid, @oracleId, @reachableNumber, @language, @hireDate,
         @preferredSiteArea, @relocationReason, @releaseDate, @releaseDateCompliance,
-        @attendanceAdherence, @disciplinaryNotes, @additionalNotes,
+        @attendanceAdherence, @disciplinaryNotes, @additionalNotes, @jobRequisitionNumber,
         @wave, @vertical, @currentMSA, @account, @lob, @site, @siteId, @lobId, @accountId,
         @trainingSupervisor, @trainingManager, @trainingManagerEmail, @supervisorEmail,
         @submittedByEmail, @submittedByName, @submittedDate, @status, @lastUpdatedDate, @overdueFlag

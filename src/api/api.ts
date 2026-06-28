@@ -325,3 +325,155 @@ export async function updateCase(data: UpdateCasePayload): Promise<{
   });
   return result;
 }
+
+// ─── Investigations API ───────────────────────────────────────────────────────
+
+export type InvestigationStatus = 'Open' | 'In Progress' | 'Pending Review' | 'Closed' | 'Cancelled';
+export type InvestigationPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+export type InvestigationType = 'Employee Complaint' | 'Manager Escalation' | 'Policy Violation' | 'Attendance Breach' | 'Performance Concern' | 'Client Complaint' | 'Other';
+
+export interface Investigation {
+  id: string;
+  investigationNumber: string;
+  traineeName: string;
+  oracleId: string;
+  caseNumber: string | null;
+  investigationType: InvestigationType;
+  priority: InvestigationPriority;
+  summary: string;
+  details: string;
+  accountId: string | null;
+  accountName: string | null;
+  requestedBy: string;
+  requestedByEmail: string;
+  assignedTo: string;
+  assignedToEmail: string;
+  dueDate: string | null;
+  status: InvestigationStatus;
+  findings: string | null;
+  resolution: string | null;
+  outcome: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  updates?: InvestigationUpdate[];
+}
+
+export interface InvestigationUpdate {
+  id: string;
+  investigationId: string;
+  updateType: string;
+  updatedBy: string;
+  updatedByEmail: string;
+  createdAt: string;
+  notes: string;
+  isInternal: boolean;
+}
+
+export interface InvestigationKpis {
+  total: number;
+  open: number;
+  inProgress: number;
+  pendingReview: number;
+  closed: number;
+  critical: number;
+}
+
+export async function fetchInvestigationCounts(): Promise<InvestigationKpis> {
+  const result = await apiFetch<{ success: boolean; data: InvestigationKpis }>('/investigations/counts');
+  return result.data || result as any;
+}
+
+export async function fetchInvestigations(options?: {
+  status?: InvestigationStatus;
+  priority?: InvestigationPriority;
+  type?: InvestigationType;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ investigations: Investigation[]; total: number; page: number; totalPages: number }> {
+  const params = new URLSearchParams();
+  if (options?.status) params.append('status', options.status);
+  if (options?.priority) params.append('priority', options.priority);
+  if (options?.type) params.append('type', options.type);
+  if (options?.search) params.append('search', options.search);
+  if (options?.page) params.append('page', String(options.page));
+  if (options?.limit) params.append('limit', String(options.limit));
+
+  const query = params.toString();
+  const result = await apiFetch<{ success: boolean; data: { investigations: Investigation[]; total: number; page: number; limit: number; totalPages: number } }>(
+    `/investigations${query ? `?${query}` : ''}`
+  );
+  return result.data || result as any;
+}
+
+export async function fetchInvestigationById(id: string): Promise<Investigation> {
+  const result = await apiFetch<{ success: boolean; data: Investigation }>(`/investigations/${id}`);
+  return result.data || result as any;
+}
+
+export interface CreateInvestigationPayload {
+  traineeName: string;
+  oracleId: string;
+  caseNumber?: string;
+  investigationType: InvestigationType;
+  priority: InvestigationPriority;
+  summary: string;
+  details: string;
+  accountId?: string;
+  assignedTo: string;
+  assignedToEmail: string;
+  dueDate: string;
+}
+
+export async function createInvestigation(data: CreateInvestigationPayload): Promise<{
+  success: boolean;
+  id: string;
+  investigationNumber: string;
+  message: string;
+}> {
+  const result = await apiFetch<{ success: boolean; id: string; investigationNumber: string; message: string }>('/investigations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return result;
+}
+
+export interface UpdateInvestigationPayload {
+  status?: InvestigationStatus;
+  priority?: InvestigationPriority;
+  assignedTo?: string;
+  assignedToEmail?: string;
+  dueDate?: string;
+  findings?: string;
+  resolution?: string;
+  outcome?: string;
+  updateNotes?: string;
+}
+
+export async function updateInvestigation(id: string, data: UpdateInvestigationPayload): Promise<{
+  success: boolean;
+  investigationNumber: string;
+  message: string;
+}> {
+  const result = await apiFetch<{ success: boolean; investigationNumber: string; message: string }>(`/investigations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return result;
+}
+
+export async function addInvestigationComment(id: string, comment: string, isInternal = false): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/investigations/${id}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ comment, isInternal }),
+  });
+}
+
+export async function resolveInvestigation(id: string, resolution: string, outcome: string): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(`/investigations/${id}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ resolution, outcome }),
+  });
+}

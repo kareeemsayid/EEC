@@ -14,6 +14,7 @@ const authMiddleware = require('./utils/authMiddleware');
 const userRoutes = require('./routes/user');
 const relocationsRoutes = require('./routes/relocations');
 const casesRoutes = require('./routes/cases');
+const investigationsRoutes = require('./routes/investigations');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,6 +45,9 @@ app.use('/api/relocations', relocationsRoutes);
 
 // Mount cases routes (counts must be before :id in the router definition)
 app.use('/api/cases', casesRoutes);
+
+// Mount investigations routes
+app.use('/api/investigations', investigationsRoutes);
 
 // 1. GET /api/accounts - Fetch all accounts (FIXED)
 app.get('/api/accounts', async (req, res) => {

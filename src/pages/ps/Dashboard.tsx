@@ -2,27 +2,25 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import {
-  fetchAllCases, fetchAccounts, fetchLOBs, fetchSites,
-  Account, LOB, Site, AttritionCase,
+  fetchAllCases, fetchAccounts,
+  Account, AttritionCase,
 } from "../../api/api";
 import {
   fetchRelocationCounts, fetchRelocations,
   RelocationCounts, RelocationRequest,
 } from "../../api/relocationsApi";
-import { formatDate } from "../../utils/formatters";
 import RiskBadge from "../../components/RiskBadge";
 import StageBadge from "../../components/StageBadge";
 import CountUp from "../../components/CountUp";
 import toast from "react-hot-toast";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
-  LineChart, Line, CartesianGrid,
+  PieChart, Pie, Cell, Legend, CartesianGrid,
 } from "recharts";
 import {
-  Users, BarChart3, AlertTriangle, Clock, Search, Filter, X, RefreshCw,
-  Eye, TrendingUp, TrendingDown, MapPin, ChevronRight, ChevronDown, Briefcase,
-  FileSearch, Activity, Inbox, ClipboardList, Building2, Shield
+  BarChart3, AlertTriangle, Clock, Search, Filter, X, RefreshCw,
+  Eye, TrendingUp, MapPin, ChevronRight, ChevronDown, Briefcase,
+  FileSearch, Activity, Inbox, ClipboardList, Shield
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -34,27 +32,12 @@ const STATUS_COLORS: Record<string, string> = {
   Closed: "#94A3B8",
 };
 
-const RISK_COLORS: Record<string, string> = {
-  Critical: "#EF4444",
-  "High Risk": "#F59E0B",
-  Monitoring: "#22C55E",
-};
-
 export default function PSDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const role = user?.role || "PS";
-
-  const allowedRoles = ["PS", "TA", "SrManager", "Admin"];
-  if (!allowedRoles.includes(role)) {
-    navigate("/dashboard");
-    return null;
-  }
 
   const [cases, setCases] = useState<AttritionCase[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [lobs, setLOBs] = useState<LOB[]>([]);
-  const [sites, setSites] = useState<Site[]>([]);
   const [relocationCounts, setRelocationCounts] = useState<RelocationCounts | null>(null);
   const [overdueRelocations, setOverdueRelocations] = useState<RelocationRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,23 +51,24 @@ export default function PSDashboard() {
   const [page, setPage] = useState(1);
   const [showRelocationPanel, setShowRelocationPanel] = useState(false);
 
+  const role = user?.role || "PS";
+  const allowedRoles = ["PS", "TA", "SrManager", "Admin"];
+  const isAllowed = allowedRoles.includes(role);
+
   const PAGE_SIZE = 20;
 
   const loadData = useCallback(async () => {
+    if (!isAllowed) return;
     setLoading(true);
     setError(null);
     try {
-      const [casesData, accountsData, lobsData, sitesData, relCounts] = await Promise.all([
+      const [casesData, accountsData, relCounts] = await Promise.all([
         fetchAllCases(),
         fetchAccounts(),
-        fetchLOBs(),
-        fetchSites(),
         fetchRelocationCounts(),
       ]);
       setCases(casesData);
       setAccounts(accountsData);
-      setLOBs(lobsData);
-      setSites(sitesData);
       setRelocationCounts(relCounts);
 
       try {
@@ -99,9 +83,15 @@ export default function PSDashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAllowed]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  useEffect(() => {
+    if (!isAllowed) {
+      navigate("/dashboard");
+    }
+  }, [isAllowed, navigate]);
 
   const filteredCases = useMemo(() => {
     return cases.filter((c) => {
@@ -148,6 +138,10 @@ export default function PSDashboard() {
       color: STATUS_COLORS[name] || "#94A3B8",
     }));
   }, [cases]);
+
+  if (!isAllowed) {
+    return null;
+  }
 
   const hasFilters = filterStatus !== "all" || filterRisk !== "all" || filterAccount !== "all" || search;
 
