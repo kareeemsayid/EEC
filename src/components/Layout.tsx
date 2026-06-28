@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
+import { useThemeContext } from "../context/ThemeContext";
 import { UserRole } from "../api/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Settings as SettingsIcon, Menu, X, Search, CircleHelp as HelpCircle, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Home, MapPin, TriangleAlert as AlertTriangle, Plus, FolderOpen, SquarePen as PenSquare, FileSearch, BarChart2, Calendar, UserCog, Bell, Activity, User } from "lucide-react";
+import { LogOut, Settings as SettingsIcon, Menu, X, Search, CircleHelp as HelpCircle, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Home, MapPin, TriangleAlert as AlertTriangle, Plus, FolderOpen, SquarePen as PenSquare, FileSearch, BarChart2, Calendar, UserCog, Moon, Sun, Activity, User } from "lucide-react";
+import NotificationBell from "./NotificationBell";
 
 interface LayoutProps { children: React.ReactNode; }
 
@@ -70,17 +72,17 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/submit",        label: "Submit Case",        icon: Plus,          tooltip: "Open a new attrition case" },
       { to: "/my-cases",      label: "My Cases",           icon: FolderOpen,    tooltip: "View all your cases" },
       { to: "/update",        label: "Update Case",        icon: PenSquare,     tooltip: "Update an existing case" },
-      { to: "/termination",   label: "Termination Center", icon: LogOut,        tooltip: "Review termination workflows", roles: ["PS","SrManager","Manager"] },
+      { to: "/termination",   label: "Termination Center", icon: LogOut,        tooltip: "Review termination workflows", roles: ["PS","SrManager","Manager","Trainer"] },
       { to: "/investigations",label: "Investigations",     icon: FileSearch,    tooltip: "HR investigation queue",     roles: ["PS","SrManager","Manager"] },
-      { to: "/high-risk",     label: "High Risk",          icon: AlertTriangle, tooltip: "Critical & high-risk cases", roles: ["TA","PS","SrManager","Manager","Supervisor"], badge: "!" },
+      { to: "/high-risk-cases", label: "High Risk Cases",    icon: AlertTriangle, tooltip: "Critical & high-risk cases", roles: ["TA","PS","SrManager","Manager","Supervisor","Trainer"], badge: "!" },
     ],
   },
   {
     label: "Relocations",
     tooltip: "Handle employee relocation requests",
     items: [
-      { to: "/relocations",        label: "All Relocations",   icon: MapPin, tooltip: "View all relocation requests" },
-      { to: "/relocations/submit", label: "Submit Relocation", icon: Plus,   tooltip: "Submit a new relocation request" },
+      { to: "/relocation-center",  label: "Relocation Center",   icon: MapPin, tooltip: "Manage all relocation requests" },
+      { to: "/relocations/submit", label: "Submit Relocation",   icon: Plus,   tooltip: "Submit a new relocation request" },
     ],
   },
   {
@@ -113,7 +115,9 @@ const PAGE_TITLES: Record<string, string> = {
   "/termination":         "Termination Center",
   "/investigations":      "Investigations",
   "/high-risk":           "High Risk Cases",
+  "/high-risk-cases":     "High Risk Cases",
   "/relocations":         "Relocations",
+  "/relocation-center":   "Relocation Center",
   "/relocations/submit":  "Submit Relocation",
   "/analytics":           "Analytics",
   "/attendance":          "Attendance Log",
@@ -125,18 +129,30 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
+  const { isDark, setTheme, setSidebarCollapsed } = useThemeContext();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchVal, setSearchVal] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+  const [sidebarCollapsed, setSidebarCollapsedLocal] = useState(() => {
     try { return localStorage.getItem("sidebar-collapsed") === "true"; }
     catch { return false; }
   });
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const toggleDarkMode = () => {
+    setTheme(isDark ? "light" : "dark");
+  };
+
+  const handleSidebarCollapse = (v: boolean) => {
+    setSidebarCollapsedLocal(v);
+    setSidebarCollapsed(v);
+    try { localStorage.setItem("sidebar-collapsed", String(v)); }
+    catch { /* no-op */ }
+  };
 
   useEffect(() => {
     try { localStorage.setItem("sidebar-collapsed", String(sidebarCollapsed)); }
@@ -204,7 +220,7 @@ export default function Layout({ children }: LayoutProps) {
   const sidebarWidth = sidebarCollapsed ? 64 : 240;
 
   return (
-    <div className="min-h-screen" style={{ background: "#EEF2FF" }}>
+    <div className="min-h-screen" style={{ background: "var(--eec-bg, #EEF2FF)" }}>
 
       {/* Sidebar CSS animations */}
       <style>{`
@@ -317,6 +333,35 @@ export default function Layout({ children }: LayoutProps) {
         .profile-section {
           transition: transform 200ms ease;
         }
+
+        @keyframes tooltip-fade-in {
+          from { opacity: 0; transform: translateY(4px) scale(0.92); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .group-tooltip {
+          position: absolute;
+          left: calc(100% + 8px);
+          top: 50%;
+          transform: translateY(-50%);
+          pointer-events: none;
+          opacity: 0;
+          z-index: 100;
+          max-width: 220px;
+        }
+        .group-tooltip-trigger:hover .group-tooltip {
+          animation: tooltip-fade-in 200ms ease-out forwards;
+          animation-delay: 150ms;
+        }
+        .group-tooltip-trigger {
+          position: relative;
+        }
+        @keyframes help-icon-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0,196,180,0.3); }
+          50% { box-shadow: 0 0 0 3px rgba(0,196,180,0.15); }
+        }
+        .help-icon-pulse {
+          animation: help-icon-pulse 2.5s ease-in-out infinite;
+        }
       `}</style>
 
       {/* Mobile overlay */}
@@ -377,14 +422,14 @@ export default function Layout({ children }: LayoutProps) {
         <div
           className="relative flex items-center justify-center overflow-hidden"
           style={{
-            height: 80,
+            height: 76,
             borderBottom: "1px solid rgba(0,196,180,0.12)",
             flexShrink: 0,
           }}
         >
           <button
             onClick={() => navigate("/")}
-            className="group relative flex items-center gap-3 px-3 py-2 rounded-2xl transition-all duration-300"
+            className="group relative flex items-center gap-2.5 px-3 py-2 rounded-2xl transition-all duration-300"
             style={{ minWidth: 0 }}
           >
             {/* Logo wrapper with glow ring */}
@@ -393,9 +438,9 @@ export default function Layout({ children }: LayoutProps) {
               <div
                 className="absolute logo-glow-ring"
                 style={{
-                  inset: -8,
-                  borderRadius: "50%",
-                  border: "1.5px solid rgba(0,196,180,0.4)",
+                  inset: -6,
+                  borderRadius: 14,
+                  border: "1.5px solid rgba(0,196,180,0.35)",
                   transition: "all 300ms ease",
                 }}
               />
@@ -403,29 +448,29 @@ export default function Layout({ children }: LayoutProps) {
               <div
                 className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{
-                  inset: -4,
-                  borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(0,196,180,0.25) 0%, transparent 70%)",
+                  inset: -3,
+                  borderRadius: 12,
+                  background: "radial-gradient(circle, rgba(0,196,180,0.3) 0%, transparent 70%)",
                 }}
               />
               {/* Logo image */}
               <div
                 className="relative z-10 flex items-center justify-center rounded-xl overflow-hidden transition-transform duration-300 group-hover:scale-105"
                 style={{
-                  width: sidebarCollapsed ? 36 : 42,
-                  height: sidebarCollapsed ? 36 : 42,
-                  background: "rgba(0,196,180,0.12)",
+                  width: sidebarCollapsed ? 34 : 38,
+                  height: sidebarCollapsed ? 34 : 38,
+                  background: "linear-gradient(135deg, rgba(0,196,180,0.15) 0%, rgba(13,43,69,0.6) 100%)",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1)",
                   transition: "width 300ms ease, height 300ms ease",
                 }}
               >
                 <img
-                  src="/assets/images/concentrix-mark.png"
+                  src="/assets/images/217c0fe1-2aee-4858-ba08-8e5493ca7a16.png"
                   alt="Concentrix"
                   style={{
-                    width: sidebarCollapsed ? 24 : 30,
+                    width: sidebarCollapsed ? 30 : 34,
                     height: "auto",
-                    filter: "brightness(0) invert(1)",
+                    objectFit: "contain",
                     transition: "width 300ms ease",
                   }}
                 />
@@ -444,9 +489,9 @@ export default function Layout({ children }: LayoutProps) {
                 >
                   <div className="flex flex-col leading-none">
                     <span
-                      className="font-bold text-xl tracking-[0.08em] eec-text-animated group-hover:tracking-[0.12em] transition-all duration-300"
+                      className="font-bold text-lg tracking-[0.06em] eec-text-animated group-hover:tracking-[0.10em] transition-all duration-300"
                       style={{
-                        background: "linear-gradient(135deg, #00C4B4 0%, #FFFFFF 60%, #00C4B4 100%)",
+                        background: "linear-gradient(135deg, #00C4B4 0%, #FFFFFF 50%, #00E6D4 100%)",
                         WebkitBackgroundClip: "text",
                         WebkitTextFillColor: "transparent",
                         backgroundClip: "text",
@@ -456,10 +501,10 @@ export default function Layout({ children }: LayoutProps) {
                       EEC
                     </span>
                     <span
-                      className="text-[9px] font-medium uppercase tracking-[0.18em] transition-all duration-300"
-                      style={{ color: "rgba(0,196,180,0.5)" }}
+                      className="text-[8px] font-medium uppercase tracking-[0.16em] transition-all duration-300"
+                      style={{ color: "rgba(0,196,180,0.55)" }}
                     >
-                      Command Center
+                      by Concentrix
                     </span>
                   </div>
                   {/* Underline slide-in on hover */}
@@ -505,7 +550,6 @@ export default function Layout({ children }: LayoutProps) {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
                     className="flex items-center gap-1.5 px-3 mb-1.5"
-                    title={group.tooltip}
                   >
                     <span
                       className="text-[9px] font-bold uppercase tracking-[0.15em]"
@@ -514,12 +558,22 @@ export default function Layout({ children }: LayoutProps) {
                       {group.label}
                     </span>
                     {group.tooltip && (
-                      <div
-                        className="w-3 h-3 rounded-full flex items-center justify-center cursor-help"
-                        style={{ background: "rgba(0,196,180,0.15)", color: "rgba(0,196,180,0.5)", fontSize: 7, fontWeight: 700 }}
-                        title={group.tooltip}
+                      <div className="group-tooltip-trigger help-icon-pulse w-3.5 h-3.5 rounded-full flex items-center justify-center cursor-help"
+                        style={{ background: "rgba(0,196,180,0.15)", color: "rgba(0,196,180,0.6)", fontSize: 8, fontWeight: 700 }}
                       >
                         ?
+                        <div className="group-tooltip px-3 py-2 rounded-xl text-xs font-medium"
+                          style={{
+                            background: "#0D2B45",
+                            color: "rgba(255,255,255,0.9)",
+                            border: "1px solid rgba(0,196,180,0.3)",
+                            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                            whiteSpace: "normal",
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {group.tooltip}
+                        </div>
                       </div>
                     )}
                   </motion.div>
@@ -672,7 +726,7 @@ export default function Layout({ children }: LayoutProps) {
           {/* Collapse toggle */}
           <div className="flex justify-center pb-3 pt-1">
             <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              onClick={() => handleSidebarCollapse(!sidebarCollapsed)}
               className="hidden lg:flex items-center justify-center rounded-full transition-all duration-300 hover:scale-110 active:scale-95"
               style={{
                 width: 32,
@@ -720,7 +774,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* ── TOP BAR ── */}
         <header
-          className="sticky top-0 z-30 flex items-center gap-4 px-6 lg:px-8"
+          className="sticky top-0 z-30 flex items-center gap-4 px-6 lg:px-8 topbar-dark"
           style={{
             background: "#FFFFFF",
             borderBottom: "1px solid #F1F5F9",
@@ -744,11 +798,21 @@ export default function Layout({ children }: LayoutProps) {
             <kbd className="text-[11px] px-1.5 py-0.5 rounded font-mono" style={{ background: "#F1F5F9", color: "#94A3B8", border: "1px solid #E2E8F0" }}>⌘K</kbd>
           </button>
 
-          {/* Bell */}
-          <button className="relative p-2 rounded-xl transition-colors hover:bg-slate-50" style={{ color: "#64748B" }}>
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "#EF4444", border: "2px solid white" }} />
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-xl transition-colors hover:bg-slate-50"
+            style={{ color: "#64748B" }}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark
+              ? <Sun className="w-5 h-5" />
+              : <Moon className="w-5 h-5" />
+            }
           </button>
+
+          {/* Notification Bell */}
+          <NotificationBell />
 
           <div style={{ width: 1, height: 24, background: "#F1F5F9" }} />
 
@@ -770,7 +834,7 @@ export default function Layout({ children }: LayoutProps) {
               )}
               <div className="hidden md:block text-left">
                 <p className="text-sm font-semibold leading-none" style={{ color: "#0F172A" }}>{user?.displayName?.split(" ")[0] || "User"}</p>
-                <p className="text-[11px] mt-0.5" style={{ color: "#94A3B8" }}>{roleLabel}</p>
+                <p className="text-[11px] mt-0.5" style={{ color: "#94A3B8" }}>{user?.jobTitle || roleLabel}</p>
               </div>
               <motion.div animate={{ rotate: dropdownOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
                 <ChevronDown className="w-4 h-4 hidden md:block" style={{ color: "#94A3B8" }} />

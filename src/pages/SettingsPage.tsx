@@ -1,442 +1,523 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
-import { motion } from "framer-motion";
-import { Settings as SettingsIcon, Palette, Bell, Monitor, Shield, RotateCcw, Sun, Moon, Volume2, VolumeX, Check, Keyboard, Save, Globe, ArrowLeft } from "lucide-react";
+import { useThemeContext } from "../context/ThemeContext";
+import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Moon, Sun, Monitor, RotateCcw, Save, Shield, Palette, Volume2, Eye,
+  Lock, ArrowLeft, Bell, BellOff, Type, Zap, LayoutTemplate,
+  Contrast, ChevronRight, Check, User, Laptop, MoonStar, Sparkles,
+  Keyboard, MousePointerClick, FileText, Clock, ShieldCheck, EyeOff,
+  Ruler
+} from "lucide-react";
 
-type SettingsTab = "appearance" | "notifications" | "display" | "privacy" | "reset";
-
-interface Settings {
-  theme: "light" | "dark" | "system";
-  fontSize: "small" | "medium" | "large";
-  notifications: boolean;
-  emailNotifications: boolean;
-  soundEffects: boolean;
-  compactMode: boolean;
-  showOnlineStatus: boolean;
-  allowDataCollection: boolean;
-  keyboardShortcuts: boolean;
-  autoSave: boolean;
-  language: string;
-}
-
-const DEFAULT_SETTINGS: Settings = {
-  theme: "light",
-  fontSize: "medium",
-  notifications: true,
-  emailNotifications: true,
-  soundEffects: false,
-  compactMode: false,
-  showOnlineStatus: true,
-  allowDataCollection: false,
-  keyboardShortcuts: true,
-  autoSave: true,
-  language: "en",
-};
-
-const TABS: { id: SettingsTab; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; description: string }[] = [
-  { id: "appearance", label: "Appearance", icon: Palette, description: "Theme and font settings" },
-  { id: "notifications", label: "Notifications", icon: Bell, description: "Alert preferences" },
-  { id: "display", label: "Display", icon: Monitor, description: "Layout and interface" },
-  { id: "privacy", label: "Privacy", icon: Shield, description: "Data and visibility" },
-  { id: "reset", label: "Reset", icon: RotateCcw, description: "Restore defaults" },
-];
-
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "es", label: "Spanish" },
-  { code: "fr", label: "French" },
-  { code: "de", label: "German" },
-  { code: "pt", label: "Portuguese" },
-];
+type Theme = "light" | "dark" | "system";
 
 export default function SettingsPage() {
-  useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
-  const [settings, setSettings] = useState<Settings>(() => {
-    try {
-      const saved = localStorage.getItem("eec-settings");
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
-  });
-  const [saved, setSaved] = useState(false);
+  const ctx = useThemeContext();
+  const { settings, isDark, setTheme, setNotifications, setSoundEnabled,
+    setCompactMode, setReducedMotion, setHighContrast, setFontSize,
+    setSidebarCollapsed, resetSettings } = ctx;
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("eec-settings", JSON.stringify(settings));
-    } catch { /* no-op */ }
-  }, [settings]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState<"appearance" | "notifications" | "display" | "privacy" | "advanced">("appearance");
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
-  const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const markChanged = () => setHasChanges(true);
+
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    markChanged();
   };
 
-  return (
-    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1 text-sm font-medium mb-4 transition-colors hover:opacity-80"
-          style={{ color: "#64748B" }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </button>
-
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <SettingsIcon className="w-5 h-5" style={{ color: "#00C4B4" }} />
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#00C4B4" }}>
-                Customize Your Experience
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold" style={{ color: "#0D2B45", letterSpacing: "0.02em" }}>
-              SETTINGS
-            </h1>
-            <p className="text-sm mt-1" style={{ color: "#64748B" }}>
-              Personalize your EEC workspace to match your preferences
-            </p>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Saved indicator */}
-      {saved && (
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0 }}
-          className="fixed top-20 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg"
-          style={{ background: "#00C4B4", color: "white" }}
-        >
-          <Check className="w-4 h-4" />
-          <span className="text-sm font-medium">Settings saved</span>
-        </motion.div>
-      )}
-
-      {/* Main Layout */}
-      <div className="flex gap-6">
-        {/* Tabs Sidebar */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-          className="w-52 shrink-0"
-        >
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            {TABS.map((tab, i) => (
-              <motion.button
-                key={tab.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.05, duration: 0.3 }}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-all ${
-                  activeTab === tab.id
-                    ? "border-l-2"
-                    : "hover:bg-gray-50"
-                }`}
-                style={{
-                  background: activeTab === tab.id ? "rgba(0,196,180,0.08)" : "transparent",
-                  borderColor: activeTab === tab.id ? "#00C4B4" : "transparent",
-                }}
-              >
-                <tab.icon
-                  className="w-4 h-4 shrink-0"
-                  style={{ color: activeTab === tab.id ? "#00C4B4" : "#94A3B8" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${activeTab === tab.id ? "" : ""}`} style={{ color: activeTab === tab.id ? "#0D2B45" : "#64748B" }}>
-                    {tab.label}
-                  </p>
-                  <p className="text-[10px] truncate" style={{ color: "#94A3B8" }}>{tab.description}</p>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Content Area */}
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="flex-1"
-        >
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            {activeTab === "appearance" && <AppearanceTab settings={settings} updateSetting={updateSetting} />}
-            {activeTab === "notifications" && <NotificationsTab settings={settings} updateSetting={updateSetting} />}
-            {activeTab === "display" && <DisplayTab settings={settings} updateSetting={updateSetting} />}
-            {activeTab === "privacy" && <PrivacyTab settings={settings} updateSetting={updateSetting} />}
-            {activeTab === "reset" && <ResetTab settings={settings} updateSetting={updateSetting} />}
-          </div>
-        </motion.div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Appearance Tab ─── */
-function AppearanceTab({ settings, updateSetting }: { settings: Settings; updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void }) {
-  return (
-    <div className="space-y-8">
-      {/* Theme Section */}
-      <SettingsSection icon={Palette} title="Theme" description="Choose your preferred color scheme">
-        <div className="grid grid-cols-3 gap-3">
-          {(["light", "dark", "system"] as const).map(theme => (
-            <button
-              key={theme}
-              onClick={() => updateSetting("theme", theme)}
-              className={`p-5 rounded-xl border-2 transition-all hover:shadow-md ${
-                settings.theme === theme ? "border-teal-500" : "border-gray-100 hover:border-gray-200"
-              }`}
-              style={{ background: settings.theme === theme ? "rgba(0,196,180,0.05)" : "transparent" }}
-            >
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: settings.theme === theme ? "rgba(0,196,180,0.15)" : "rgba(0,0,0,0.05)" }}>
-                  {theme === "light" ? <Sun className="w-6 h-6" style={{ color: "#F59E0B" }} /> :
-                   theme === "dark" ? <Moon className="w-6 h-6" style={{ color: "#6366F1" }} /> :
-                   <Monitor className="w-6 h-6" style={{ color: "#64748B" }} />}
-                </div>
-                <span className="text-sm font-medium capitalize" style={{ color: "#0D2B45" }}>{theme}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </SettingsSection>
-
-      {/* Font Size */}
-      <SettingsSection icon={Monitor} title="Font Size" description="Adjust text readability">
-        <div className="flex gap-3">
-          {(["small", "medium", "large"] as const).map(size => (
-            <button
-              key={size}
-              onClick={() => updateSetting("fontSize", size)}
-              className={`px-6 py-3 rounded-xl border-2 font-medium transition-all ${
-                settings.fontSize === size ? "border-teal-500" : "border-gray-100 hover:border-gray-200"
-              }`}
-              style={{
-                background: settings.fontSize === size ? "rgba(0,196,180,0.08)" : "transparent",
-                color: settings.fontSize === size ? "#00C4B4" : "#64748B",
-              }}
-            >
-              {size.charAt(0).toUpperCase() + size.slice(1)}
-            </button>
-          ))}
-        </div>
-      </SettingsSection>
-
-      {/* Language */}
-      <SettingsSection icon={Globe} title="Language" description="Select your preferred language">
-        <select
-          value={settings.language}
-          onChange={(e) => updateSetting("language", e.target.value)}
-          className="w-full max-w-xs px-4 py-2.5 rounded-xl border outline-none focus:border-teal-500 transition-colors"
-          style={{ borderColor: "#E2E8F0", color: "#0D2B45" }}
-        >
-          {LANGUAGES.map(lang => (
-            <option key={lang.code} value={lang.code}>{lang.label}</option>
-          ))}
-        </select>
-      </SettingsSection>
-    </div>
-  );
-}
-
-/* ─── Notifications Tab ─── */
-function NotificationsTab({ settings, updateSetting }: { settings: Settings; updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void }) {
-  return (
-    <div className="space-y-6">
-      <SettingsSection icon={Bell} title="Notifications" description="Control how you receive alerts">
-        <div className="space-y-4">
-          <ToggleRow
-            icon={Bell}
-            label="In-app notifications"
-            description="Show notifications within the application"
-            value={settings.notifications}
-            onChange={v => updateSetting("notifications", v)}
-          />
-          <ToggleRow
-            icon={Sun}
-            label="Email notifications"
-            description="Receive email alerts for critical updates"
-            value={settings.emailNotifications}
-            onChange={v => updateSetting("emailNotifications", v)}
-          />
-          <ToggleRow
-            icon={settings.soundEffects ? Volume2 : VolumeX}
-            label="Sound effects"
-            description="Play sound for notifications and interactions"
-            value={settings.soundEffects}
-            onChange={v => updateSetting("soundEffects", v)}
-          />
-        </div>
-      </SettingsSection>
-    </div>
-  );
-}
-
-/* ─── Display Tab ─── */
-function DisplayTab({ settings, updateSetting }: { settings: Settings; updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void }) {
-  return (
-    <div className="space-y-6">
-      <SettingsSection icon={Monitor} title="Display" description="Customize your interface layout">
-        <div className="space-y-4">
-          <ToggleRow
-            icon={Monitor}
-            label="Compact mode"
-            description="Reduce spacing for denser information display"
-            value={settings.compactMode}
-            onChange={v => updateSetting("compactMode", v)}
-          />
-          <ToggleRow
-            icon={Keyboard}
-            label="Keyboard shortcuts"
-            description="Enable keyboard shortcuts for quick navigation"
-            value={settings.keyboardShortcuts}
-            onChange={v => updateSetting("keyboardShortcuts", v)}
-          />
-          <ToggleRow
-            icon={Save}
-            label="Auto-save"
-            description="Automatically save form data"
-            value={settings.autoSave}
-            onChange={v => updateSetting("autoSave", v)}
-          />
-        </div>
-      </SettingsSection>
-    </div>
-  );
-}
-
-/* ─── Privacy Tab ─── */
-function PrivacyTab({ settings, updateSetting }: { settings: Settings; updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void }) {
-  return (
-    <div className="space-y-6">
-      <SettingsSection icon={Shield} title="Privacy" description="Manage your data and visibility">
-        <div className="space-y-4">
-          <ToggleRow
-            icon={Sun}
-            label="Show online status"
-            description="Let others see when you are online"
-            value={settings.showOnlineStatus}
-            onChange={v => updateSetting("showOnlineStatus", v)}
-          />
-          <ToggleRow
-            icon={Shield}
-            label="Allow data collection"
-            description="Help improve EEC by sharing anonymous usage data"
-            value={settings.allowDataCollection}
-            onChange={v => updateSetting("allowDataCollection", v)}
-          />
-        </div>
-      </SettingsSection>
-    </div>
-  );
-}
-
-/* ─── Reset Tab ─── */
-function ResetTab({ settings, updateSetting }: { settings: Settings; updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void }) {
   const handleReset = () => {
-    try {
-      localStorage.removeItem("eec-settings");
-    } catch { /* no-op */ }
-    Object.keys(DEFAULT_SETTINGS).forEach(key => {
-      updateSetting(key as keyof Settings, DEFAULT_SETTINGS[key as keyof Settings]);
-    });
+    resetSettings();
+    setHasChanges(false);
+    toast.success("All settings reset to defaults");
   };
 
+  const handleSave = () => {
+    setHasChanges(false);
+    setShowSaveConfirm(true);
+    setTimeout(() => setShowSaveConfirm(false), 2000);
+    toast.success("Settings saved successfully");
+  };
+
+  const themeOptions: { value: Theme; label: string; icon: React.ReactNode; desc: string }[] = [
+    { value: "light", label: "Light", icon: <Sun className="w-5 h-5" />, desc: "Clean and bright" },
+    { value: "dark", label: "Dark", icon: <Moon className="w-5 h-5" />, desc: "Easy on the eyes" },
+    { value: "system", label: "System", icon: <Monitor className="w-5 h-5" />, desc: "Follows your OS" },
+  ];
+
+  const fontSizeOptions: { value: "small" | "normal" | "large"; label: string; sample: string }[] = [
+    { value: "small", label: "Small", sample: "Aa" },
+    { value: "normal", label: "Normal", sample: "Aa" },
+    { value: "large", label: "Large", sample: "Aa" },
+  ];
+
+  const tabs = [
+    { id: "appearance" as const, label: "Appearance", icon: Palette },
+    { id: "notifications" as const, label: "Notifications", icon: Bell },
+    { id: "display" as const, label: "Display", icon: Eye },
+    { id: "privacy" as const, label: "Privacy", icon: Shield },
+    { id: "advanced" as const, label: "Advanced", icon: Zap },
+  ];
+
   return (
-    <div className="space-y-6">
-      <SettingsSection icon={RotateCcw} title="Reset Settings" description="Restore all preferences to defaults">
-        <div className="rounded-xl p-5 border" style={{ background: "rgba(245,158,11,0.05)", borderColor: "rgba(245,158,11,0.2)" }}>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(245,158,11,0.15)" }}>
-              <RotateCcw className="w-5 h-5" style={{ color: "#F59E0B" }} />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium" style={{ color: "#0D2B45" }}>Reset all preferences</p>
-              <p className="text-sm mt-1" style={{ color: "#94A3B8" }}>
-                This will reset all your settings to their default values. This action cannot be undone.
-              </p>
+    <div className="max-w-5xl mx-auto space-y-6 animate-fade-in pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2.5 rounded-xl bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Customize your workspace experience</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <AnimatePresence>
+            {showSaveConfirm && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium"
+              >
+                <Check className="w-4 h-4" />
+                Saved
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {hasChanges && (
+            <motion.button
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              onClick={handleSave}
+              className="flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-teal-500/20"
+            >
+              <Save className="w-4 h-4" />
+              Save Changes
+            </motion.button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Sidebar Tabs */}
+        <div className="lg:col-span-3">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-2 space-y-1 sticky top-4">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                    isActive
+                      ? "bg-teal-50 text-teal-700 shadow-sm"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <Icon className={`w-4.5 h-4.5 ${isActive ? "text-teal-600" : "text-gray-400"}`} />
+                  {tab.label}
+                  <ChevronRight className={`w-4 h-4 ml-auto transition-transform ${isActive ? "rotate-90 text-teal-500" : "text-gray-300"}`} />
+                </button>
+              );
+            })}
+            <div className="pt-2 mt-2 border-t border-gray-100">
               <button
                 onClick={handleReset}
-                className="mt-4 px-5 py-2.5 rounded-xl font-medium text-sm transition-all hover:shadow-md"
-                style={{ background: "#F59E0B", color: "white" }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all"
               >
+                <RotateCcw className="w-4 h-4" />
                 Reset to Defaults
               </button>
             </div>
           </div>
         </div>
-      </SettingsSection>
+
+        {/* Content */}
+        <div className="lg:col-span-9 space-y-5">
+          <AnimatePresence mode="wait">
+            {activeTab === "appearance" && (
+              <motion.div
+                key="appearance"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-5"
+              >
+                {/* Theme */}
+                <SectionCard icon={<Palette className="w-5 h-5 text-teal-600" />} title="Theme">
+                  <div className="grid grid-cols-3 gap-3">
+                    {themeOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleThemeChange(option.value)}
+                        className={`relative flex flex-col items-center gap-2.5 p-5 rounded-xl border-2 transition-all ${
+                          settings.theme === option.value
+                            ? "border-teal-500 bg-teal-50/60"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                          settings.theme === option.value ? "bg-teal-100 text-teal-600" : "bg-gray-100 text-gray-500"
+                        }`}>
+                          {option.icon}
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm font-semibold block ${settings.theme === option.value ? "text-teal-700" : "text-gray-700"}`}>
+                            {option.label}
+                          </span>
+                          <span className="text-[11px] text-gray-400">{option.desc}</span>
+                        </div>
+                        {settings.theme === option.value && (
+                          <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </SectionCard>
+
+                {/* Accent Preview */}
+                <SectionCard icon={<Sparkles className="w-5 h-5 text-amber-500" />} title="Preview">
+                  <div className={`p-5 rounded-xl transition-colors ${isDark ? "bg-[#0F2841] border border-[#1A3A5C]" : "bg-gray-50 border border-gray-100"}`}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                        {user?.displayName?.charAt(0) || "U"}
+                      </div>
+                      <div>
+                        <p className={`text-sm font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                          {user?.displayName || "User Name"}
+                        </p>
+                        <p className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                          {user?.jobTitle || user?.role || "Team Member"}
+                        </p>
+                      </div>
+                      <div className="ml-auto">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-100 text-teal-700">
+                          Active
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </SectionCard>
+              </motion.div>
+            )}
+
+            {activeTab === "notifications" && (
+              <motion.div
+                key="notifications"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-5"
+              >
+                <SectionCard icon={<Bell className="w-5 h-5 text-teal-600" />} title="Notification Preferences">
+                  <div className="space-y-3">
+                    <ToggleRow
+                      icon={settings.notifications ? <Bell className="w-5 h-5 text-teal-600" /> : <BellOff className="w-5 h-5 text-gray-400" />}
+                      title="Push Notifications"
+                      description="Receive alerts for case updates, escalations, and assignments"
+                      value={settings.notifications}
+                      onChange={(v) => { setNotifications(v); markChanged(); }}
+                    />
+                    <ToggleRow
+                      icon={<Volume2 className="w-5 h-5 text-gray-600" />}
+                      title="Sound Alerts"
+                      description="Play sound for critical notifications and urgent actions"
+                      value={settings.soundEnabled}
+                      onChange={(v) => { setSoundEnabled(v); markChanged(); }}
+                    />
+                    <ToggleRow
+                      icon={<Eye className="w-5 h-5 text-gray-600" />}
+                      title="Desktop Notifications"
+                      description="Show browser notification banners when app is in background"
+                      value={settings.notifications}
+                      onChange={(v) => { setNotifications(v); markChanged(); }}
+                    />
+                  </div>
+                </SectionCard>
+
+                <SectionCard icon={<ShieldCheck className="w-5 h-5 text-blue-500" />} title="Notification Types">
+                  <div className="space-y-3">
+                    <InfoRow icon={<FileText className="w-4 h-4" />} label="Case Updates" value="All cases you own or follow" />
+                    <InfoRow icon={<Zap className="w-4 h-4" />} label="Escalations" value="Critical and high-risk alerts" />
+                    <InfoRow icon={<Clock className="w-4 h-4" />} label="SLA Reminders" value="48h, 24h, and 4h warnings" />
+                    <InfoRow icon={<User className="w-4 h-4" />} label="Mentions" value="When someone tags you in a comment" />
+                  </div>
+                </SectionCard>
+              </motion.div>
+            )}
+
+            {activeTab === "display" && (
+              <motion.div
+                key="display"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-5"
+              >
+                <SectionCard icon={<Eye className="w-5 h-5 text-teal-600" />} title="Display Preferences">
+                  <div className="space-y-3">
+                    <ToggleRow
+                      icon={<LayoutTemplate className="w-5 h-5 text-gray-600" />}
+                      title="Compact Mode"
+                      description="Reduce spacing and padding to show more content per screen"
+                      value={settings.compactMode}
+                      onChange={(v) => { setCompactMode(v); markChanged(); }}
+                    />
+                    <ToggleRow
+                      icon={<MoonStar className="w-5 h-5 text-gray-600" />}
+                      title="Reduced Motion"
+                      description="Minimize animations for accessibility and performance"
+                      value={settings.reducedMotion}
+                      onChange={(v) => { setReducedMotion(v); markChanged(); }}
+                    />
+                    <ToggleRow
+                      icon={<Contrast className="w-5 h-5 text-gray-600" />}
+                      title="High Contrast"
+                      description="Increase contrast ratios for better readability"
+                      value={settings.highContrast}
+                      onChange={(v) => { setHighContrast(v); markChanged(); }}
+                    />
+                    <ToggleRow
+                      icon={<Laptop className="w-5 h-5 text-gray-600" />}
+                      title="Collapsed Sidebar"
+                      description="Keep the sidebar collapsed by default for more workspace"
+                      value={settings.sidebarCollapsed}
+                      onChange={(v) => { setSidebarCollapsed(v); markChanged(); }}
+                    />
+                  </div>
+                </SectionCard>
+
+                <SectionCard icon={<Type className="w-5 h-5 text-purple-500" />} title="Font Size">
+                  <div className="grid grid-cols-3 gap-3">
+                    {fontSizeOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setFontSize(opt.value); markChanged(); }}
+                        className={`p-4 rounded-xl border-2 transition-all text-center ${
+                          settings.fontSize === opt.value
+                            ? "border-teal-500 bg-teal-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className={`font-bold ${opt.value === "small" ? "text-lg" : opt.value === "large" ? "text-2xl" : "text-xl"} ${settings.fontSize === opt.value ? "text-teal-700" : "text-gray-600"}`}>
+                          {opt.sample}
+                        </span>
+                        <p className={`text-xs mt-1 font-medium ${settings.fontSize === opt.value ? "text-teal-600" : "text-gray-500"}`}>
+                          {opt.label}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </SectionCard>
+              </motion.div>
+            )}
+
+            {activeTab === "privacy" && (
+              <motion.div
+                key="privacy"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-5"
+              >
+                <SectionCard icon={<Shield className="w-5 h-5 text-teal-600" />} title="Privacy & Security">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Lock className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Session Timeout</p>
+                          <p className="text-xs text-gray-500">Auto sign-out after 15 minutes of inactivity</p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-teal-600 font-semibold">15 min</span>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Shield className="w-5 h-5 text-gray-600" />
+                        <p className="text-sm font-medium text-gray-800">Authentication</p>
+                      </div>
+                      <p className="text-xs text-gray-500 ml-8">
+                        Signed in as <span className="font-medium text-gray-700">{user?.email}</span>
+                      </p>
+                      <p className="text-xs text-gray-500 ml-8 mt-1">
+                        Managed through Microsoft Azure AD. Your session is encrypted and secure.
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <EyeOff className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Activity Logging</p>
+                          <p className="text-xs text-gray-500">All actions are logged for audit compliance</p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-emerald-600 font-semibold">Enabled</span>
+                    </div>
+                  </div>
+                </SectionCard>
+
+                <SectionCard icon={<User className="w-5 h-5 text-blue-500" />} title="Your Profile">
+                  <div className="space-y-3">
+                    <InfoRow icon={<User className="w-4 h-4" />} label="Display Name" value={user?.displayName || "—"} />
+                    <InfoRow icon={<BriefcaseIcon />} label="Job Title" value={user?.jobTitle || "—"} />
+                    <InfoRow icon={<Shield className="w-4 h-4" />} label="Role" value={user?.role || "—"} />
+                    <InfoRow icon={<Lock className="w-4 h-4" />} label="Email" value={user?.email || "—"} />
+                  </div>
+                </SectionCard>
+              </motion.div>
+            )}
+
+            {activeTab === "advanced" && (
+              <motion.div
+                key="advanced"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-5"
+              >
+                <SectionCard icon={<Zap className="w-5 h-5 text-amber-500" />} title="Advanced Options">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Keyboard className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Keyboard Shortcuts</p>
+                          <p className="text-xs text-gray-500">Press ? anywhere to open the command palette</p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-teal-600 font-semibold">Enabled</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <MousePointerClick className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Auto-save Drafts</p>
+                          <p className="text-xs text-gray-500">Forms are saved automatically every 30 seconds</p>
+                        </div>
+                      </div>
+                      <span className="text-sm text-teal-600 font-semibold">Enabled</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Data Export</p>
+                          <p className="text-xs text-gray-500">Download your cases and activity as CSV</p>
+                        </div>
+                      </div>
+                      <button className="text-xs font-semibold text-teal-600 hover:text-teal-700 px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 transition-colors">
+                        Export
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <Ruler className="w-5 h-5 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Clear Cache</p>
+                          <p className="text-xs text-gray-500">Reset local data and force a fresh sync</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem("eec-settings-v2");
+                          toast.success("Local cache cleared. Reloading...");
+                          setTimeout(() => window.location.reload(), 1500);
+                        }}
+                        className="text-xs font-semibold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </SectionCard>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ─── Settings Section ─── */
-function SettingsSection({ icon: Icon, title, description, children }: {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
+function SectionCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(0,196,180,0.1)" }}>
-          <Icon className="w-4 h-4" style={{ color: "#00C4B4" }} />
-        </div>
-        <div>
-          <h3 className="font-semibold" style={{ color: "#0D2B45" }}>{title}</h3>
-          <p className="text-xs" style={{ color: "#94A3B8" }}>{description}</p>
-        </div>
-      </div>
+    <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+      <h2 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        {icon}
+        {title}
+      </h2>
       {children}
     </div>
   );
 }
 
-/* ─── Toggle Row ─── */
-function ToggleRow({ icon: Icon, label, description, value, onChange }: {
-  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
-  label: string;
+function ToggleRow({
+  icon,
+  title,
+  description,
+  value,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  title: string;
   description: string;
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-xl transition-colors hover:bg-gray-50">
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
       <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5 shrink-0" style={{ color: "#94A3B8" }} />
+        {icon}
         <div>
-          <p className="text-sm font-medium" style={{ color: "#0D2B45" }}>{label}</p>
-          <p className="text-xs" style={{ color: "#94A3B8" }}>{description}</p>
+          <p className="text-sm font-medium text-gray-800">{title}</p>
+          <p className="text-xs text-gray-500">{description}</p>
         </div>
       </div>
       <button
         onClick={() => onChange(!value)}
-        className={`w-12 h-6 rounded-full transition-all relative ${value ? "shadow-md" : ""}`}
-        style={{ background: value ? "#00C4B4" : "#CBD5E1" }}
+        className={`relative w-12 h-7 rounded-full transition-colors ${value ? "bg-teal-500" : "bg-gray-300"}`}
       >
-        <motion.div
-          animate={{ x: value ? 24 : 2 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
-          className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+        <span
+          className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow transition-transform ${value ? "translate-x-5" : ""}`}
         />
       </button>
     </div>
+  );
+}
+
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between py-2.5">
+      <div className="flex items-center gap-2.5 text-gray-500">
+        {icon}
+        <span className="text-sm">{label}</span>
+      </div>
+      <span className="text-sm font-medium text-gray-800">{value}</span>
+    </div>
+  );
+}
+
+function BriefcaseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+      <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    </svg>
   );
 }

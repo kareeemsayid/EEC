@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
 import { createRelocation } from "../../api/relocationsApi";
 import { apiFetch } from "../../api";
-import { User, MapPin, Briefcase, ArrowRight, ArrowLeft, Check, CircleAlert as AlertCircle, Mail, Phone, Globe, Calendar, Building2, Users, FileText, Send, Sparkles, Clock, ShieldCheck } from "lucide-react";
+import { User, MapPin, Briefcase, ArrowRight, ArrowLeft, Check, CircleAlert as AlertCircle, Mail, Phone, Globe, Calendar, Building2, Users, FileText, Send, Sparkles, Clock, ShieldCheck, PartyPopper } from "lucide-react";
 import toast from "react-hot-toast";
 
 const VERTICALS = [
@@ -193,7 +193,19 @@ export default function SubmitRelocation() {
   // ─── Success screen ─────────────────────────────────────
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto py-12">
+      <div className="max-w-2xl mx-auto py-12 relative">
+        {Array.from({ length: 40 }).map((_, i) => (
+          <div
+            key={i}
+            className="confetti-piece"
+            style={{
+              left: `${Math.random() * 100}%`,
+              background: ["#00C4B4", "#0D2B45", "#2563EB", "#F59E0B", "#22C55E"][i % 5],
+              animationDelay: `${Math.random() * 0.5}s`,
+              transform: `rotate(${Math.random() * 360}deg)`,
+            }}
+          />
+        ))}
         <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-3xl shadow-glass overflow-hidden">
           <div className="relative bg-gradient-navy px-8 py-12 text-center">
             <div className="absolute inset-0 opacity-20" style={{
@@ -201,7 +213,7 @@ export default function SubmitRelocation() {
             }} />
             <div className="relative">
               <div className="w-20 h-20 mx-auto rounded-full bg-gradient-teal flex items-center justify-center mb-4 shadow-glow-teal-lg ring-4 ring-white/20">
-                <Check className="w-10 h-10 text-white" strokeWidth={3} />
+                <PartyPopper className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Request Submitted Successfully!</h2>
               <p className="text-teal-200/70 text-sm">Your relocation request has been sent to the relevant teams</p>
@@ -274,7 +286,7 @@ export default function SubmitRelocation() {
       <div className="glass-card bg-white/90 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass p-6">
         {/* Step 1: Employee Information */}
         {step === 1 && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5 stagger-slide-in">
             <SectionTitle icon={User} title="Employee Information" subtitle="Basic details about the employee being relocated" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Employee Name" icon={User} error={errors.employeeName} required>
@@ -328,7 +340,7 @@ export default function SubmitRelocation() {
 
         {/* Step 2: Relocation Details */}
         {step === 2 && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5 stagger-slide-in">
             <SectionTitle icon={MapPin} title="Relocation Details" subtitle="Where should the employee be relocated and why" />
             <Field label="Preferred Site Area" icon={MapPin} error={errors.preferredSiteArea} required>
               <div className="flex flex-wrap gap-2 mt-1">
@@ -383,7 +395,7 @@ export default function SubmitRelocation() {
 
         {/* Step 3: Stakeholders & Review */}
         {step === 3 && (
-          <div className="space-y-5 animate-fade-in">
+          <div className="space-y-5 stagger-slide-in">
             <SectionTitle icon={Users} title="Stakeholders & Review" subtitle="Who should be notified about this request" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="Training Supervisor Name" icon={User} error={errors.trainingSupervisorName} required>

@@ -29,8 +29,10 @@ const HelpSupport = lazy(() => import("./pages/HelpSupport"));
 const HelpPage = lazy(() => import("./pages/HelpPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
 const Relocations = lazy(() => import("./pages/relocations/Relocations"));
+const RelocationCenter = lazy(() => import("./pages/RelocationCenter"));
 const SubmitRelocation = lazy(() => import("./pages/relocations/SubmitRelocation"));
 const RelocationDetail = lazy(() => import("./pages/relocations/RelocationDetail"));
+const HighRiskCases = lazy(() => import("./pages/HighRiskCases"));
 const TrainerDashboard = lazy(() => import("./pages/trainer/Dashboard"));
 const SupervisorDashboard = lazy(() => import("./pages/supervisor/Dashboard"));
 const ManagerDashboard = lazy(() => import("./pages/manager/Dashboard"));
@@ -211,6 +213,14 @@ function AppRoutes() {
 
         {/* Relocation routes */}
         <Route
+          path="/relocation-center"
+          element={
+            <AuthenticatedRoute>
+              <RelocationCenter />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
           path="/relocations"
           element={
             <AuthenticatedRoute>
@@ -239,7 +249,7 @@ function AppRoutes() {
         <Route
           path="/termination"
           element={
-            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager"]}>
+            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager", "Trainer"]}>
               <TerminationCenter />
             </AuthenticatedRoute>
           }
@@ -273,8 +283,16 @@ function AppRoutes() {
         <Route
           path="/high-risk"
           element={
-            <AuthenticatedRoute allowedRoles={["TA", "PS", "SrManager", "Manager", "Supervisor"]}>
+            <AuthenticatedRoute allowedRoles={["TA", "PS", "SrManager", "Manager", "Supervisor", "Trainer"]}>
               <HighRiskDashboard />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/high-risk-cases"
+          element={
+            <AuthenticatedRoute allowedRoles={["TA", "PS", "SrManager", "Manager", "Supervisor", "Trainer"]}>
+              <HighRiskCases />
             </AuthenticatedRoute>
           }
         />

@@ -13,7 +13,7 @@ import EmptyState from "../components/EmptyState";
 import CountUp from "../components/CountUp";
 import { formatHours, timeAgo } from "../utils/formatters";
 import toast from "react-hot-toast";
-import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, RefreshCw, Calendar, Activity, ChevronRight, ChevronDown, Shield, ArrowUpRight, Minus, Building2, Scale, UserCheck, MapPin } from "lucide-react";
+import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, RefreshCw, Calendar, Activity, ChevronRight, ChevronDown, Shield, ArrowUpRight, Minus, Building2, Scale, UserCheck, MapPin, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Dynamic greeting based on time of day with creative messaging
@@ -107,7 +107,29 @@ export default function HomeScreen() {
   const { main: greetingMain, sub: greetingSub } = getGreeting();
 
   return (
-    <div className="space-y-6 pb-8 animate-fade-in">
+    <div className="space-y-8 pb-12 animate-fade-in">
+      {/* Subtle background animation */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <motion.div
+          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-[0.03]"
+          style={{ background: "radial-gradient(circle, #00C4B4 0%, transparent 70%)" }}
+        />
+        <motion.div
+          animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.02]"
+          style={{ background: "radial-gradient(circle, #2563EB 0%, transparent 70%)" }}
+        />
+        <motion.div
+          animate={{ x: [0, 15, 0], y: [0, -10, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 4 }}
+          className="absolute top-1/2 left-1/3 w-64 h-64 rounded-full opacity-[0.02]"
+          style={{ background: "radial-gradient(circle, #00C4B4 0%, transparent 70%)" }}
+        />
+      </div>
+
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
       {/* Welcome Section - Enhanced Creative Design */}
@@ -115,7 +137,7 @@ export default function HomeScreen() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative overflow-hidden rounded-2xl p-6"
+        className="relative overflow-hidden rounded-2xl p-8"
         style={{
           background: "linear-gradient(135deg, #0D2B45 0%, #1E3A5F 50%, #0D2B45 100%)",
         }}
@@ -141,10 +163,14 @@ export default function HomeScreen() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="flex items-center gap-3 mb-2"
+            className="flex items-center gap-3 mb-3"
           >
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.2)" }}>
               <Shield className="w-6 h-6" style={{ color: "#00C4B4" }} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-teal-400/60" />
+              <span className="text-xs font-medium text-teal-300/70 uppercase tracking-wider">Dashboard</span>
             </div>
           </motion.div>
 
@@ -182,19 +208,19 @@ export default function HomeScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.4 }}
-            className="flex flex-wrap gap-4 mt-5"
+            className="flex flex-wrap gap-4 mt-6"
           >
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
               <span className="text-xs font-medium text-white/90">{kpi.activeCases} Active Cases</span>
             </div>
             {kpi.critical > 0 && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(239,68,68,0.2)" }}>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.2)" }}>
                 <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                 <span className="text-xs font-medium text-red-300">{kpi.critical} Critical</span>
               </div>
             )}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: "rgba(0,196,180,0.15)" }}>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(0,196,180,0.15)" }}>
               <TrendingUp className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
               <span className="text-xs font-medium" style={{ color: "#00C4B4" }}>{resolvedCases} Resolved</span>
             </div>
@@ -203,20 +229,26 @@ export default function HomeScreen() {
       </motion.div>
 
       {/* Main Grid: Hero (65%) + Right Stack (35%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Hero Card - 65% width */}
         <div className="lg:col-span-7 xl:col-span-8">
-          <div className="eec-card-gradient p-6 min-h-[420px] flex flex-col">
+          <div className="eec-card-gradient p-7 min-h-[440px] flex flex-col relative overflow-hidden">
+            {/* Subtle grid pattern */}
+            <div className="absolute inset-0 opacity-[0.03]" style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+              backgroundSize: '40px 40px'
+            }} />
+
             {/* Hero Header */}
-            <div className="flex items-start justify-between mb-4">
+            <div className="relative flex items-start justify-between mb-5">
               <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1 block">Dashboard</span>
-                <h1 className="text-2xl font-bold text-white">Overview</h1>
+                <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1 block">Overview</span>
+                <h1 className="text-2xl font-bold text-white">Performance Trends</h1>
               </div>
               <div className="relative">
                 <button
                   onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-white/80 hover:text-white transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white/80 hover:text-white transition-colors"
                   style={{ background: "rgba(255,255,255,0.1)" }}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -244,7 +276,7 @@ export default function HomeScreen() {
               {loading ? (
                 <div className="h-full rounded-xl bg-white/5 shimmer-bg" />
               ) : (
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={WEEKLY_TREND} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
                     <defs>
                       <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
@@ -268,7 +300,7 @@ export default function HomeScreen() {
             </div>
 
             {/* Bottom Stats Row */}
-            <div className="grid grid-cols-3 gap-4 mt-4 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+            <div className="grid grid-cols-3 gap-5 mt-5 pt-5 relative" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
               <div className="text-center">
                 <p className="text-3xl font-bold text-white">{loading ? "—" : <CountUp value={cases.length} duration={600} />}</p>
                 <p className="text-xs text-white/60 mt-1">Total Cases</p>
@@ -292,7 +324,7 @@ export default function HomeScreen() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="eec-card p-5 hover:shadow-card-hover cursor-pointer transition-all group"
+            className="eec-card p-6 hover:shadow-card-hover cursor-pointer transition-all group"
             onClick={() => navigate("/relocations")}
           >
             <div className="flex items-center justify-between">
@@ -317,7 +349,7 @@ export default function HomeScreen() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="rounded-2xl p-5 cursor-pointer transition-all group relative overflow-hidden"
+            className="rounded-2xl p-6 cursor-pointer transition-all group relative overflow-hidden"
             style={{ background: "linear-gradient(135deg, #EF4444 0%, #F97316 100%)" }}
             onClick={() => navigate("/high-risk")}
           >
@@ -346,71 +378,47 @@ export default function HomeScreen() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="eec-card p-5"
+            className="eec-card p-6"
           >
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Quick Actions</p>
-            <div className="space-y-2">
-              <button
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Quick Actions</p>
+            <div className="space-y-2.5">
+              <QuickActionButton
+                icon={<Plus className="w-4 h-4" />}
+                label="Submit New Case"
+                color="navy"
                 onClick={() => navigate("/submit")}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-navy-900 hover:text-white text-navy-900"
-                style={{ background: "rgba(30,58,95,0.05)" }}
-              >
-                <span className="flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Submit New Case
-                </span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
-              </button>
-              <button
+              />
+              <QuickActionButton
+                icon={<MapPin className="w-4 h-4" />}
+                label="Request Relocation"
+                color="teal"
                 onClick={() => navigate("/relocations/submit")}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-teal-600 hover:text-white"
-                style={{ background: "rgba(0,196,180,0.08)", color: "#00C4B4" }}
-              >
-                <span className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  Request Relocation
-                </span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
-              </button>
-              <button
+              />
+              <QuickActionButton
+                icon={<Scale className="w-4 h-4" />}
+                label="Request Investigation"
+                color="teal"
                 onClick={() => navigate("/investigations/new")}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-teal-600 hover:text-white"
-                style={{ background: "rgba(0,196,180,0.08)", color: "#00C4B4" }}
-              >
-                <span className="flex items-center gap-2">
-                  <Scale className="w-4 h-4" />
-                  Request Investigation
-                </span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
-              </button>
-              <button
+              />
+              <QuickActionButton
+                icon={<FolderOpen className="w-4 h-4" />}
+                label="View All Cases"
+                color="gray"
                 onClick={() => navigate("/my-cases")}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-navy-900 hover:text-white text-gray-700"
-                style={{ background: "#f8fafc" }}
-              >
-                <span className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4" />
-                  View All Cases
-                </span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
-              </button>
-              <button
+              />
+              <QuickActionButton
+                icon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
+                label="Refresh Data"
+                color="gray"
                 onClick={loadData}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:bg-navy-900 hover:text-white text-gray-700"
-                style={{ background: "#f8fafc" }}
-              >
-                <span className="flex items-center gap-2">
-                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-                  Refresh Data
-                </span>
-              </button>
+              />
             </div>
           </motion.div>
         </div>
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <KpiCard
           label="Active Cases"
           value={kpi.activeCases}
@@ -452,7 +460,7 @@ export default function HomeScreen() {
       </div>
 
       {/* Progress Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <ProgressCard
           label="PS Clearance SLA"
           value={psClearanceSLA}
@@ -483,10 +491,10 @@ export default function HomeScreen() {
       </div>
 
       {/* Bottom Row: Recent Activity + Active Cases */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
         <div className="eec-card overflow-hidden">
-          <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
+          <div className="px-6 py-5 flex items-center justify-between border-b border-gray-100">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-eecblue" />
               <h2 className="font-semibold text-navy-900">Recent Activity</h2>
@@ -494,7 +502,7 @@ export default function HomeScreen() {
             <span className="text-xs text-gray-400">{activeCases.length} updates</span>
           </div>
           {loading ? (
-            <div className="p-5 space-y-4">
+            <div className="p-6 space-y-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 animate-pulse">
                   <div className="w-9 h-9 rounded-full bg-gray-200" />
@@ -510,7 +518,7 @@ export default function HomeScreen() {
           ) : (
             <div className="divide-y divide-gray-50">
               {cases.slice(0, 5).map((c, i) => (
-                <div key={c.id} className="px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
+                <div key={c.id} className="px-6 py-3 hover:bg-gray-50 transition-colors cursor-pointer">
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0" style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2563EB 100%)" }}>
                       {c.traineeName?.charAt(0) || "?"}
@@ -529,7 +537,7 @@ export default function HomeScreen() {
 
         {/* Active Cases Table */}
         <div className="lg:col-span-2 eec-card overflow-hidden">
-          <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100">
+          <div className="px-6 py-5 flex items-center justify-between border-b border-gray-100">
             <div className="flex items-center gap-2">
               <FolderOpen className="w-4 h-4 text-eecblue" />
               <h2 className="font-semibold text-navy-900">Active Cases</h2>
@@ -537,7 +545,7 @@ export default function HomeScreen() {
             <span className="px-2.5 py-1 rounded-full text-xs font-bold text-white bg-navy-900">{activeCases.length}</span>
           </div>
           {loading ? (
-            <div className="p-5 space-y-3">
+            <div className="p-6 space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
               ))}
@@ -554,7 +562,7 @@ export default function HomeScreen() {
               {activeCases.slice(0, 6).map((c) => (
                 <div
                   key={c.id}
-                  className="px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4"
+                  className="px-6 py-3.5 hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-4"
                   onClick={() => navigate(`/timeline?case=${c.caseNumber}`)}
                 >
                   <span className="font-mono text-xs font-semibold w-24 shrink-0 text-eecblue">{c.caseNumber}</span>
@@ -568,7 +576,7 @@ export default function HomeScreen() {
             </div>
           )}
           {activeCases.length > 6 && (
-            <div className="px-5 py-3 border-t border-gray-100">
+            <div className="px-6 py-3 border-t border-gray-100">
               <button
                 onClick={() => navigate("/my-cases")}
                 className="w-full text-center text-sm font-semibold text-eecblue flex items-center justify-center gap-1 hover:underline"
@@ -580,6 +588,39 @@ export default function HomeScreen() {
         </div>
       </div>
     </div>
+  );
+}
+
+function QuickActionButton({
+  icon,
+  label,
+  color,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  color: "navy" | "teal" | "gray";
+  onClick: () => void;
+}) {
+  const colorMap = {
+    navy: { bg: "rgba(30,58,95,0.05)", hover: "bg-navy-900 text-white", text: "text-navy-900" },
+    teal: { bg: "rgba(0,196,180,0.08)", hover: "bg-teal-600 text-white", text: "text-[#00C4B4]" },
+    gray: { bg: "#f8fafc", hover: "bg-navy-900 text-white", text: "text-gray-700" },
+  };
+  const c = colorMap[color];
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${c.hover} ${c.text}`}
+      style={{ background: c.bg }}
+    >
+      <span className="flex items-center gap-2">
+        {icon}
+        {label}
+      </span>
+      <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
+    </button>
   );
 }
 
