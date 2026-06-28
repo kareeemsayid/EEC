@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 
 interface LoadingScreenProps {
   subtitle?: string;
+  message?: string;
   show?: boolean;
 }
 
-export default function LoadingScreen({ subtitle = "Loading your workspace", show = true }: LoadingScreenProps) {
+export default function LoadingScreen({ subtitle, message, show = true }: LoadingScreenProps) {
+  const displayMessage = message || subtitle || "Loading your workspace";
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState(0);
 
@@ -173,11 +175,11 @@ export default function LoadingScreen({ subtitle = "Loading your workspace", sho
             ))}
           </motion.h1>
 
-          {/* Phase text with fade transition */}
+          {/* Phase text / custom message with fade transition */}
           <div className="h-6 mb-8">
             <AnimatePresence mode="wait">
               <motion.p
-                key={phase}
+                key={message || subtitle ? displayMessage : phase}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
@@ -185,7 +187,7 @@ export default function LoadingScreen({ subtitle = "Loading your workspace", sho
                 className="text-sm"
                 style={{ color: 'rgba(255,255,255,0.5)' }}
               >
-                {phases[phase]}
+                {message || subtitle ? displayMessage : phases[phase]}
               </motion.p>
             </AnimatePresence>
           </div>

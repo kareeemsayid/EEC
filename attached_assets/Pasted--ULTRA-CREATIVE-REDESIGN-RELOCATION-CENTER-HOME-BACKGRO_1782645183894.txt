@@ -1,0 +1,159 @@
+🎨 ULTRA‑CREATIVE REDESIGN – RELOCATION CENTER, HOME BACKGROUND, KPI CARDS & QUICK ACTIONS
+
+I need you to redesign and enhance the following components with WOW‑level creativity, animations, and polish. All data must come from the API – no dummy data.
+
+─────────────
+🔹 PART 1 – HOME PAGE BACKGROUND ANIMATION (HomeScreen.tsx)
+─────────────
+
+Add a stunning, subtle animated background to the home page/dashboard that makes the app feel alive and premium.
+
+Design Requirements:
+- Background: a subtle animated gradient or geometric pattern behind the content.
+- Option A: Animated gradient mesh – slowly shifting colors (navy → teal → navy) over 20 seconds.
+- Option B: Floating geometric shapes (circles, dots, or lines) that drift slowly across the screen.
+- Option C: Particle network – small connected dots that move and form patterns (like a constellation).
+
+Implementation:
+- Use pure CSS `@keyframes` and `background-size` or `transform` – no external libraries.
+- The animation should be low‑contrast and non‑distracting (opacity 0.05–0.15).
+- It should sit behind the content and not interfere with readability.
+
+─────────────
+🔹 PART 2 – KPI CARDS – ULTRA CREATIVE REDESIGN
+─────────────
+
+The KPI cards (Active Cases, High Risk, Monitoring, Terminations) on the home page/dashboard need a WOW creative makeover.
+
+Current cards: simple number + label.
+New design: each card should be a visually rich, animated tile.
+
+Each KPI Card should include:
+- Icon (teal circle background, white icon) – use lucide‑react icons (FileText, AlertTriangle, Activity, UserX).
+- Large number (2rem, bold, navy or white) – with a count‑up animation (0 → actual number over 1.5s).
+- Label (0.875rem, muted color).
+- Trend indicator – a small badge with:
+  - Green ▲ + percentage (if increased).
+  - Red ▼ + percentage (if decreased).
+  - Gray — (if unchanged).
+- A mini sparkline chart (recharts LineChart) showing the trend over the last 7 days (optional but impressive).
+
+Animations:
+- Each card fades in and slides up with a stagger (100ms delay per card).
+- On hover: the card scales up (1.03), shadow deepens, and a teal glow appears.
+- The number counts up from 0 to the actual value (use a simple `useEffect` with `setInterval`).
+
+Data Source:
+- Active Cases → GET /api/cases/count?status=open
+- High Risk → GET /api/cases/count?risk=high
+- Monitoring → GET /api/cases/count?status=monitoring
+- Terminations → GET /api/cases/count?terminated=true
+
+If any endpoint returns 0, show "0" (not a placeholder).
+
+─────────────
+🔹 PART 3 – QUICK ACTIONS – FIX & ANIMATE
+─────────────
+
+The Quick Actions section has buttons where the text is not showing. Fix this and make them ultra creative.
+
+Current issue: text not visible – likely due to CSS or layout issues.
+
+New Design:
+- Each Quick Action button should be a card with an icon and a label (both visible).
+- Layout: horizontal row or grid (2–4 columns depending on screen size).
+- Each button:
+  - Icon (large, teal) at the top.
+  - Label below (bold, navy/white).
+  - Subtle shadow and border.
+  - On hover: scale up (1.05), teal glow, and the label slides up slightly.
+
+Add these Quick Actions:
+1. Request Investigation → navigates to `/investigations/new`
+2. Submit Relocation → navigates to `/relocations/new`
+3. New Case → navigates to `/cases/new`
+4. View All Cases → navigates to `/cases`
+
+Animations:
+- Buttons fade in and slide up with stagger (75ms delay).
+- On hover, a teal underline appears under the label.
+- Click: subtle ripple effect.
+
+─────────────
+🔹 PART 4 – RELOCATION CENTER – WOW CREATIVE REDESIGN
+─────────────
+
+The Relocation Center (`src/pages/RelocationCenter.tsx`) needs a complete WOW redesign.
+
+Layout:
+- Full‑width page with a hero card at the top.
+- Hero card:
+  - Title: "Relocation Center" with a MapPin icon.
+  - Subtitle: "Manage all relocation requests in one place."
+  - Stats bar: 4 small cards (Total Pending, PS Cleared, TA Cleared, Relocated) with numbers from API.
+  - Quick action: "New Relocation" button (teal, large).
+
+Main section:
+- Filter bar: search input, status dropdown, date range picker (all functional).
+- Table: full‑width, modern design with:
+  - Columns: Request Number (clickable → detail), Employee Name, From → To (sites), Status (badge), SLA Countdown, Actions (View, Edit, Clear).
+  - Each row: on hover, teal border on the left.
+  - Status badges: teal (Cleared), amber (Pending), red (Overdue), gray (Relocated).
+- Pagination: at the bottom.
+
+Empty state:
+- When no relocations: show a friendly illustration/icon with "No relocation requests yet. Create one!" and a link to the form.
+
+Animations:
+- Hero card: fade‑in + slide‑down.
+- Stats cards: stagger slide‑in (50ms delay).
+- Table rows: fade‑in as they appear.
+- On hover: rows scale slightly and shadow deepens.
+
+Data Source:
+- GET /api/relocations → returns list of relocations.
+- POST /api/relocations → create new.
+- PUT /api/relocations/:id → update status.
+
+─────────────
+🔹 PART 5 – WELCOME CARD (HomeScreen.tsx) – ENHANCED WITH PROFILE
+─────────────
+
+The welcome card needs to show the user's profile (photo, name, title) in a creative way.
+
+Layout:
+- Full‑width card with a subtle gradient (navy to teal) or clean white shadow.
+- Left side (70%):
+  - Greeting: "Rise & Shine, {firstName}" with wave emoji and sparkle.
+  - Subtitle: "Even on weekends, excellence never sleeps."
+  - KPI chips: Active Cases & Resolved (count‑up animation).
+- Right side (30%):
+  - User photo (from Microsoft Graph) or initials avatar with gradient.
+  - Display name (bold).
+  - Job title (from MS Graph) – as a badge.
+  - A decorative element (e.g., a small "Welcome back" ribbon).
+
+Animations:
+- The entire card: fade‑in + slight scale (0.98 → 1).
+- Left side: stagger (greeting → subtitle → KPIs).
+- Right side: slide‑in from right with spring effect.
+- Photo: pulse softly on load.
+
+─────────────
+🔹 PART 6 – FINAL CHECKS & DEPLOYMENT
+─────────────
+
+After you implement these changes:
+1. Verify all data comes from the API – no hardcoded numbers.
+2. Ensure the build passes with `npm run build`.
+3. Confirm the quick action labels are visible and functional.
+4. Test the relocation center on both light and dark modes.
+5. Show me the updated files:
+   - `src/pages/HomeScreen.tsx`
+   - `src/pages/RelocationCenter.tsx`
+   - `src/components/KPICard.tsx` (if you create a separate component)
+   - `src/components/QuickActions.tsx` (if you create one)
+   - `src/components/BackgroundAnimation.tsx` (if you create one)
+   - `src/styles/index.css` (for new animations)
+
+Make the EEC app visually stunning and a joy to use! 🚀

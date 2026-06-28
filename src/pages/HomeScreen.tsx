@@ -13,7 +13,8 @@ import EmptyState from "../components/EmptyState";
 import CountUp from "../components/CountUp";
 import { formatHours, timeAgo } from "../utils/formatters";
 import toast from "react-hot-toast";
-import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, RefreshCw, Calendar, Activity, ChevronRight, ChevronDown, Shield, ArrowUpRight, Minus, Building2, Scale, UserCheck, MapPin, Sparkles } from "lucide-react";
+// ✅ Removed: RefreshCw, ArrowUpRight
+import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, Calendar, Activity, ChevronRight, ChevronDown, Shield, Minus, Building2, Scale, UserCheck, MapPin, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Dynamic greeting based on time of day with creative messaging
@@ -158,71 +159,146 @@ export default function HomeScreen() {
           />
         </div>
 
-        <div className="relative z-10">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="flex items-center gap-3 mb-3"
-          >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.2)" }}>
-              <Shield className="w-6 h-6" style={{ color: "#00C4B4" }} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-teal-400/60" />
-              <span className="text-xs font-medium text-teal-300/70 uppercase tracking-wider">Dashboard</span>
-            </div>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-            className="text-3xl md:text-4xl font-bold mb-2"
-            style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}
-          >
-            {greetingMain},{" "}
-            <span className="relative inline-block">
-              <span style={{ color: "#00C4B4" }}>{user?.displayName?.split(" ")[0] || "Champion"}</span>
-              <motion.span
-                className="absolute -bottom-1 left-0 h-0.5 bg-teal-400"
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
-              />
-            </span>
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-            className="text-sm md:text-base max-w-xl"
-            style={{ color: "rgba(255,255,255,0.7)" }}
-          >
-            {greetingSub}
-          </motion.p>
-
-          {/* Quick Stats Row */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.4 }}
-            className="flex flex-wrap gap-4 mt-6"
-          >
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs font-medium text-white/90">{kpi.activeCases} Active Cases</span>
-            </div>
-            {kpi.critical > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.2)" }}>
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-xs font-medium text-red-300">{kpi.critical} Critical</span>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8">
+          {/* Left: greeting + stats */}
+          <div className="flex-1 min-w-0">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="flex items-center gap-3 mb-3"
+            >
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.2)" }}>
+                <Shield className="w-6 h-6" style={{ color: "#00C4B4" }} />
               </div>
-            )}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(0,196,180,0.15)" }}>
-              <TrendingUp className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
-              <span className="text-xs font-medium" style={{ color: "#00C4B4" }}>{resolvedCases} Resolved</span>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-teal-400/60" />
+                <span className="text-xs font-medium text-teal-300/70 uppercase tracking-wider">Dashboard</span>
+              </div>
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="text-3xl md:text-4xl font-bold mb-2"
+              style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}
+            >
+              {greetingMain},{" "}
+              <span className="relative inline-block">
+                <span style={{ color: "#00C4B4" }}>{user?.displayName?.split(" ")[0] || "Champion"}</span>
+                <motion.span
+                  className="absolute -bottom-1 left-0 h-0.5 bg-teal-400"
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
+                />
+              </span>{" "}
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              className="text-sm md:text-base max-w-xl"
+              style={{ color: "rgba(255,255,255,0.7)" }}
+            >
+              {greetingSub}
+            </motion.p>
+
+            {/* Quick Stats Row */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.4 }}
+              className="flex flex-wrap gap-3 mt-6"
+            >
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs font-medium text-white/90">
+                  {loading ? "—" : <><CountUp value={kpi.activeCases} duration={800} /> Active Cases</>}
+                </span>
+              </div>
+              {kpi.critical > 0 && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.2)" }}>
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                  <span className="text-xs font-medium text-red-300">
+                    <CountUp value={kpi.critical} duration={800} /> Critical
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(0,196,180,0.15)" }}>
+                <TrendingUp className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
+                <span className="text-xs font-medium" style={{ color: "#00C4B4" }}>
+                  {loading ? "—" : <><CountUp value={resolvedCases} duration={800} /> Resolved</>}
+                </span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Right: user profile card */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4, duration: 0.5, type: "spring", stiffness: 120 }}
+            className="shrink-0 flex flex-col items-center gap-3 md:w-52"
+          >
+            {/* Photo / Initials avatar */}
+            <motion.div
+              animate={{ scale: [1, 1.04, 1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="relative group cursor-pointer"
+            >
+              <div
+                className="absolute -inset-1 rounded-full opacity-60 blur-md group-hover:opacity-90 transition-opacity"
+                style={{ background: "linear-gradient(135deg, #00C4B4, #2563EB)" }}
+              />
+              <div
+                className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/30 group-hover:border-teal-300 transition-all"
+                style={{ background: "linear-gradient(135deg, #00C4B4 0%, #0D2B45 100%)" }}
+              >
+                {user?.photoUrl ? (
+                  <img
+                    src={user.photoUrl}
+                    alt={user.displayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-bold text-white select-none">
+                    {user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "EE"}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Name */}
+            <div className="text-center">
+              <p className="font-bold text-white text-base leading-tight">{user?.displayName || "Welcome"}</p>
+              {user?.jobTitle && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 }}
+                  className="inline-block mt-1.5 px-3 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
+                  style={{
+                    background: "rgba(0,196,180,0.2)",
+                    color: "#00E6D4",
+                    border: "1px solid rgba(0,196,180,0.3)",
+                    boxShadow: "0 0 12px rgba(0,196,180,0.15)",
+                  }}
+                >
+                  {user.jobTitle}
+                </motion.span>
+              )}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+                className="mt-2 flex items-center justify-center gap-1.5"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[10px] text-white/50 font-medium">Welcome back</span>
+              </motion.div>
             </div>
           </motion.div>
         </div>
@@ -381,36 +457,30 @@ export default function HomeScreen() {
             className="eec-card p-6"
           >
             <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Quick Actions</p>
-            <div className="space-y-2.5">
-              <QuickActionButton
-                icon={<Plus className="w-4 h-4" />}
-                label="Submit New Case"
-                color="navy"
+            <div className="grid grid-cols-2 gap-3">
+              <QuickActionCard
+                icon={Plus}
+                label="New Case"
+                color="#1E3A5F"
                 onClick={() => navigate("/submit")}
               />
-              <QuickActionButton
-                icon={<MapPin className="w-4 h-4" />}
-                label="Request Relocation"
-                color="teal"
+              <QuickActionCard
+                icon={MapPin}
+                label="Relocation"
+                color="#00C4B4"
                 onClick={() => navigate("/relocations/submit")}
               />
-              <QuickActionButton
-                icon={<Scale className="w-4 h-4" />}
-                label="Request Investigation"
-                color="teal"
+              <QuickActionCard
+                icon={Scale}
+                label="Investigation"
+                color="#7C3AED"
                 onClick={() => navigate("/investigations/new")}
               />
-              <QuickActionButton
-                icon={<FolderOpen className="w-4 h-4" />}
-                label="View All Cases"
-                color="gray"
+              <QuickActionCard
+                icon={FolderOpen}
+                label="All Cases"
+                color="#2563EB"
                 onClick={() => navigate("/my-cases")}
-              />
-              <QuickActionButton
-                icon={<RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />}
-                label="Refresh Data"
-                color="gray"
-                onClick={loadData}
               />
             </div>
           </motion.div>
@@ -591,36 +661,49 @@ export default function HomeScreen() {
   );
 }
 
-function QuickActionButton({
-  icon,
+function QuickActionCard({
+  icon: Icon,
   label,
   color,
   onClick,
 }: {
-  icon: React.ReactNode;
+  icon: React.ElementType;
   label: string;
-  color: "navy" | "teal" | "gray";
+  color: string;
   onClick: () => void;
 }) {
-  const colorMap = {
-    navy: { bg: "rgba(30,58,95,0.05)", hover: "bg-navy-900 text-white", text: "text-navy-900" },
-    teal: { bg: "rgba(0,196,180,0.08)", hover: "bg-teal-600 text-white", text: "text-[#00C4B4]" },
-    gray: { bg: "#f8fafc", hover: "bg-navy-900 text-white", text: "text-gray-700" },
-  };
-  const c = colorMap[color];
-
+  const [hovered, setHovered] = useState(false);
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${c.hover} ${c.text}`}
-      style={{ background: c.bg }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      whileTap={{ scale: 0.96 }}
+      className="relative flex flex-col items-center justify-center gap-2.5 rounded-2xl p-4 w-full text-center transition-all overflow-hidden border"
+      style={{
+        background: hovered ? color : `${color}10`,
+        borderColor: hovered ? color : `${color}30`,
+        boxShadow: hovered ? `0 8px 24px ${color}40` : "none",
+      }}
     >
-      <span className="flex items-center gap-2">
-        {icon}
+      <div
+        className="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+        style={{
+          background: hovered ? "rgba(255,255,255,0.2)" : `${color}18`,
+        }}
+      >
+        <Icon
+          className="w-5 h-5 transition-all"
+          style={{ color: hovered ? "#fff" : color }}
+        />
+      </div>
+      <span
+        className="text-xs font-bold tracking-wide transition-all"
+        style={{ color: hovered ? "#fff" : "#1E3A5F" }}
+      >
         {label}
       </span>
-      <ArrowUpRight className="w-3.5 h-3.5 opacity-50" />
-    </button>
+    </motion.button>
   );
 }
 
@@ -643,52 +726,57 @@ function KpiCard({
   loading: boolean;
   onClick?: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay / 1000 }}
-      className={`eec-card ${onClick ? "cursor-pointer" : ""}`}
+      whileHover={{ scale: 1.03, y: -4 }}
+      className={`eec-card relative overflow-hidden ${onClick ? "cursor-pointer" : ""}`}
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        borderColor: hovered ? `${color}30` : undefined,
-        boxShadow: hovered ? `0 8px 24px ${color}15` : undefined,
-      }}
+      style={{ transition: "box-shadow 0.2s, border-color 0.2s" }}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center"
-          style={{ background: `${color}12` }}
-        >
-          <Icon className="w-5 h-5" style={{ color }} />
+      {/* Glow layer on hover via CSS */}
+      <motion.div
+        className="absolute inset-0 rounded-2xl pointer-events-none"
+        style={{ background: `radial-gradient(ellipse at top left, ${color}18 0%, transparent 70%)` }}
+        initial={{ opacity: 0 }}
+        whileHover={{ opacity: 1 }}
+      />
+      <div className="relative">
+        <div className="flex items-start justify-between mb-4">
+          <motion.div
+            whileHover={{ rotate: [0, -10, 10, 0], scale: 1.15 }}
+            transition={{ duration: 0.4 }}
+            className="w-12 h-12 rounded-2xl flex items-center justify-center"
+            style={{ background: `${color}15` }}
+          >
+            <Icon className="w-6 h-6" style={{ color }} />
+          </motion.div>
+          <span
+            className={`flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full ${
+              trend.dir === "up"
+                ? "bg-red-50 text-red-600"
+                : trend.dir === "down"
+                ? "bg-green-50 text-green-600"
+                : "bg-gray-100 text-gray-500"
+            }`}
+          >
+            {trend.dir === "up" ? (
+              <TrendingUp className="w-2.5 h-2.5" />
+            ) : trend.dir === "down" ? (
+              <TrendingDown className="w-2.5 h-2.5" />
+            ) : (
+              <Minus className="w-2.5 h-2.5" />
+            )}
+            {trend.val}
+          </span>
         </div>
-        <span
-          className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-            trend.dir === "up"
-              ? "bg-red-50 text-red-600"
-              : trend.dir === "down"
-              ? "bg-green-50 text-green-600"
-              : "bg-gray-100 text-gray-500"
-          }`}
-        >
-          {trend.dir === "up" ? (
-            <TrendingUp className="w-2.5 h-2.5" />
-          ) : trend.dir === "down" ? (
-            <TrendingDown className="w-2.5 h-2.5" />
-          ) : (
-            <Minus className="w-2.5 h-2.5" />
-          )}
-          {trend.val}
-        </span>
+        <div className="text-4xl font-extrabold mb-1" style={{ color }}>
+          {loading ? <span className="text-gray-300">—</span> : <CountUp value={value} duration={800} />}
+        </div>
+        <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">{label}</p>
       </div>
-      <div className="text-3xl font-bold text-navy-900 mb-1" style={{ color: hovered ? color : undefined }}>
-        {loading ? "—" : <CountUp value={value} duration={600} />}
-      </div>
-      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
     </motion.div>
   );
 }

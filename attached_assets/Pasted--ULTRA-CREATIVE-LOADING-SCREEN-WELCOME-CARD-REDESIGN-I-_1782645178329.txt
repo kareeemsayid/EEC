@@ -1,0 +1,99 @@
+🎨 ULTRA‑CREATIVE LOADING SCREEN & WELCOME CARD REDESIGN
+
+I need you to redesign the loading screen and the welcome card (HomeScreen) with WOW‑level creativity, animations, and polish. Only ONE loading screen must exist across the entire app.
+
+─────────────
+🔹 PART 1 – LOADING SCREEN (src/components/LoadingScreen.tsx)
+─────────────
+
+Remove ALL other loading screens (including React's default, MSAL's "Authentication...", and any fallback text). The only loading screen used should be this component.
+
+- Full‑screen overlay with navy (#0D2B45) background (dark mode: #071C2E).
+- Concentrix logo (SVG) should animate in a creative, eye‑catching way:
+  - Option A: Morphing logo – the logo rotates 360° with a glowing trail, then settles in the center.
+  - Option B: Particle explosion – the logo bursts into tiny teal particles that reassemble into the logo.
+  - Option C: 3D flip – the logo flips in 3D with a shine effect.
+  Choose the most creative and smooth animation you can implement with pure CSS/React (no external libraries).
+- Background: add subtle animated geometric shapes (circles, lines) moving slowly to create depth.
+- Message: "Loading your workspace…" with animated ellipsis.
+- Progress bar: thin teal gradient at the bottom, looping infinitely.
+- When loading completes, fade out with a 300ms transition.
+
+🛠️ Implementation:
+- Use CSS keyframes and React state for the animation.
+- The logo SVG should be imported from `public/assets/concentrix-logo.svg` (or use the existing ConcentrixLogo component).
+- Ensure the loading screen is used in:
+  - `App.tsx` – during MSAL initialization.
+  - Route transitions – as fallback for `<Suspense>`.
+  - Async operations – via the `useLoading` hook (show overlay while fetching).
+
+────────────────
+🔹 PART 2 – WELCOME CARD (HomeScreen.tsx)
+────────────────
+
+Redesign the top hero section of `HomeScreen.tsx` with a split layout and stunning animations.
+
+Layout:
+- Full‑width card with a subtle gradient (navy to teal) or a clean white card with shadow.
+- Left side (70%):
+  - Greeting: "Rise & Shine, {firstName}" with a wave emoji and sparkle ✨, animated entrance (slide‑up + fade).
+  - Subtitle: "Even on weekends, excellence never sleeps" – appears with a delay.
+  - Two KPI chips (Active Cases & Resolved) – each with a large number and a small label, animated with a count‑up effect (from 0 to actual value).
+- Right side (30%):
+  - User profile card – shows user's photo (from Microsoft Graph) or initials avatar with a teal/navy gradient.
+  - Display name (bold, white or navy).
+  - Job title (from MS Graph) – displayed as a badge with a subtle glow.
+  - A small "Welcome back" stamp or a decorative element.
+
+Animations:
+- The entire card fades in with a slight scale (0.98 → 1) over 400ms.
+- Left content: each element (greeting, subtitle, KPIs) staggers in with a 100ms delay.
+- Right profile: slides in from the right with a bounce effect (spring).
+- Photo: pulses softly (scale 1.0 → 1.05 → 1.0) on load.
+- Hover on the profile: the photo enlarges slightly and a glow appears.
+
+🛠️ Implementation:
+- Use CSS `@keyframes` and `animation` or `transition` – no external animation libraries (unless you want to use framer‑motion if already installed).
+- Ensure all data comes from `/api/user/profile` (displayName, jobTitle, photoBase64, etc.).
+- If no photo, show initials with the gradient background.
+
+─────────────
+🔹 PART 3 – REMOVE ALL OTHER LOADING SCREENS
+─────────────
+
+Search the entire codebase for any occurrence of:
+- "Authentication..."
+- "Loading..."
+- "Please wait..."
+- Any plain text that appears during initial load.
+
+Replace them with the new LoadingScreen component. Also, in `App.tsx`, ensure that MSAL initialization uses `<LoadingScreen message="Connecting to secure gateway…" />` and not any default text.
+
+🔍 Double‑check:
+- `src/App.tsx`
+- `src/auth/useAuth.ts`
+- `src/index.tsx` (if there's a fallback)
+- Any `<Suspense>` fallback using the new LoadingScreen.
+
+─────────────
+🔹 PART 4 – FINAL POLISH
+─────────────
+
+- Ensure the loading screen is only shown when the app is actually loading (initial load, route transitions, async operations). No flickering.
+- The loading screen should have a `message` prop that can be customized.
+- The welcome card should be responsive (on smaller screens, the right profile moves below the left content).
+- All animations should be smooth and hardware‑accelerated (use `transform` and `opacity`).
+
+─────────────
+🛠️ EXPECTED OUTPUT
+─────────────
+
+After you implement these changes, show me:
+1. The updated `src/components/LoadingScreen.tsx`.
+2. The updated `src/pages/HomeScreen.tsx`.
+3. Any changes to `src/App.tsx` or other files to remove duplicate loading screens.
+4. The new CSS styles (if added to `src/styles/index.css` or a new file).
+
+Make sure the build passes with `npm run build` and the app runs without errors.
+
+Let's make the EEC app visually stunning and delight users! 🚀

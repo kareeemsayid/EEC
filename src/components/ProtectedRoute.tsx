@@ -5,6 +5,7 @@ import { useIsAuthenticated, useMsal } from "@azure/msal-react";
 import { InteractionStatus } from "@azure/msal-browser";
 import { useAuth, UserRole } from "../auth/useAuth";
 import AccessDenied from "./AccessDenied";
+import GlobalLoadingScreen from "./LoadingScreen";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -39,51 +40,6 @@ const pageVariants = {
   },
 };
 
-// Loading screen with Concentrix branding
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "#0D2B45" }}>
-      <div className="text-center">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="relative flex items-center justify-center"
-        >
-          {/* Outer ring animation */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 rounded-full border-2 border-transparent"
-              style={{ borderTopColor: "#00C4B4", borderRightColor: "rgba(0,196,180,0.3)" }}
-            />
-          </div>
-          {/* Logo */}
-          <div className="relative w-16 h-16 rounded-2xl flex items-center justify-center overflow-hidden"
-            style={{ background: "rgba(0,196,180,0.12)", boxShadow: "0 4px 16px rgba(0,0,0,0.3)" }}
-          >
-            <img
-              src="/assets/images/concentrix-mark.png"
-              alt="Concentrix"
-              style={{ width: 32, height: "auto", filter: "brightness(0) invert(1)" }}
-            />
-          </div>
-        </motion.div>
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mt-5 text-sm font-medium"
-          style={{ color: "rgba(255,255,255,0.6)" }}
-        >
-          Loading your workspace
-        </motion.p>
-      </div>
-    </div>
-  );
-}
-
 // Get the default dashboard path for each role
 function getRoleDashboardPath(role?: UserRole): string {
   switch (role) {
@@ -114,7 +70,7 @@ export default function ProtectedRoute({
 
   // MSAL is still initializing
   if (inProgress !== InteractionStatus.None) {
-    return <LoadingScreen />;
+    return <GlobalLoadingScreen message="Connecting to secure gateway…" />;
   }
 
   // Not authenticated
@@ -124,7 +80,7 @@ export default function ProtectedRoute({
 
   // Authenticated but still loading profile
   if (profileLoading || !user) {
-    return <LoadingScreen />;
+    return <GlobalLoadingScreen message="Loading your workspace…" />;
   }
 
   // Check role access

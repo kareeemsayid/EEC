@@ -1,0 +1,27 @@
+zealous-coast-018453310.7.azurestaticapps.net	304	document	Other	0.0 kB	403 ms
+css2?family=Barlow+Condensed:wght@300;400;500;600;…0;600&family=Space+Mono:wght@400;700&display=swap	200	stylesheet	(index):0	(memory cache)	0 ms
+main.354a7f59.css	200	stylesheet	(index):0	(memory cache)	0 ms
+css2?family=Inter:wght@400;500;600;700&display=swap	200	stylesheet	main.354a7f59.css:0	(memory cache)	0 ms
+UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2	200	font	css2	(memory cache)	0 ms
+main.b196d736.js	304	script	(index):0	0.0 kB	129 ms
+unread-count	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	635 ms
+Imageconcentrix-mark.png	304	png	react-dom.production.min.js:261	0.0 kB	111 ms
+Image217c0fe1-2aee-4858-ba08-8e5493ca7a16.png	304	png	react-dom.production.min.js:24	0.0 kB	105 ms
+unread-count	503	preflight	Preflight
+0.0 kB	175 ms
+me?$select=id,displayName,mail,givenName,surname,j…Title,userPrincipalName,department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.3 kB	1.21 s
+Fetch$value	200	fetch	SessionExpiry.tsx:18	0.7 kB	664 ms
+manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	200	fetch	SessionExpiry.tsx:18	1.2 kB	660 ms
+me?$select=department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.1 kB	1.20 s
+me?$select=id,displayName,mail,givenName,surname,j…Title,userPrincipalName,department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.3 kB	2.10 s
+Fetch$value	200	fetch	SessionExpiry.tsx:18	0.7 kB	963 ms
+manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	200	fetch	SessionExpiry.tsx:18	1.2 kB	924 ms
+me?$select=department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.1 kB	2.09 s
+me?$select=id,displayName,mail,givenName,surname,j…Title,userPrincipalName,department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.3 kB	2.34 s
+Fetch$value	200	fetch	SessionExpiry.tsx:18	0.7 kB	1.27 s
+manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	200	fetch	SessionExpiry.tsx:18	1.2 kB	1.20 s
+me?$select=department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.1 kB	2.35 s
+Fetch$value	200	fetch	SessionExpiry.tsx:18	(disk cache)	1 ms
+Fetch$value	200	fetch	SessionExpiry.tsx:18	(disk cache)	1 ms
+roles?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	493 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	661 ms

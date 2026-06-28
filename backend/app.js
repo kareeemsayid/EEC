@@ -23,23 +23,53 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware — allow Azure Static Web Apps, Azure Functions, Replit, and localhost
+// Enhanced CORS with proper preflight handling
 app.use(cors({
   origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    if (
-      origin.includes('.azurestaticapps.net') ||
-      origin.includes('.azurewebsites.net') ||
-      origin.includes('.replit.dev') ||
-      origin.includes('.replit.app') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1')
-    ) {
+
+    // List of allowed origins
+    const allowedPatterns = [
+      '.azurestaticapps.net',
+      '.azurewebsites.net',
+      '.replit.dev',
+      '.replit.app',
+      'localhost',
+      '127.0.0.1',
+      '.vercel.app',
+      '.netlify.app',
+    ];
+
+    const isAllowed = allowedPatterns.some(pattern => origin.includes(pattern));
+
+    if (isAllowed) {
       return callback(null, true);
     }
+
+    // Log rejected origins for debugging
+    console.log('[CORS] Rejected origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Info', 'Apikey', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Length', 'X-Request-Id'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 }));
+
+// Explicit OPTIONS handler for preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info, Apikey, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(204);
+});
+
 app.use(express.json());
 
 // Request logger
