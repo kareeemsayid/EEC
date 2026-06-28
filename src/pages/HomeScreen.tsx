@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip as ChartTooltip, ResponsiveContainer, CartesianGrid,
@@ -13,8 +13,7 @@ import EmptyState from "../components/EmptyState";
 import CountUp from "../components/CountUp";
 import { formatHours, timeAgo } from "../utils/formatters";
 import toast from "react-hot-toast";
-// ✅ Removed: RefreshCw, ArrowUpRight
-import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, Calendar, Activity, ChevronRight, ChevronDown, Shield, Minus, Building2, Scale, UserCheck, MapPin, Sparkles } from "lucide-react";
+import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, Calendar, Activity, ChevronRight, ChevronDown, Shield, Minus, Building2, Scale, UserCheck, MapPin, Sparkles, Zap, Target, Award } from "lucide-react";
 import { motion } from "framer-motion";
 
 // Dynamic greeting based on time of day with creative messaging
@@ -50,6 +49,241 @@ const WEEKLY_TREND = [
 ];
 
 const PERIOD_OPTIONS = ["Last 6 weeks", "Last 30 days", "Last quarter", "This year"];
+
+// Ultra-creative welcome card background with morphing blobs and particles
+function WelcomeCardCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const tRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    const dpr = window.devicePixelRatio || 1;
+
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      canvas.width = parent.offsetWidth * dpr;
+      canvas.height = parent.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Morphing organic blobs
+    type Blob = {
+      x: number; y: number;
+      baseRadius: number;
+      phase: number;
+      speedX: number;
+      speedY: number;
+      hue: number;
+      points: number;
+    };
+
+    const blobs: Blob[] = [
+      { x: 0.15, y: 0.25, baseRadius: 180, phase: 0, speedX: 0.0002, speedY: 0.00015, hue: 174, points: 8 },
+      { x: 0.85, y: 0.75, baseRadius: 220, phase: Math.PI, speedX: -0.00018, speedY: 0.00022, hue: 210, points: 6 },
+      { x: 0.5, y: 0.5, baseRadius: 160, phase: Math.PI / 2, speedX: 0.00025, speedY: -0.0002, hue: 200, points: 7 },
+    ];
+
+    // Floating particles
+    type Particle = { x: number; y: number; vx: number; vy: number; size: number; alpha: number; hue: number };
+    const particles: Particle[] = Array.from({ length: 35 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0003,
+      vy: (Math.random() - 0.5) * 0.0003,
+      size: 1.5 + Math.random() * 3,
+      alpha: 0.15 + Math.random() * 0.25,
+      hue: 174 + Math.random() * 30,
+    }));
+
+    // Connection nodes
+    type Node = { x: number; y: number; vx: number; vy: number; size: number };
+    const nodes: Node[] = Array.from({ length: 15 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.00015,
+      vy: (Math.random() - 0.5) * 0.00015,
+      size: 2 + Math.random() * 2,
+    }));
+
+    const draw = () => {
+      tRef.current += 0.008;
+      const W = canvas!.offsetWidth;
+      const H = canvas!.offsetHeight;
+      ctx.clearRect(0, 0, W, H);
+
+      // Layer 1: Morphing organic blobs with smooth edges
+      blobs.forEach((blob, bi) => {
+        blob.x += blob.speedX + Math.sin(tRef.current * 0.3 + bi) * 0.00005;
+        blob.y += blob.speedY + Math.cos(tRef.current * 0.25 + bi) * 0.00005;
+        if (blob.x < -0.1) blob.x = 1.1;
+        if (blob.x > 1.1) blob.x = -0.1;
+        if (blob.y < -0.1) blob.y = 1.1;
+        if (blob.y > 1.1) blob.y = -0.1;
+
+        const cx = blob.x * W;
+        const cy = blob.y * H;
+
+        // Draw morphing blob
+        ctx.beginPath();
+        for (let i = 0; i <= blob.points * 10; i++) {
+          const angle = (i / (blob.points * 10)) * Math.PI * 2;
+          const radiusVar = blob.baseRadius * (
+            1 +
+            0.25 * Math.sin(blob.phase + tRef.current + angle * 3) +
+            0.15 * Math.sin(blob.phase * 2 + tRef.current * 1.3 + angle * 5) +
+            0.1 * Math.sin(tRef.current * 0.7 + angle * 7)
+          );
+          const px = cx + radiusVar * Math.cos(angle);
+          const py = cy + radiusVar * Math.sin(angle);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+
+        // Gradient fill
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, blob.baseRadius * 1.8);
+        grad.addColorStop(0, `hsla(${blob.hue}, 80%, 55%, 0.12)`);
+        grad.addColorStop(0.5, `hsla(${blob.hue}, 70%, 45%, 0.06)`);
+        grad.addColorStop(1, "transparent");
+        ctx.fillStyle = grad;
+        ctx.fill();
+      });
+
+      // Layer 2: Connection nodes with lines
+      nodes.forEach(node => {
+        node.x += node.vx;
+        node.y += node.vy;
+        if (node.x < 0 || node.x > 1) node.vx *= -1;
+        if (node.y < 0 || node.y > 1) node.vy *= -1;
+      });
+
+      // Draw connections
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const x1 = nodes[i].x * W;
+          const y1 = nodes[i].y * H;
+          const x2 = nodes[j].x * W;
+          const y2 = nodes[j].y * H;
+          const dist = Math.hypot(x2 - x1, y2 - y1);
+          if (dist < 150) {
+            const alpha = 0.08 * (1 - dist / 150);
+            ctx.strokeStyle = `rgba(45, 212, 191, ${alpha})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw nodes
+      nodes.forEach(node => {
+        const px = node.x * W;
+        const py = node.y * H;
+
+        // Glow
+        const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, node.size * 6);
+        glowGrad.addColorStop(0, "rgba(45, 212, 191, 0.15)");
+        glowGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(px, py, node.size * 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core
+        ctx.fillStyle = `rgba(45, 212, 191, ${0.4 + 0.2 * Math.sin(tRef.current * 2)})`;
+        ctx.beginPath();
+        ctx.arc(px, py, node.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Layer 3: Floating particles with trails
+      particles.forEach(p => {
+        p.x += p.vx + Math.sin(tRef.current * 0.4 + p.hue) * 0.00008;
+        p.y += p.vy + Math.cos(tRef.current * 0.35 + p.hue) * 0.00008;
+        if (p.x < 0) p.x = 1;
+        if (p.x > 1) p.x = 0;
+        if (p.y < 0) p.y = 1;
+        if (p.y > 1) p.y = 0;
+
+        const px = p.x * W;
+        const py = p.y * H;
+        const alpha = p.alpha * (0.6 + 0.4 * Math.sin(tRef.current * 1.5 + p.hue));
+
+        // Glow
+        const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, p.size * 5);
+        glowGrad.addColorStop(0, `hsla(${p.hue}, 80%, 60%, ${alpha * 0.5})`);
+        glowGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size * 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Core
+        ctx.fillStyle = `hsla(${p.hue}, 70%, 70%, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Layer 4: Sweeping light rays
+      const rayCount = 3;
+      for (let r = 0; r < rayCount; r++) {
+        const rayAngle = tRef.current * 0.15 + (r * Math.PI * 2) / rayCount;
+        const rayX = W * 0.5 + Math.cos(rayAngle) * W * 0.6;
+        const rayY = H * 0.5 + Math.sin(rayAngle) * H * 0.6;
+
+        const rayGrad = ctx.createRadialGradient(rayX, rayY, 0, rayX, rayY, 100);
+        rayGrad.addColorStop(0, "rgba(45, 212, 191, 0.03)");
+        rayGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = rayGrad;
+        ctx.beginPath();
+        ctx.arc(rayX, rayY, 100, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Layer 5: Subtle grid overlay
+      ctx.strokeStyle = "rgba(45, 212, 191, 0.02)";
+      ctx.lineWidth = 0.5;
+      const gridSize = 50;
+      for (let x = 0; x < W; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = 0; y < H; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
+      style={{ opacity: 0.9 }}
+    />
+  );
+}
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -109,197 +343,277 @@ export default function HomeScreen() {
 
   return (
     <div className="space-y-8 pb-12 animate-fade-in">
-      {/* Subtle background animation */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <motion.div
-          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-[0.03]"
-          style={{ background: "radial-gradient(circle, #00C4B4 0%, transparent 70%)" }}
-        />
-        <motion.div
-          animate={{ x: [0, -20, 0], y: [0, 30, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.02]"
-          style={{ background: "radial-gradient(circle, #2563EB 0%, transparent 70%)" }}
-        />
-        <motion.div
-          animate={{ x: [0, 15, 0], y: [0, -10, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 4 }}
-          className="absolute top-1/2 left-1/3 w-64 h-64 rounded-full opacity-[0.02]"
-          style={{ background: "radial-gradient(circle, #00C4B4 0%, transparent 70%)" }}
-        />
-      </div>
-
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-      {/* Welcome Section - Enhanced Creative Design */}
+      {/* ULTRA-CREATIVE WELCOME SECTION WITH GLASSMORPHISM */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative overflow-hidden rounded-2xl p-8"
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="relative overflow-hidden rounded-3xl min-h-[320px]"
         style={{
-          background: "linear-gradient(135deg, #0D2B45 0%, #1E3A5F 50%, #0D2B45 100%)",
+          background: "linear-gradient(135deg, rgba(13,43,69,0.95) 0%, rgba(30,58,95,0.9) 50%, rgba(13,43,69,0.95) 100%)",
+          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1) inset",
         }}
       >
-        {/* Animated background particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Ultra-creative animated canvas background */}
+        <WelcomeCardCanvas />
+
+        {/* Glassmorphism overlay cards */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Top left decorative glass element */}
           <motion.div
-            animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
+            animate={{ rotate: [0, 5, 0], scale: [1, 1.05, 1] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-20"
-            style={{ background: "radial-gradient(circle, #00C4B4 0%, transparent 70%)" }}
+            className="absolute -top-20 -left-20 w-80 h-80 rounded-full"
+            style={{
+              background: "radial-gradient(circle, rgba(0,196,180,0.08) 0%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
           />
+          {/* Bottom right decorative glass element */}
           <motion.div
-            animate={{ x: [0, -30, 0], y: [0, 20, 0] }}
+            animate={{ rotate: [0, -5, 0], scale: [1, 1.08, 1] }}
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full opacity-15"
-            style={{ background: "radial-gradient(circle, #2563EB 0%, transparent 70%)" }}
+            className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full"
+            style={{
+              background: "radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%)",
+              filter: "blur(50px)",
+            }}
           />
         </div>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8 p-10">
           {/* Left: greeting + stats */}
           <div className="flex-1 min-w-0">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className="flex items-center gap-3 mb-3"
+              transition={{ delay: 0.15, duration: 0.5 }}
+              className="flex items-center gap-4 mb-4"
             >
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.2)" }}>
-                <Shield className="w-6 h-6" style={{ color: "#00C4B4" }} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-teal-400/60" />
-                <span className="text-xs font-medium text-teal-300/70 uppercase tracking-wider">Dashboard</span>
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative"
+              >
+                <div className="absolute -inset-2 rounded-2xl opacity-60 blur-lg" style={{ background: "linear-gradient(135deg, #00C4B4, #2563EB)" }} />
+                <div className="relative w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-xl border border-white/20" style={{ background: "rgba(0,196,180,0.15)" }}>
+                  <Shield className="w-7 h-7" style={{ color: "#00E6D4" }} />
+                </div>
+              </motion.div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Sparkles className="w-4 h-4" style={{ color: "#00C4B4" }} />
+                  </motion.div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "#00E6D4" }}>Dashboard</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-xs text-white/50">Live Updates Active</span>
+                </div>
               </div>
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-              className="text-3xl md:text-4xl font-bold mb-2"
-              style={{ color: "#FFFFFF", letterSpacing: "-0.02em" }}
+              transition={{ delay: 0.25, duration: 0.5 }}
+              className="text-4xl md:text-5xl font-black mb-3"
+              style={{ color: "#FFFFFF", letterSpacing: "-0.03em" }}
             >
               {greetingMain},{" "}
               <span className="relative inline-block">
-                <span style={{ color: "#00C4B4" }}>{user?.displayName?.split(" ")[0] || "Champion"}</span>
                 <motion.span
-                  className="absolute -bottom-1 left-0 h-0.5 bg-teal-400"
+                  style={{ color: "#00E6D4" }}
+                  animate={{ textShadow: ["0 0 0px #00E6D4", "0 0 20px #00E6D4", "0 0 0px #00E6D4"] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                >
+                  {user?.displayName?.split(" ")[0] || "Champion"}
+                </motion.span>
+                <motion.span
+                  className="absolute -bottom-2 left-0 h-1 rounded-full"
+                  style={{ background: "linear-gradient(90deg, #00C4B4, #2563EB)" }}
                   initial={{ width: 0 }}
                   animate={{ width: "100%" }}
-                  transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
+                  transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
                 />
-              </span>{" "}
+              </span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-              className="text-sm md:text-base max-w-xl"
-              style={{ color: "rgba(255,255,255,0.7)" }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="text-base md:text-lg max-w-xl mb-6"
+              style={{ color: "rgba(255,255,255,0.65)" }}
             >
               {greetingSub}
             </motion.p>
 
-            {/* Quick Stats Row */}
+            {/* Ultra-styled Quick Stats Row with glassmorphism */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 25 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
-              className="flex flex-wrap gap-3 mt-6"
+              transition={{ delay: 0.5, duration: 0.5 }}
+              className="flex flex-wrap gap-4"
             >
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.1)" }}>
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-medium text-white/90">
-                  {loading ? "—" : <><CountUp value={kpi.activeCases} duration={800} /> Active Cases</>}
+              <motion.div
+                whileHover={{ scale: 1.05, y: -2 }}
+                className="flex items-center gap-3 px-5 py-3 rounded-2xl backdrop-blur-xl border border-white/15 cursor-pointer transition-all"
+                style={{ background: "rgba(255,255,255,0.08)", boxShadow: "0 8px 32px rgba(0,0,0,0.1)" }}
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-3 h-3 rounded-full bg-green-400"
+                  style={{ boxShadow: "0 0 12px rgba(74, 222, 128, 0.5)" }}
+                />
+                <span className="text-sm font-bold text-white">
+                  {loading ? "—" : <><CountUp value={kpi.activeCases} duration={800} /> Active</>}
                 </span>
-              </div>
+              </motion.div>
+
               {kpi.critical > 0 && (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(239,68,68,0.2)" }}>
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                  <span className="text-xs font-medium text-red-300">
+                <motion.div
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="flex items-center gap-3 px-5 py-3 rounded-2xl backdrop-blur-xl border border-red-400/30 cursor-pointer"
+                  style={{ background: "rgba(239,68,68,0.15)", boxShadow: "0 8px 32px rgba(239,68,68,0.15)" }}
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                  </motion.div>
+                  <span className="text-sm font-bold text-red-300">
                     <CountUp value={kpi.critical} duration={800} /> Critical
                   </span>
-                </div>
+                </motion.div>
               )}
-              <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ background: "rgba(0,196,180,0.15)" }}>
-                <TrendingUp className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
-                <span className="text-xs font-medium" style={{ color: "#00C4B4" }}>
+
+              <motion.div
+                whileHover={{ scale: 1.05, y: -2 }}
+                className="flex items-center gap-3 px-5 py-3 rounded-2xl backdrop-blur-xl border border-teal-400/30 cursor-pointer"
+                style={{ background: "rgba(0,196,180,0.12)", boxShadow: "0 8px 32px rgba(0,196,180,0.1)" }}
+              >
+                <TrendingUp className="w-4 h-4" style={{ color: "#00E6D4" }} />
+                <span className="text-sm font-bold" style={{ color: "#00E6D4" }}>
                   {loading ? "—" : <><CountUp value={resolvedCases} duration={800} /> Resolved</>}
                 </span>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
 
-          {/* Right: user profile card */}
+          {/* Right: user profile card with ultra-glassmorphism */}
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
+            initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.4, duration: 0.5, type: "spring", stiffness: 120 }}
-            className="shrink-0 flex flex-col items-center gap-3 md:w-52"
+            transition={{ delay: 0.35, duration: 0.6, type: "spring", stiffness: 100 }}
+            className="shrink-0 md:w-64"
           >
-            {/* Photo / Initials avatar */}
             <motion.div
-              animate={{ scale: [1, 1.04, 1] }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              className="relative group cursor-pointer"
+              whileHover={{ scale: 1.02 }}
+              className="relative rounded-3xl p-6 backdrop-blur-2xl border border-white/20"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+              }}
             >
-              <div
-                className="absolute -inset-1 rounded-full opacity-60 blur-md group-hover:opacity-90 transition-opacity"
-                style={{ background: "linear-gradient(135deg, #00C4B4, #2563EB)" }}
+              {/* Animated conic gradient ring */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute -inset-1 rounded-3xl opacity-30"
+                style={{
+                  background: "conic-gradient(from 0deg, #00C4B4, #2563EB, #7C3AED, #00C4B4)",
+                  filter: "blur(8px)",
+                }}
               />
-              <div
-                className="relative w-20 h-20 rounded-full flex items-center justify-center overflow-hidden border-2 border-white/30 group-hover:border-teal-300 transition-all"
-                style={{ background: "linear-gradient(135deg, #00C4B4 0%, #0D2B45 100%)" }}
-              >
-                {user?.photoUrl ? (
-                  <img
-                    src={user.photoUrl}
-                    alt={user.displayName}
-                    className="w-full h-full object-cover"
+
+              <div className="relative flex flex-col items-center gap-4">
+                {/* Photo / Initials avatar with ultra-glow */}
+                <motion.div
+                  animate={{ scale: [1, 1.03, 1] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative group cursor-pointer"
+                >
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute -inset-3 rounded-full opacity-40"
+                    style={{
+                      background: "conic-gradient(from 0deg, #00C4B4, transparent, #2563EB, transparent, #00C4B4)",
+                    }}
                   />
-                ) : (
-                  <span className="text-2xl font-bold text-white select-none">
-                    {user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "EE"}
-                  </span>
-                )}
+                  <div
+                    className="relative w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-3 border-white/30"
+                    style={{
+                      background: "linear-gradient(135deg, #00C4B4 0%, #0D2B45 100%)",
+                      boxShadow: "0 0 40px rgba(0,196,180,0.3), inset 0 0 20px rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    {user?.photoUrl ? (
+                      <img src={user.photoUrl} alt={user.displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-black text-white select-none">
+                        {user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "EE"}
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Name and title */}
+                <div className="text-center">
+                  <p className="font-bold text-white text-lg leading-tight">{user?.displayName || "Welcome"}</p>
+                  {user?.jobTitle && (
+                    <motion.span
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.7 }}
+                      className="inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                      style={{
+                        background: "linear-gradient(135deg, rgba(0,196,180,0.2), rgba(37,99,235,0.2))",
+                        color: "#00E6D4",
+                        border: "1px solid rgba(0,196,180,0.3)",
+                        boxShadow: "0 0 20px rgba(0,196,180,0.15)",
+                      }}
+                    >
+                      {user.jobTitle}
+                    </motion.span>
+                  )}
+                </div>
+
+                {/* Quick stats badges */}
+                <div className="grid grid-cols-3 gap-2 w-full mt-2">
+                  <div className="text-center p-2 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
+                    <div className="flex items-center justify-center mb-1">
+                      <Target className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
+                    </div>
+                    <p className="text-lg font-bold text-white">{kpi.activeCases}</p>
+                    <p className="text-[9px] text-white/50 uppercase">Cases</p>
+                  </div>
+                  <div className="text-center p-2 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
+                    <div className="flex items-center justify-center mb-1">
+                      <Award className="w-3.5 h-3.5 text-yellow-400" />
+                    </div>
+                    <p className="text-lg font-bold text-white">{kpi.highRisk}</p>
+                    <p className="text-[9px] text-white/50 uppercase">High</p>
+                  </div>
+                  <div className="text-center p-2 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
+                    <div className="flex items-center justify-center mb-1">
+                      <Zap className="w-3.5 h-3.5 text-green-400" />
+                    </div>
+                    <p className="text-lg font-bold text-white">{resolvedCases}</p>
+                    <p className="text-[9px] text-white/50 uppercase">Done</p>
+                  </div>
+                </div>
               </div>
             </motion.div>
-
-            {/* Name */}
-            <div className="text-center">
-              <p className="font-bold text-white text-base leading-tight">{user?.displayName || "Welcome"}</p>
-              {user?.jobTitle && (
-                <motion.span
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="inline-block mt-1.5 px-3 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-                  style={{
-                    background: "rgba(0,196,180,0.2)",
-                    color: "#00E6D4",
-                    border: "1px solid rgba(0,196,180,0.3)",
-                    boxShadow: "0 0 12px rgba(0,196,180,0.15)",
-                  }}
-                >
-                  {user.jobTitle}
-                </motion.span>
-              )}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.9 }}
-                className="mt-2 flex items-center justify-center gap-1.5"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[10px] text-white/50 font-medium">Welcome back</span>
-              </motion.div>
-            </div>
           </motion.div>
         </div>
       </motion.div>
@@ -736,7 +1050,6 @@ function KpiCard({
       onClick={onClick}
       style={{ transition: "box-shadow 0.2s, border-color 0.2s" }}
     >
-      {/* Glow layer on hover via CSS */}
       <motion.div
         className="absolute inset-0 rounded-2xl pointer-events-none"
         style={{ background: `radial-gradient(ellipse at top left, ${color}18 0%, transparent 70%)` }}
