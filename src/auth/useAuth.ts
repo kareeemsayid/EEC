@@ -219,25 +219,28 @@ export function useAuth(): UseAuthReturn {
   }, [instance]);
 
   const logout = useCallback(() => {
-    // Clear all MSAL cache and session data
+    // Clear all local storage and session data immediately
     localStorage.clear();
     sessionStorage.clear();
-    // Remove all MSAL-specific keys
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('msal.')) localStorage.removeItem(key);
+
+    // Clear all cookies for this domain
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
-    Object.keys(sessionStorage).forEach(key => {
-      if (key.startsWith('msal.')) sessionStorage.removeItem(key);
-    });
-    // Use logoutPopup to avoid the account picker page, then force redirect
-    instance.logoutPopup({
-      postLogoutRedirectUri: window.location.origin + '/login',
-    }).catch(() => {
-      // Fallback: force navigate to login if popup fails
-      window.location.href = window.location.origin + '/login';
-    }).finally(() => {
-      window.location.href = window.location.origin + '/login';
-    });
+
+    // Redirect immediately to login without popup
+    // Clear MSAL cache silently
+    const clearMsalCache = () => {
+      try {
+        instance.clearCache();
+      } catch {
+        // Ignore cache clear errors
+      }
+    };
+    clearMsalCache();
+
+    // Force immediate redirect to login page
+    window.location.href = '/login';
   }, [instance]);
 
   return { user, profileLoading, isAuthenticated, login, logout, getAccessToken };

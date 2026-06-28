@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Phone, MessageCircle, Send, Copy, CircleCheck as CheckCircle, Clock, CircleAlert as AlertCircle, ArrowLeft, ExternalLink, Headphones as HeadphonesIcon, Sparkles, Zap, MessageSquare } from "lucide-react";
+import { Mail, Phone, MessageCircle, Send, Copy, CircleCheck as CheckCircle, Clock, CircleAlert as AlertCircle, ArrowLeft, ExternalLink, Headphones as HeadphonesIcon, Sparkles, Zap, MessageSquare, Loader as Loader2 } from "lucide-react";
+import { useAuth } from "../auth/useAuth";
 
 const PRIORITY_OPTIONS = [
   { value: "low", label: "Low", description: "General inquiry or feedback", color: "#22C55E" },
@@ -16,15 +17,22 @@ const SUPPORT_TIMELINE = [
   { step: 4, title: "Resolution", desc: "Your issue is resolved and confirmed", icon: CheckCircle },
 ];
 
+const DEVELOPER_EMAIL = "kareem.alihamza@concentrix.com";
+const SUPPORT_PHONE = "+20 01270793411";
+
 export default function SupportPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     subject: "",
     message: "",
     priority: "medium",
+    name: user?.displayName || "",
+    email: user?.email || "",
   });
   const [copied, setCopied] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -89,19 +97,55 @@ export default function SupportPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Update form data when user loads
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+      }));
+    }
+  }, [user]);
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopied(label);
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+
+    // Create mailto link with pre-filled email to developer
+    const mailtoSubject = encodeURIComponent(`[EEC Support - ${formData.priority.toUpperCase()}] ${formData.subject}`);
+    const mailtoBody = encodeURIComponent(
+      `Name: ${formData.name}\n` +
+      `Email: ${formData.email}\n` +
+      `Priority: ${formData.priority}\n\n` +
+      `Message:\n${formData.message}\n\n` +
+      `---\nSent from EEC Support Center`
+    );
+
+    // Open email client
+    window.location.href = `mailto:${DEVELOPER_EMAIL}?subject=${mailtoSubject}&body=${mailtoBody}`;
+
+    // Simulate success after short delay
     setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ subject: "", message: "", priority: "medium" });
-    }, 3000);
+      setSubmitting(false);
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({
+          subject: "",
+          message: "",
+          priority: "medium",
+          name: user?.displayName || "",
+          email: user?.email || "",
+        });
+      }, 3000);
+    }, 1000);
   };
 
   return (
@@ -317,13 +361,57 @@ export default function SupportPage() {
                   transition={{ duration: 2, repeat: Infinity }}
                 />
               </motion.div>
-              <h4 className="text-lg font-semibold" style={{ color: "#0D2B45" }}>Message Sent!</h4>
+              <h4 className="text-lg font-semibold" style={{ color: "#0D2B45" }}>Email Client Opened!</h4>
               <p className="text-sm mt-2" style={{ color: "#64748B" }}>
-                We'll get back to you within 24 hours.
+                Your email client has been opened with your message pre-filled. Just hit send!
               </p>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="p-5 space-y-5 relative">
+              {/* Name */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.35 }}
+              >
+                <label className="block text-sm font-medium mb-2" style={{ color: "#0D2B45" }}>Your Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Your name"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border outline-none transition-all focus:ring-2"
+                  style={{
+                    borderColor: "rgba(0,196,180,0.2)",
+                    color: "#0D2B45",
+                    background: "rgba(255,255,255,0.8)",
+                  }}
+                />
+              </motion.div>
+
+              {/* Email */}
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.38 }}
+              >
+                <label className="block text-sm font-medium mb-2" style={{ color: "#0D2B45" }}>Your Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="your.email@concentrix.com"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border outline-none transition-all focus:ring-2"
+                  style={{
+                    borderColor: "rgba(0,196,180,0.2)",
+                    color: "#0D2B45",
+                    background: "rgba(255,255,255,0.8)",
+                  }}
+                />
+              </motion.div>
+
               {/* Subject */}
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -409,22 +497,27 @@ export default function SupportPage() {
               {/* Submit */}
               <motion.button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all relative overflow-hidden"
+                disabled={submitting}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-medium text-sm transition-all relative overflow-hidden disabled:opacity-70"
                 style={{
                   background: "linear-gradient(135deg, #00C4B4, #0D2B45)",
                   color: "white",
                   boxShadow: "0 8px 24px rgba(0,196,180,0.25)",
                 }}
-                whileHover={{ scale: 1.02, boxShadow: "0 12px 32px rgba(0,196,180,0.35)" }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: submitting ? 1 : 1.02, boxShadow: "0 12px 32px rgba(0,196,180,0.35)" }}
+                whileTap={{ scale: submitting ? 1 : 0.98 }}
               >
-                <motion.span
-                  animate={{ x: [0, 4, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <Send className="w-4 h-4" />
-                </motion.span>
-                Send Message
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <motion.span
+                    animate={{ x: [0, 4, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    <Send className="w-4 h-4" />
+                  </motion.span>
+                )}
+                {submitting ? "Opening Email..." : "Send Message"}
               </motion.button>
             </form>
           )}
@@ -452,11 +545,12 @@ export default function SupportPage() {
 
             <div className="p-5 space-y-4">
               {/* Email */}
-              <motion.div
-                className="flex items-center justify-between p-4 rounded-xl transition-all relative overflow-hidden group cursor-pointer"
+              <motion.a
+                href={`mailto:${DEVELOPER_EMAIL}`}
+                className="flex items-center justify-between p-4 rounded-xl transition-all relative overflow-hidden group cursor-pointer block"
                 style={{ background: "linear-gradient(135deg, rgba(0,196,180,0.08), rgba(0,196,180,0.02))" }}
                 whileHover={{ scale: 1.02 }}
-                onClick={() => handleCopy("kareem.alihamza@concentrix.com", "email")}
+                onClick={() => handleCopy(DEVELOPER_EMAIL, "email")}
               >
                 <motion.div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -473,24 +567,25 @@ export default function SupportPage() {
                   </motion.div>
                   <div>
                     <p className="text-xs" style={{ color: "#94A3B8" }}>Email Support</p>
-                    <p className="text-sm font-medium" style={{ color: "#0D2B45" }}>kareem.alihamza@concentrix.com</p>
+                    <p className="text-sm font-medium" style={{ color: "#0D2B45" }}>{DEVELOPER_EMAIL}</p>
                   </div>
                 </div>
-                <motion.button
+                <motion.div
                   className="p-2 rounded-lg transition-colors relative z-10"
                   style={{ color: copied === "email" ? "#22C55E" : "#94A3B8" }}
                   whileTap={{ scale: 0.9 }}
                 >
                   {copied === "email" ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </motion.button>
-              </motion.div>
+                </motion.div>
+              </motion.a>
 
               {/* Phone */}
-              <motion.div
-                className="flex items-center justify-between p-4 rounded-xl transition-all relative overflow-hidden group cursor-pointer"
+              <motion.a
+                href={`tel:${SUPPORT_PHONE.replace(/\s/g, "")}`}
+                className="flex items-center justify-between p-4 rounded-xl transition-all relative overflow-hidden group cursor-pointer block"
                 style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(37,99,235,0.02))" }}
                 whileHover={{ scale: 1.02 }}
-                onClick={() => handleCopy("+1 (555) 123-4567", "phone")}
+                onClick={() => handleCopy(SUPPORT_PHONE, "phone")}
               >
                 <motion.div
                   className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -507,17 +602,17 @@ export default function SupportPage() {
                   </motion.div>
                   <div>
                     <p className="text-xs" style={{ color: "#94A3B8" }}>Phone Support</p>
-                    <p className="text-sm font-medium" style={{ color: "#0D2B45" }}>+1 (555) 123-4567</p>
+                    <p className="text-sm font-medium" style={{ color: "#0D2B45" }}>{SUPPORT_PHONE}</p>
                   </div>
                 </div>
-                <motion.button
+                <motion.div
                   className="p-2 rounded-lg transition-colors relative z-10"
                   style={{ color: copied === "phone" ? "#22C55E" : "#94A3B8" }}
                   whileTap={{ scale: 0.9 }}
                 >
                   {copied === "phone" ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </motion.button>
-              </motion.div>
+                </motion.div>
+              </motion.a>
 
               {/* Response Time */}
               <motion.div
@@ -623,8 +718,9 @@ export default function SupportPage() {
       </div>
 
       {/* Floating Contact Button */}
-      <motion.button
-        className="fixed bottom-8 right-8 w-16 h-16 rounded-full flex items-center justify-center z-50 shadow-2xl"
+      <motion.a
+        href={`mailto:${DEVELOPER_EMAIL}`}
+        className="fixed bottom-8 right-8 w-16 h-16 rounded-full flex items-center justify-center z-50 shadow-2xl cursor-pointer"
         style={{
           background: "linear-gradient(135deg, #00C4B4, #0D2B45)",
           boxShadow: "0 8px 32px rgba(0,196,180,0.4)",
@@ -634,7 +730,6 @@ export default function SupportPage() {
         transition={{ delay: 1, type: "spring", stiffness: 200 }}
         whileHover={{ scale: 1.1, boxShadow: "0 12px 48px rgba(0,196,180,0.5)" }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       >
         <motion.div
           animate={{ y: [0, -4, 0] }}
@@ -648,7 +743,7 @@ export default function SupportPage() {
           animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         />
-      </motion.button>
+      </motion.a>
     </div>
   );
 }

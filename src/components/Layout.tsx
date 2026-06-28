@@ -86,6 +86,18 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: "My Dashboard",
+    tooltip: "Your personalized dashboard view",
+    items: [
+      { to: "/dashboard/trainer", label: "Trainer Dashboard", icon: Activity, tooltip: "Your training dashboard", roles: ["Trainer"] },
+      { to: "/dashboard/supervisor", label: "Supervisor Dashboard", icon: Activity, tooltip: "Your team dashboard", roles: ["Supervisor"] },
+      { to: "/dashboard/manager", label: "Manager Dashboard", icon: Activity, tooltip: "Account overview dashboard", roles: ["Manager", "SrManager"] },
+      { to: "/ps-dashboard", label: "PS Command Center", icon: Activity, tooltip: "People Solutions command center", roles: ["PS"] },
+      { to: "/dashboard/ta", label: "TA Dashboard", icon: Activity, tooltip: "Talent Acquisition hub", roles: ["TA"] },
+      { to: "/admin", label: "Admin Dashboard", icon: Activity, tooltip: "Admin control panel", roles: ["Admin"] },
+    ],
+  },
+  {
     label: "Resources",
     tooltip: "Training and resource links",
     items: [
@@ -609,31 +621,6 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           ))}
 
-          {/* My Dashboard shortcut */}
-          {roleDashboard !== "/" && (
-            <div className="mt-5">
-              <AnimatePresence>
-                {!sidebarCollapsed && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.15em]"
-                    style={{ color: "rgba(0,196,180,0.45)" }}
-                  >
-                    Dashboard
-                  </motion.p>
-                )}
-              </AnimatePresence>
-              <SidebarNavItem
-                item={{ to: roleDashboard, label: "My Dashboard", icon: Activity, tooltip: "Your personalized dashboard" }}
-                collapsed={sidebarCollapsed}
-                isActive={location.pathname === roleDashboard}
-                delay={0}
-                onNavigate={(to) => { navigate(to); setMobileOpen(false); }}
-              />
-            </div>
-          )}
         </nav>
 
         {/* ── PROFILE SECTION ── */}

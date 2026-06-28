@@ -14,7 +14,7 @@ import CountUp from "../components/CountUp";
 import { formatHours, timeAgo } from "../utils/formatters";
 import toast from "react-hot-toast";
 import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, Calendar, Activity, ChevronRight, ChevronDown, Shield, Minus, Building2, Scale, UserCheck, MapPin, Sparkles, Zap, Target, Award } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Dynamic greeting based on time of day with creative messaging
 function getGreeting(): { main: string; sub: string } {
@@ -320,6 +320,38 @@ function MorphingBlobCanvas() {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.9 }} />;
 }
 
+// Animated hexagonal pattern background for Performance Trends card
+function HexPatternBackground() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.06]">
+      <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0 }}>
+        <defs>
+          <pattern id="hexPattern" x="0" y="0" width="56" height="100" patternUnits="userSpaceOnUse">
+            <polygon
+              points="28,0 56,16 56,48 28,64 0,48 0,16"
+              fill="none"
+              stroke="rgba(255,255,255,0.4)"
+              strokeWidth="0.5"
+            />
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="100%" height="100%" fill="url(#hexPattern)" />
+      </svg>
+      {/* Animated scan line */}
+      <motion.div
+        className="absolute left-0 right-0 h-px"
+        style={{
+          top: 0,
+          background: "linear-gradient(90deg, transparent, rgba(0,196,180,0.4), transparent)",
+          boxShadow: "0 0 20px rgba(0,196,180,0.3)",
+        }}
+        animate={{ y: ["0%", "100%"] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+      />
+    </div>
+  );
+}
+
 export default function HomeScreen() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -544,68 +576,55 @@ export default function HomeScreen() {
             </motion.div>
           </div>
 
-          {/* Right: Ultra-premium user profile card */}
+          {/* Right: Compact premium user profile card */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.35, duration: 0.6, type: "spring", stiffness: 100 }}
-            className="shrink-0 md:w-72"
+            className="shrink-0 md:w-56"
           >
             <motion.div
               whileHover={{ scale: 1.02, y: -4 }}
               transition={{ duration: 0.3 }}
-              className="relative rounded-3xl p-6 backdrop-blur-2xl border border-white/20 overflow-hidden group"
+              className="relative rounded-2xl p-4 backdrop-blur-2xl border border-white/20 overflow-hidden group"
               style={{
                 background: "linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
-                boxShadow: "0 30px 60px -15px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
+                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
               }}
             >
               {/* Animated conic gradient outer ring */}
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-                className="absolute -inset-1 rounded-3xl opacity-50"
+                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                className="absolute -inset-1 rounded-2xl opacity-50"
                 style={{
                   background: "conic-gradient(from 0deg, #00C4B4, transparent 30%, #2563EB, transparent 60%, #00E6D4, #00C4B4)",
-                  filter: "blur(10px)",
+                  filter: "blur(8px)",
                 }}
               />
 
-              {/* Shimmer sweep effect */}
-              <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)",
-                }}
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
-              />
-
-              <div className="relative flex flex-col items-center gap-4">
-                {/* Photo / Initials avatar with glowing ring and pulse */}
+              <div className="relative flex flex-col items-center gap-3">
+                {/* Photo / Initials avatar with circle ring animation */}
                 <motion.div
-                  animate={{ scale: [1, 1.04, 1] }}
-                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
                   className="relative cursor-pointer"
                   whileHover={{ scale: 1.08 }}
                 >
-                  {/* Multi-layer glowing ring */}
-                  <motion.div
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                    className="absolute -inset-4 rounded-full"
-                    style={{
-                      background: "conic-gradient(from 0deg, #00C4B4 0%, transparent 15%, #00E6D4 30%, transparent 45%, #2563EB 60%, transparent 75%, #00C4B4 100%)",
-                      opacity: 0.6,
-                    }}
-                  />
+                  {/* Circle rotating glow ring */}
                   <motion.div
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute -inset-2 rounded-full opacity-80"
+                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+                    className="absolute -inset-3 rounded-full"
                     style={{
-                      background: "conic-gradient(from 180deg, #00C4B4, transparent, #00E6D4, transparent, #00C4B4)",
+                      background: "conic-gradient(from 0deg, #00C4B4 0%, transparent 25%, #00E6D4 50%, transparent 75%, #00C4B4 100%)",
+                      opacity: 0.7,
                     }}
+                  />
+                  {/* Inner pulse ring */}
+                  <motion.div
+                    className="absolute -inset-1.5 rounded-full"
+                    animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.7, 0.4] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    style={{ background: "rgba(0,196,180,0.2)" }}
                   />
                   {/* Pulse ring */}
                   <motion.div
@@ -734,89 +753,268 @@ export default function HomeScreen() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Hero Card - 65% width */}
         <div className="lg:col-span-7 xl:col-span-8">
-          <div className="eec-card-gradient p-7 min-h-[440px] flex flex-col relative overflow-hidden">
-            {/* Subtle grid pattern */}
-            <div className="absolute inset-0 opacity-[0.03]" style={{
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-              backgroundSize: '40px 40px'
-            }} />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="eec-card-gradient p-7 min-h-[440px] flex flex-col relative overflow-hidden group"
+            style={{
+              background: "linear-gradient(160deg, rgba(13,43,69,0.98) 0%, rgba(30,58,95,0.95) 40%, rgba(13,43,69,0.98) 100%)",
+              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
+            }}
+          >
+            {/* Animated hex pattern background */}
+            <HexPatternBackground />
+
+            {/* Floating orbs */}
+            <motion.div
+              className="absolute -top-20 -right-20 w-64 h-64 rounded-full pointer-events-none"
+              style={{
+                background: "radial-gradient(circle, rgba(0,196,180,0.15) 0%, transparent 70%)",
+                filter: "blur(30px)",
+              }}
+              animate={{
+                x: [0, 30, 0],
+                y: [0, -20, 0],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full pointer-events-none"
+              style={{
+                background: "radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%)",
+                filter: "blur(40px)",
+              }}
+              animate={{
+                x: [0, -20, 0],
+                y: [0, 30, 0],
+                scale: [1, 1.15, 1],
+              }}
+              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            />
 
             {/* Hero Header */}
-            <div className="relative flex items-start justify-between mb-5">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-white/60 mb-1 block">Overview</span>
-                <h1 className="text-2xl font-bold text-white">Performance Trends</h1>
-              </div>
+            <div className="relative flex items-start justify-between mb-5 z-10">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <motion.div
+                  className="flex items-center gap-2 mb-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 360] }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(0,196,180,0.3) 0%, rgba(0,196,180,0.1) 100%)",
+                      border: "1px solid rgba(0,196,180,0.4)",
+                    }}
+                  >
+                    <TrendingUp className="w-4 h-4" style={{ color: "#00E6D4" }} />
+                  </motion.div>
+                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "rgba(255,255,255,0.5)" }}>Overview</span>
+                </motion.div>
+                <h1 className="text-2xl font-black" style={{
+                  color: "#FFFFFF",
+                  textShadow: "0 2px 10px rgba(0,0,0,0.3)",
+                }}>
+                  Performance Trends
+                </h1>
+              </motion.div>
               <div className="relative">
-                <button
+                <motion.button
                   onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-white/80 hover:text-white transition-colors"
-                  style={{ background: "rgba(255,255,255,0.1)" }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    color: "rgba(255,255,255,0.8)",
+                  }}
+                  whileHover={{
+                    scale: 1.05,
+                    backgroundColor: "rgba(0,196,180,0.2)",
+                    borderColor: "rgba(0,196,180,0.4)",
+                  }}
+                  whileTap={{ scale: 0.98 }}
                 >
                   <Calendar className="w-3.5 h-3.5" />
                   {selectedPeriod}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                {showPeriodDropdown && (
-                  <div className="absolute right-0 mt-1 z-20 w-40 rounded-xl overflow-hidden shadow-dropdown" style={{ background: "white" }}>
-                    {PERIOD_OPTIONS.map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => { setSelectedPeriod(p); setShowPeriodDropdown(false); }}
-                        className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors ${p === selectedPeriod ? "bg-navy-800 text-white" : "text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        {p}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  <motion.div
+                    animate={{ rotate: showPeriodDropdown ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-3 h-3" />
+                  </motion.div>
+                </motion.button>
+                <AnimatePresence>
+                  {showPeriodDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                      className="absolute right-0 mt-2 z-20 w-44 rounded-xl overflow-hidden"
+                      style={{
+                        background: "linear-gradient(180deg, rgba(13,43,69,0.98) 0%, rgba(7,28,46,0.98) 100%)",
+                        border: "1px solid rgba(0,196,180,0.3)",
+                        boxShadow: "0 20px 40px rgba(0,0,0,0.4)",
+                      }}
+                    >
+                      {PERIOD_OPTIONS.map((p, i) => (
+                        <motion.button
+                          key={p}
+                          onClick={() => { setSelectedPeriod(p); setShowPeriodDropdown(false); }}
+                          className="w-full text-left px-4 py-3 text-xs font-medium transition-colors flex items-center gap-2"
+                          style={{
+                            color: p === selectedPeriod ? "#00E6D4" : "rgba(255,255,255,0.7)",
+                            background: p === selectedPeriod ? "rgba(0,196,180,0.15)" : "transparent",
+                          }}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          whileHover={{ background: "rgba(0,196,180,0.1)" }}
+                        >
+                          {p === selectedPeriod && (
+                            <motion.div
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ background: "#00E6D4" }}
+                              layoutId="selectedPeriod"
+                            />
+                          )}
+                          {p}
+                        </motion.button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
             {/* Chart Area */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative z-10">
               {loading ? (
-                <div className="h-full rounded-xl bg-white/5 shimmer-bg" />
+                <motion.div
+                  className="h-full rounded-xl"
+                  style={{ background: "rgba(255,255,255,0.05)" }}
+                  animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
               ) : (
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={WEEKLY_TREND} margin={{ top: 4, right: 16, left: -8, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
-                        <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                      <linearGradient id="heroGradCritical" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(239,68,68,0.4)" />
+                        <stop offset="100%" stopColor="rgba(239,68,68,0)" />
+                      </linearGradient>
+                      <linearGradient id="heroGradHigh" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(245,158,11,0.3)" />
+                        <stop offset="100%" stopColor="rgba(245,158,11,0)" />
+                      </linearGradient>
+                      <linearGradient id="heroGradMon" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgba(34,197,94,0.3)" />
+                        <stop offset="100%" stopColor="rgba(34,197,94,0)" />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" vertical={false} />
-                    <XAxis dataKey="week" tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }} axisLine={false} tickLine={false} />
-                    <ChartTooltip
-                      contentStyle={{ borderRadius: 12, border: "none", fontSize: 11, background: "#1E3A5F", color: "white" }}
-                      labelStyle={{ color: "white" }}
+                    <XAxis
+                      dataKey="week"
+                      tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+                      axisLine={false}
+                      tickLine={false}
                     />
-                    <Area type="monotone" dataKey="critical" stroke="#EF4444" strokeWidth={2} fill="url(#heroGrad)" />
-                    <Area type="monotone" dataKey="highRisk" stroke="#F59E0B" strokeWidth={2} fill="transparent" />
-                    <Area type="monotone" dataKey="monitoring" stroke="#22C55E" strokeWidth={2} fill="transparent" />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "rgba(255,255,255,0.5)" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <ChartTooltip
+                      contentStyle={{
+                        borderRadius: 12,
+                        border: "none",
+                        fontSize: 11,
+                        background: "linear-gradient(180deg, rgba(13,43,69,0.98) 0%, rgba(7,28,46,0.98) 100%)",
+                        color: "white",
+                        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                      }}
+                      labelStyle={{ color: "white", fontWeight: 600 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="critical"
+                      stroke="#EF4444"
+                      strokeWidth={2.5}
+                      fill="url(#heroGradCritical)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="highRisk"
+                      stroke="#F59E0B"
+                      strokeWidth={2}
+                      fill="url(#heroGradHigh)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="monitoring"
+                      stroke="#22C55E"
+                      strokeWidth={2}
+                      fill="url(#heroGradMon)"
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </div>
 
-            {/* Bottom Stats Row */}
-            <div className="grid grid-cols-3 gap-5 mt-5 pt-5 relative" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-white">{loading ? "—" : <CountUp value={cases.length} duration={600} />}</p>
-                <p className="text-xs text-white/60 mt-1">Total Cases</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-red-400">{loading ? "—" : <CountUp value={kpi.critical} duration={600} />}</p>
-                <p className="text-xs text-white/60 mt-1">Critical</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-teal-400">{loading ? "—" : <CountUp value={resolvedCases} duration={600} />}</p>
-                <p className="text-xs text-white/60 mt-1">Resolved</p>
-              </div>
+            {/* Bottom Stats Row with animated cards */}
+            <div className="grid grid-cols-3 gap-4 mt-5 pt-5 relative z-10" style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              {[
+                { label: "Total Cases", value: cases.length, color: "#00C4B4", icon: FolderOpen },
+                { label: "Critical", value: kpi.critical, color: "#EF4444", icon: AlertTriangle },
+                { label: "Resolved", value: resolvedCases, color: "#22C55E", icon: TrendingUp },
+              ].map((stat, i) => (
+                <motion.div
+                  key={stat.label}
+                  className="text-center p-4 rounded-xl relative overflow-hidden group/stat"
+                  style={{ background: "rgba(255,255,255,0.03)" }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + i * 0.1 }}
+                  whileHover={{
+                    scale: 1.05,
+                    background: "rgba(255,255,255,0.08)",
+                    transition: { duration: 0.2 }
+                  }}
+                >
+                  {/* Glow effect on hover */}
+                  <motion.div
+                    className="absolute inset-0 opacity-0 group-hover/stat:opacity-100 transition-opacity duration-300"
+                    style={{
+                      background: `radial-gradient(circle, ${stat.color}15 0%, transparent 70%)`,
+                    }}
+                  />
+                  <stat.icon
+                    className="w-4 h-4 mx-auto mb-2 relative z-10"
+                    style={{ color: stat.color }}
+                  />
+                  <motion.p
+                    className="text-3xl font-black relative z-10"
+                    style={{ color: stat.color }}
+                    initial={{ scale: 0.5 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.5 + i * 0.1, type: "spring" }}
+                  >
+                    {loading ? "—" : <CountUp value={stat.value} duration={600} />}
+                  </motion.p>
+                  <p className="text-xs text-white/50 mt-1 relative z-10">{stat.label}</p>
+                </motion.div>
+              ))}
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Right Stack - 35% width */}
@@ -1111,36 +1309,140 @@ function QuickActionCard({
   onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
+
   return (
     <motion.button
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      whileTap={{ scale: 0.96 }}
-      className="relative flex flex-col items-center justify-center gap-2.5 rounded-2xl p-4 w-full text-center transition-all overflow-hidden border"
+      whileHover={{
+        scale: 1.05,
+        y: -6,
+        transition: { duration: 0.25, ease: "easeOut" }
+      }}
+      whileTap={{ scale: 0.95 }}
+      className="relative flex flex-col items-center justify-center gap-3 rounded-2xl p-5 w-full text-center transition-all overflow-hidden group"
       style={{
-        background: hovered ? color : `${color}10`,
-        borderColor: hovered ? color : `${color}30`,
-        boxShadow: hovered ? `0 8px 24px ${color}40` : "none",
+        background: hovered
+          ? `linear-gradient(135deg, ${color} 0%, ${color}DD 100%)`
+          : `linear-gradient(135deg, ${color}08 0%, ${color}03 100%)`,
+        border: `1.5px solid ${hovered ? color : `${color}25`}`,
+        boxShadow: hovered
+          ? `0 20px 40px ${color}35, 0 0 0 1px ${color}40, inset 0 1px 0 rgba(255,255,255,0.2)`
+          : "none",
       }}
     >
-      <div
-        className="w-11 h-11 rounded-xl flex items-center justify-center transition-all"
+      {/* Animated background gradient sweep */}
+      <motion.div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
-          background: hovered ? "rgba(255,255,255,0.2)" : `${color}18`,
+          background: `linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%)`,
+          transform: "skewX(-12deg) translateX(-150%)",
+        }}
+        animate={hovered ? { transform: "skewX(-12deg) translateX(150%)" } : {}}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
+      />
+
+      {/* Pulsing glow ring behind icon */}
+      <motion.div
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        initial={false}
+        animate={hovered ? { scale: 1.5, opacity: [0, 0.3, 0] } : { scale: 0.8, opacity: 0 }}
+        transition={{ duration: 1.2, repeat: hovered ? Infinity : 0 }}
+      >
+        <div
+          className="w-12 h-12 rounded-full"
+          style={{ background: `radial-gradient(circle, ${color}40 0%, transparent 70%)` }}
+        />
+      </motion.div>
+
+      {/* Icon container with morphing effect */}
+      <motion.div
+        className="relative z-10"
+        animate={{
+          scale: hovered ? 1.15 : 1,
+          rotate: hovered ? [0, -5, 5, 0] : 0,
+        }}
+        transition={{ duration: 0.3 }}
+      >
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 relative overflow-hidden"
+          style={{
+            background: hovered
+              ? "rgba(255,255,255,0.25)"
+              : `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+            boxShadow: hovered
+              ? `0 8px 20px ${color}30, inset 0 1px 0 rgba(255,255,255,0.3)`
+              : "none",
+            border: `1px solid ${hovered ? "rgba(255,255,255,0.3)" : `${color}20`}`,
+          }}
+        >
+          {/* Icon shimmer effect */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)",
+              transform: "skewX(-12deg)",
+            }}
+            animate={hovered ? { x: ["-100%", "100%"] } : { x: "-100%" }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+          <Icon
+            className="w-5.5 h-5.5 relative z-10 transition-all duration-300"
+            style={{
+              color: hovered ? "#FFFFFF" : color,
+              filter: hovered ? "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" : "none",
+            }}
+          />
+        </div>
+      </motion.div>
+
+      {/* Label with animated underline */}
+      <motion.span
+        className="relative z-10 text-xs font-bold tracking-wide transition-all duration-300"
+        style={{
+          color: hovered ? "#FFFFFF" : "#1E3A5F",
+          textShadow: hovered ? "0 1px 2px rgba(0,0,0,0.2)" : "none",
         }}
       >
-        <Icon
-          className="w-5 h-5 transition-all"
-          style={{ color: hovered ? "#fff" : color }}
-        />
-      </div>
-      <span
-        className="text-xs font-bold tracking-wide transition-all"
-        style={{ color: hovered ? "#fff" : "#1E3A5F" }}
-      >
         {label}
-      </span>
+        {/* Animated underline */}
+        <motion.div
+          className="absolute -bottom-1 left-0 right-0 h-0.5 rounded-full"
+          style={{ background: hovered ? "rgba(255,255,255,0.6)" : "transparent" }}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: hovered ? 1 : 0 }}
+          transition={{ duration: 0.25 }}
+        />
+      </motion.span>
+
+      {/* Floating particles on hover */}
+      {hovered && (
+        <>
+          {[...Array(4)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 rounded-full"
+              style={{
+                background: "rgba(255,255,255,0.6)",
+                left: `${20 + i * 20}%`,
+                bottom: "20%",
+              }}
+              initial={{ y: 0, opacity: 0, scale: 0 }}
+              animate={{
+                y: -30,
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0.5]
+              }}
+              transition={{
+                duration: 0.8,
+                delay: i * 0.1,
+                ease: "easeOut"
+              }}
+            />
+          ))}
+        </>
+      )}
     </motion.button>
   );
 }
