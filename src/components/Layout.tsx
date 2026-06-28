@@ -45,19 +45,6 @@ const ROLE_COLORS: Record<string, { bg: string }> = {
   Admin:     { bg: "#EF4444" },
 };
 
-function getRoleDashboard(role?: string): string {
-  switch (role) {
-    case "Trainer":   return "/dashboard/trainer";
-    case "Supervisor":return "/dashboard/supervisor";
-    case "Manager":
-    case "SrManager": return "/dashboard/manager";
-    case "PS":        return "/ps-dashboard";
-    case "TA":        return "/dashboard/ta";
-    case "Admin":     return "/admin";
-    default:          return "/";
-  }
-}
-
 const NAV_GROUPS: NavGroup[] = [
   {
     label: "Main",
@@ -203,7 +190,6 @@ export default function Layout({ children }: LayoutProps) {
   const userRole = user?.role as UserRole | undefined;
   const roleLabel = ROLE_LABELS[userRole || ""] || userRole || "User";
   const roleColors = ROLE_COLORS[userRole || ""] || ROLE_COLORS.Trainer;
-  // ❌ Removed unused variable: roleDashboard
 
   const initials = useMemo(() => {
     if (!user?.displayName) return "?";
