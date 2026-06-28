@@ -1,0 +1,34 @@
+	manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	200	fetch	SessionExpiry.tsx:18	1.2 kB	980 ms
+
+me?$select=department,officeLocation	200	fetch	SessionExpiry.tsx:18	1.1 kB	952 ms
+Fetch$value	200	fetch	SessionExpiry.tsx:18	(disk cache)	1 ms
+Fetch$value	200	fetch	SessionExpiry.tsx:18	(disk cache)	2 ms
+Fetch$value	200	fetch	SessionExpiry.tsx:18	(disk cache)	2 ms
+roles?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	134 ms
+manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	400	fetch	SessionExpiry.tsx:18	1.0 kB	220 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	267 ms
+directReports?$select=id,displayName,mail,jobTitle	200	fetch	SessionExpiry.tsx:18	1.1 kB	927 ms
+roles?email=kareem.alihamza%40concentrix.com	503	preflight	Preflight
+0.0 kB	132 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	503	preflight	Preflight
+0.0 kB	264 ms
+roles?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	184 ms
+manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	400	fetch	SessionExpiry.tsx:18	1.0 kB	241 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	189 ms
+directReports?$select=id,displayName,mail,jobTitle	200	fetch	SessionExpiry.tsx:18	1.1 kB	966 ms
+roles?email=kareem.alihamza%40concentrix.com	503	preflight	Preflight
+0.0 kB	181 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	503	preflight	Preflight
+0.0 kB	184 ms
+roles?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	155 ms
+manager?$select=id,displayName,mail,jobTitle,department,userPrincipalName	400	fetch	SessionExpiry.tsx:18	1.0 kB	219 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	152 ms
+directReports?$select=id,displayName,mail,jobTitle	200	fetch	SessionExpiry.tsx:18	1.1 kB	970 ms
+roles?email=kareem.alihamza%40concentrix.com	503	preflight	Preflight
+0.0 kB	153 ms
+supervisorAccounts?email=kareem.alihamza%40concentrix.com	503	preflight	Preflight
+0.0 kB	147 ms
+cases	CORS error	fetch	SessionExpiry.tsx:18	0.0 kB	524 ms
+cases	503	preflight	Preflight
+0.0 kB	522 ms
+Imageblob:https://zealous-coast-018453310.7.azurestaticapps.net/f60e064f-45ee-4def-a42a-bab3a8768c10	200	jpeg	react-dom.production.min.js:261	

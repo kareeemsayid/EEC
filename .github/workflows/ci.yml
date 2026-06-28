@@ -1,0 +1,39 @@
+name: EEC CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build React app
+        env:
+          CI: false
+          REACT_APP_AZURE_AD_CLIENT_ID: ${{ secrets.REACT_APP_AZURE_AD_CLIENT_ID }}
+          REACT_APP_AZURE_AD_TENANT_ID: ${{ secrets.REACT_APP_AZURE_AD_TENANT_ID }}
+        run: npm run build
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm install --omit=dev
+
+      - name: Verify backend loads
+        working-directory: ./backend
+        run: node -e "require('./app'); console.log('Backend OK');"

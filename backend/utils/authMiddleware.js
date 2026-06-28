@@ -106,7 +106,7 @@ async function authMiddleware(req, res, next) {
         const lobRequest = pool.request();
         lobRequest.input('email', email);
         const lobResult = await lobRequest.query(`
-          SELECT lobId FROM SupervisorLOBs
+          SELECT lobName AS lobId FROM SupervisorLOBs
           WHERE LOWER(supervisorEmail) = @email
         `);
         user.assignedLOBs = lobResult.recordset.map(row => row.lobId);
@@ -119,7 +119,7 @@ async function authMiddleware(req, res, next) {
         const accountRequest = pool.request();
         accountRequest.input('email', email);
         const accountResult = await accountRequest.query(`
-          SELECT accountId FROM ManagerAccounts
+          SELECT accountName AS accountId FROM ManagerAccounts
           WHERE LOWER(managerEmail) = @email
         `);
         user.assignedAccounts = accountResult.recordset.map(row => row.accountId);

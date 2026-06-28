@@ -87,7 +87,7 @@ router.get('/case-counts', async (req, res) => {
         SUM(CASE WHEN riskStatus = 'Monitoring' THEN 1 ELSE 0 END) as monitoring,
         SUM(CASE WHEN lifecycleStage = 'Termination Recommended' THEN 1 ELSE 0 END) as terminations,
         SUM(CASE WHEN investigationRequested = 1 AND terminationApproved = 0 THEN 1 ELSE 0 END) as investigations,
-        SUM(CASE WHEN overdueFlag = 1 AND caseStatus = 'Active' THEN 1 ELSE 0 END) as overdue
+        SUM(CASE WHEN caseStatus = 'Active' AND DATEDIFF(day, TRY_CAST(caseOpenedDate AS DATE), GETDATE()) > 3 AND terminationApproved = 0 AND investigationRequested = 0 THEN 1 ELSE 0 END) as overdue
       FROM AttritionCases ${whereClause}
     `);
 
@@ -97,7 +97,7 @@ router.get('/case-counts', async (req, res) => {
         SUM(CASE WHEN status = 'Submitted' THEN 1 ELSE 0 END) as submitted,
         SUM(CASE WHEN status = 'PSCleared' THEN 1 ELSE 0 END) as psCleared,
         SUM(CASE WHEN status = 'Relocated' THEN 1 ELSE 0 END) as relocated,
-        SUM(CASE WHEN overdueFlag = 1 THEN 1 ELSE 0 END) as overdue
+        SUM(CASE WHEN slaStatus LIKE '%Overdue%' OR slaStatus LIKE '%ATTENTION%' OR slaStatus LIKE '%ALERT%' THEN 1 ELSE 0 END) as overdue
       FROM RelocationRequests
     `);
 
@@ -129,6 +129,49 @@ router.get('/case-counts', async (req, res) => {
   } catch (error) {
     console.error('[GET /api/analytics/case-counts] Error:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch case counts' });
+  }
+});
+
+// GET /api/analytics/trend - Month-by-month trend data for charts
+router.get('/trend', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const { months = 6 } = req.query;
+    const monthCount = Math.min(parseInt(months, 10) || 6, 24);
+
+    const caseResult = await pool.request().query(`
+      SELECT
+        FORMAT(TRY_CAST(caseOpenedDate AS DATE), 'yyyy-MM') AS month,
+        COUNT(*) AS cases,
+        SUM(CASE WHEN riskStatus = 'Critical' OR severityLevel = 'Critical' THEN 1 ELSE 0 END) AS critical
+      FROM AttritionCases
+      WHERE TRY_CAST(caseOpenedDate AS DATE) >= DATEADD(MONTH, -${monthCount}, GETDATE())
+        AND caseOpenedDate IS NOT NULL AND caseOpenedDate != ''
+      GROUP BY FORMAT(TRY_CAST(caseOpenedDate AS DATE), 'yyyy-MM')
+      ORDER BY month ASC
+    `);
+
+    const relResult = await pool.request().query(`
+      SELECT
+        FORMAT(submittedDate, 'yyyy-MM') AS month,
+        COUNT(*) AS relocations,
+        SUM(CASE WHEN status = 'Relocated' THEN 1 ELSE 0 END) AS completed
+      FROM RelocationRequests
+      WHERE submittedDate >= DATEADD(MONTH, -${monthCount}, GETDATE())
+      GROUP BY FORMAT(submittedDate, 'yyyy-MM')
+      ORDER BY month ASC
+    `);
+
+    res.json({
+      success: true,
+      data: {
+        cases: caseResult.recordset,
+        relocations: relResult.recordset,
+      },
+    });
+  } catch (error) {
+    console.error('[GET /api/analytics/trend] Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch trend data' });
   }
 });
 

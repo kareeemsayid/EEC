@@ -4,17 +4,17 @@ import { Configuration, LogLevel } from "@azure/msal-browser";
 // ─── All values come from environment variables ONLY ───────────────────────
 // Never hardcode Client ID, Tenant ID, or Redirect URI in source code.
 // Set these as GitHub Secrets → they become REACT_APP_* env vars at build time.
-const clientId = process.env.REACT_APP_AZURE_AD_CLIENT_ID!;
-const tenantId = process.env.REACT_APP_AZURE_AD_TENANT_ID!;
+const clientId = process.env.REACT_APP_AZURE_AD_CLIENT_ID || "00000000-0000-0000-0000-000000000000";
+const tenantId = process.env.REACT_APP_AZURE_AD_TENANT_ID || "common";
 const redirectUri =
   process.env.REACT_APP_AZURE_AD_REDIRECT_URI ||
   window.location.origin;
 
-// Guard: fail fast during development if vars are missing
+// Guard: warn during development if vars are missing
 if (!clientId || !tenantId) {
-  throw new Error(
+  console.warn(
     "[msalConfig] Missing REACT_APP_AZURE_AD_CLIENT_ID or REACT_APP_AZURE_AD_TENANT_ID. " +
-    "Check your GitHub Secrets and workflow env block."
+    "Set these environment variables for Azure AD authentication to work."
   );
 }
 

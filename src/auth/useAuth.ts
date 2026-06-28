@@ -10,6 +10,7 @@ import {
 import {
   fetchUserRole,
   fetchSupervisorAccounts,
+  setApiUserEmail,
   UserRole,
   SupervisorAccount,
 } from "../api/api";
@@ -143,6 +144,9 @@ export function useAuth(): UseAuthReturn {
       try {
         const token = await getAccessToken();
         const userEmail = accounts[0]?.username || "";
+
+        // Forward the signed-in email to the API layer so backend auth works
+        if (userEmail) setApiUserEmail(userEmail);
 
         // Fetch Graph data in parallel: profile, photo, manager1, department
         const [profile, photoUrl, manager1, meGraphRaw] = await Promise.all([

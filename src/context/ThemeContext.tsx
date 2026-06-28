@@ -35,7 +35,9 @@ function loadSettings(): ThemeSettings {
       const parsed = JSON.parse(raw);
       return { ...defaultSettings, ...parsed };
     }
-  } catch { /* ignore */ }
+  } catch {
+    // ignore
+  }
   return { ...defaultSettings };
 }
 
@@ -43,7 +45,8 @@ function applyThemeToDOM(theme: Theme) {
   const root = document.documentElement;
   const isDark =
     theme === "dark" ||
-    (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    (theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
   if (isDark) {
     root.setAttribute("data-theme", "dark");
     root.style.colorScheme = "dark";
@@ -66,23 +69,27 @@ interface ThemeContextValue {
   setFontSize: (v: ThemeSettings["fontSize"]) => void;
   setLanguage: (v: string) => void;
   resetSettings: () => void;
-  updateSetting: <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => void;
+  updateSetting: <K extends keyof ThemeSettings>(
+    key: K,
+    value: ThemeSettings[K]
+  ) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  }
   const [settings, setSettings] = useState<ThemeSettings>(() => {
     const s = loadSettings();
     applyThemeToDOM(s.theme);
-    if (s.compactMode) document.documentElement.setAttribute("data-compact", "true");
+    if (s.compactMode)
+      document.documentElement.setAttribute("data-compact", "true");
     return s;
   });
 
   const isDark =
     settings.theme === "dark" ||
-    (settings.theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    (settings.theme === "system" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   useEffect(() => {
     applyThemeToDOM(settings.theme);
@@ -98,11 +105,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", handler);
   }, [settings.theme]);
 
-  const update = <K extends keyof ThemeSettings>(key: K, value: ThemeSettings[K]) => {
+  const update = <K extends keyof ThemeSettings>(
+    key: K,
+    value: ThemeSettings[K]
+  ) => {
     setSettings((prev) => {
       const next = { ...prev, [key]: value };
       if (key === "compactMode") {
-        if (value) document.documentElement.setAttribute("data-compact", "true");
+        if (value)
+          document.documentElement.setAttribute("data-compact", "true");
         else document.documentElement.removeAttribute("data-compact");
       }
       return next;
@@ -138,8 +149,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function useThemeContext() {
-    }
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error("useThemeContext must be used within ThemeProvider");
+  if (!ctx)
+    throw new Error("useThemeContext must be used within ThemeProvider");
   return ctx;
 }

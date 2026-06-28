@@ -1,0 +1,442 @@
+🔧 COMPLETE BACKEND FIX – 404 ERRORS, DATABASE CONNECTIONS, DROPDOWNS & ALL ENDPOINTS
+
+I need you to fix the entire backend of my EEC application. The frontend is a React app that expects specific API endpoints. Currently, I'm getting 404 errors on `/api/cases`, `/api/accounts`, `/api/lobs`, and many other endpoints. Dropdowns (accounts, LOBs, sites, trainers, etc.) are not populating because the endpoints don't exist or return empty data.
+
+─────────────
+🗄️ DATABASE SCHEMA (EXACT TABLES & COLUMNS)
+─────────────
+
+Use these table names and column names EXACTLY as shown. The database is Azure SQL.
+
+**Accounts**
+- Id (int, PK)
+- AccountName (nvarchar(255))
+- WarningHours (int)
+- CriticalHours (int)
+- DocumentGraceHours (int)
+- active (bit)
+
+**LOBs**
+- Id (int, PK)
+- LOBName (nvarchar(255))
+- AccountId (int, FK → Accounts.Id)
+
+**Sites**
+- Id (int, PK)
+- SiteName (nvarchar(255))
+- City (nvarchar(100))
+- Timezone (nvarchar(50))
+- active (bit)
+
+**AttritionCases**
+- Id (int, PK)
+- caseNumber (nvarchar(50))
+- traineeName (nvarchar(255))
+- oracleId (nvarchar(50))
+- personalEmail (nvarchar(255))
+- workEmail (nvarchar(255))
+- account (nvarchar(255))
+- lob (nvarchar(255))
+- site (nvarchar(255))
+- wave (nvarchar(100))
+- trainerName (nvarchar(255))
+- trainerEmail (nvarchar(255))
+- trainingManager (nvarchar(255))
+- trainingManagerEmail (nvarchar(255))
+- attritionCategory (nvarchar(255))
+- subReason (nvarchar(500))
+- severityLevel (nvarchar(50))
+- totalMissedHours (int)
+- riskStatus (nvarchar(50))
+- lifecycleStage (nvarchar(50))
+- incidentDate (nvarchar(50))
+- hireDate (nvarchar(50))
+- caseOpenedDate (nvarchar(50))
+- lastUpdatedDate (nvarchar(50))
+- caseStatus (nvarchar(50))
+- notes (nvarchar(max))
+- outlookConversationId (nvarchar(255))
+- documentationRequired (bit)
+- escalationRequired (bit)
+- workdayActionTaken (bit)
+- terminationReason (nvarchar(500))
+- localReason (nvarchar(500))
+- effectiveDate (nvarchar(50))
+- terminationSheetSent (bit)
+- leaverEmailSent (bit)
+- thresholdHours (int)
+- openedBy (nvarchar(255))
+- investigationRequested (bit)
+- terminationApproved (bit)
+- terminated (bit)
+- terminationSheetSentDate (datetime)
+- investigationDate (datetime)
+- terminationApprovalDate (datetime)
+- version (int)
+
+**RelocationRequests**
+- id (int, PK)
+- requestNumber (nvarchar(50))
+- employeeName (nvarchar(255))
+- oracleId (nvarchar(50))
+- currentSiteId (int)
+- currentLobId (int)
+- currentAccountId (int)
+- hireDate (date)
+- employeeEmail (nvarchar(255))
+- requestedRelocationDate (date)
+- targetSiteId (int)
+- targetLobId (int)
+- targetAccountId (int)
+- relocationReason (nvarchar(100))
+- additionalNotes (nvarchar(max))
+- trainingManagerName (nvarchar(255))
+- trainingManagerEmail (nvarchar(255))
+- supervisorName (nvarchar(255))
+- supervisorEmail (nvarchar(255))
+- status (nvarchar(50))
+- remindTA (bit)
+- remindTADate (datetime)
+- psClearedDate (datetime)
+- taClearedDate (datetime)
+- relocatedDate (datetime)
+- submittedByEmail (nvarchar(255))
+- submittedDate (datetime)
+- lastUpdatedDate (datetime)
+- slaStatus (nvarchar(50))
+- slaRiskAssessment (nvarchar(255))
+- priorityLogic (nvarchar(100))
+- jobRequisitionNumber (nvarchar(50)) → ADD IF MISSING
+
+**HRInvestigations**
+- Id (int, PK)
+- InvestigationNumber (nvarchar(20))
+- CaseId (int)
+- CaseNumber (nvarchar(20))
+- TraineeName (nvarchar(200))
+- OracleID (nvarchar(50))
+- InvestigationType (nvarchar(50))
+- InvestigationStatus (nvarchar(20))
+- Priority (nvarchar(20))
+- InitiatedBy (nvarchar(200))
+- InitiatedDate (datetime)
+- AssignedTo (nvarchar(200))
+- AssignedToEmail (nvarchar(200))
+- DueDate (datetime)
+- Summary (nvarchar(500))
+- Details (nvarchar(2000))
+- Findings (nvarchar(2000))
+- Recommendation (nvarchar(1000))
+- ApprovedBy (nvarchar(200))
+- ApprovalDate (datetime)
+- ClosureNotes (nvarchar(2000))
+- CompletedDate (datetime)
+- Resolution (nvarchar(50))
+- EscalatedTo (nvarchar(200))
+- CreatedDate (datetime)
+
+**Users**
+- email (nvarchar(255), PK)
+- displayName (nvarchar(255))
+- role (nvarchar(50))
+- createdDate (datetime)
+- accessExpiryDate (datetime)
+- active (bit)
+
+**AttritionSequence**
+- yearKey (int, PK)
+- lastSeq (int)
+
+**RelocationSequence** (CREATE IF NOT EXISTS)
+- yearKey (int, PK)
+- lastSeq (int)
+
+**UserNotifications** (CREATE IF NOT EXISTS)
+- id (int, PK, IDENTITY)
+- userEmail (nvarchar(255))
+- moduleType (nvarchar(20))
+- entityId (int)
+- message (nvarchar(500))
+- linkUrl (nvarchar(255))
+- isRead (bit DEFAULT 0)
+- readAt (datetime)
+- createdAt (datetime DEFAULT GETDATE())
+
+**ActivityLog** (CREATE IF NOT EXISTS)
+- id (int, PK, IDENTITY)
+- userEmail (nvarchar(255))
+- userRole (nvarchar(50))
+- action (nvarchar(100))
+- moduleType (nvarchar(20))
+- entityId (int)
+- entityRef (nvarchar(100))
+- details (nvarchar(max))
+- ipAddress (nvarchar(50))
+- actionDate (datetime DEFAULT GETDATE())
+
+**PinnedItems** (CREATE IF NOT EXISTS)
+- id (int, PK, IDENTITY)
+- userEmail (nvarchar(255))
+- itemType (nvarchar(20))
+- itemId (int)
+- pinnedDate (datetime DEFAULT GETDATE())
+
+─────────────
+🔹 TASK 1 – FIX SERVER.JS – ADD ALL MISSING ROUTES
+─────────────
+
+Update `server.js` to include ALL these endpoints. The frontend expects them:
+
+**1. Health Check**
+- `GET /api/health` → return `{ status: 'OK', db: 'connected' | 'disconnected' }`
+
+**2. Accounts & LOBs**
+- `GET /api/accounts` → return all active accounts with their LOBs (joined)
+  Example: `[{ id, accountName, warningHours, criticalHours, documentGraceHours, active: true, lobs: [{ id, lobName, accountId }] }]`
+- `GET /api/lobs` → return all LOBs (filter by `?accountId=`)
+- `GET /api/accounts/:id/lobs` → return LOBs for a specific account
+
+**3. Sites (for dropdowns)**
+- `GET /api/sites` → return all active sites (id, siteName, city)
+
+**4. Attrition Cases**
+- `GET /api/cases` → return all columns from AttritionCases (sorted by caseOpenedDate DESC)
+- `GET /api/cases/:id` → return a single case
+- `POST /api/cases` → insert new case (accept all form fields)
+  - Generate `caseNumber` from AttritionSequence (e.g., `C-{year}-{seq}`)
+  - Set `caseOpenedDate` = current date
+  - Set `caseStatus` = 'Open'
+  - Set `riskStatus` = 'Pending' (or based on totalMissedHours)
+  - Return the new case with its ID and caseNumber
+- `PUT /api/cases/:id` → update any fields
+- `DELETE /api/cases/:id` → delete a case (hard delete)
+
+**5. Relocations**
+- `GET /api/relocations` → return all relocations with joined account/lob/site names
+- `GET /api/relocations/:id` → return a single relocation
+- `POST /api/relocations` → insert new relocation (accept all form fields)
+  - Generate `requestNumber` from RelocationSequence (e.g., `RR-{year}-{seq}`)
+  - Set `submittedDate` and `lastUpdatedDate` = current date
+  - Set `status` = 'Submitted'
+  - Accept `jobRequisitionNumber` field
+  - Return the new relocation with its ID and requestNumber
+- `PUT /api/relocations/:id` → update any fields (status, dates, etc.)
+- `DELETE /api/relocations/:id` → delete
+
+**6. Investigations**
+- `GET /api/investigations` → return all investigations
+- `GET /api/investigations/:id` → return a single investigation
+- `POST /api/investigations` → insert new investigation
+  - Generate `InvestigationNumber` = `INV-{year}-{seq}`
+  - Set `CreatedDate` and `InitiatedDate` = current date
+  - Return the new investigation
+- `PUT /api/investigations/:id` → update
+- `DELETE /api/investigations/:id` → delete
+
+**7. Users (Authentication)**
+- `GET /api/users/me` → get user by email (from `X-MS-CLIENT-PRINCIPAL-NAME` header or query param)
+  - If email not in Users table, create a default user with role 'Trainer'
+  - Return `{ email, displayName, role, createdDate, accessExpiryDate, active }`
+- `GET /api/users` → list all users (admin only, optional)
+- `POST /api/users` → create user (admin only, optional)
+
+**8. Notifications**
+- `GET /api/notifications` → return notifications for current user (ordered by createdAt DESC, limit 50)
+- `POST /api/notifications/read/:id` → mark notification as read
+- `POST /api/notifications/read-all` → mark all as read
+- `GET /api/notifications/unread-count` → return unread count
+
+**9. Activity & Analytics**
+- `GET /api/activity/recent` → return recent activities (from ActivityLog)
+- `GET /api/analytics/sla-performance` → return PS/TA SLA % and relocation rate
+- `GET /api/analytics/case-counts` → return counts by status/risk/severity
+- `GET /api/analytics/trend` → return trend data for charts
+
+**10. Pins**
+- `GET /api/pins` → get pinned items for current user
+- `POST /api/pins/:type/:id` → pin an item (type = 'Case' or 'Relocation')
+- `DELETE /api/pins/:type/:id` → unpin an item
+
+**11. Email & Teams**
+- `POST /api/email/send` → send email (using nodemailer with SMTP secrets)
+- `POST /api/teams/send` → send Teams message (using webhook URLs)
+
+─────────────
+🔹 TASK 2 – FIX DROPDOWNS (Accounts, LOBs, Sites, Trainers)
+─────────────
+
+The frontend expects these dropdown endpoints to return data:
+
+- `/api/accounts` → for account dropdowns (with lobs nested)
+- `/api/lobs?accountId=1` → for LOB dropdowns filtered by account
+- `/api/sites` → for site dropdowns
+- `/api/users?role=trainer` → for trainer dropdowns (list users with role 'Trainer')
+
+Ensure all these endpoints return valid JSON data from the database.
+
+─────────────
+🔹 TASK 3 – FIX 404 ERRORS – CHECK EVERY FRONTEND API CALL
+─────────────
+
+The frontend makes these API calls. Ensure every single one exists:
+
+From `src/api/api.ts` (or similar):
+- `fetchAccounts()` → GET /api/accounts
+- `fetchLOBs(accountId?)` → GET /api/lobs
+- `fetchSites()` → GET /api/sites
+- `fetchCases()` → GET /api/cases
+- `fetchCase(id)` → GET /api/cases/:id
+- `createCase(data)` → POST /api/cases
+- `updateCase(id, data)` → PUT /api/cases/:id
+- `deleteCase(id)` → DELETE /api/cases/:id
+- `fetchRelocations()` → GET /api/relocations
+- `fetchRelocation(id)` → GET /api/relocations/:id
+- `createRelocation(data)` → POST /api/relocations
+- `updateRelocation(id, data)` → PUT /api/relocations/:id
+- `fetchInvestigations()` → GET /api/investigations
+- `fetchInvestigation(id)` → GET /api/investigations/:id
+- `createInvestigation(data)` → POST /api/investigations
+- `updateInvestigation(id, data)` → PUT /api/investigations/:id
+- `fetchUserProfile()` → GET /api/users/me
+- `fetchNotifications()` → GET /api/notifications
+- `markNotificationRead(id)` → POST /api/notifications/read/:id
+- `markAllNotificationsRead()` → POST /api/notifications/read-all
+
+─────────────
+🔹 TASK 4 – CORS & ERROR HANDLING
+─────────────
+
+- Enable CORS for all origins (or restrict to your frontend URL).
+- All routes should return proper HTTP status codes:
+  - 200 for success
+  - 201 for created
+  - 400 for bad request
+  - 404 if not found
+  - 500 for server errors
+- Log all errors to console and optionally to ActivityLog.
+
+─────────────
+🔹 TASK 5 – ENVIRONMENT VARIABLES (Replit Secrets)
+─────────────
+
+Ensure the app loads these from `process.env`:
+SQL_SERVER
+SQL_DATABASE
+SQL_USER
+SQL_PASSWORD
+SMTP_USER
+SMTP_PASS
+TEAMS_WEBHOOK_ATTRITION
+TEAMS_WEBHOOK_RELOCATION
+
+text
+
+If any are missing, log a warning but don't crash the app.
+
+─────────────
+🔹 TASK 6 – CREATE MISSING TABLES (if not exists)
+─────────────
+
+Before starting, ensure these tables exist. If not, create them:
+
+```sql
+-- RelocationSequence (if not exists)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'RelocationSequence')
+BEGIN
+    CREATE TABLE RelocationSequence (
+        yearKey INT PRIMARY KEY,
+        lastSeq INT
+    );
+END
+
+-- UserNotifications (if not exists)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'UserNotifications')
+BEGIN
+    CREATE TABLE UserNotifications (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        userEmail NVARCHAR(255),
+        moduleType NVARCHAR(20),
+        entityId INT,
+        message NVARCHAR(500),
+        linkUrl NVARCHAR(255),
+        isRead BIT DEFAULT 0,
+        readAt DATETIME,
+        createdAt DATETIME DEFAULT GETDATE()
+    );
+END
+
+-- ActivityLog (if not exists)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ActivityLog')
+BEGIN
+    CREATE TABLE ActivityLog (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        userEmail NVARCHAR(255),
+        userRole NVARCHAR(50),
+        action NVARCHAR(100),
+        moduleType NVARCHAR(20),
+        entityId INT,
+        entityRef NVARCHAR(100),
+        details NVARCHAR(MAX),
+        ipAddress NVARCHAR(50),
+        actionDate DATETIME DEFAULT GETDATE()
+    );
+END
+
+-- PinnedItems (if not exists)
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'PinnedItems')
+BEGIN
+    CREATE TABLE PinnedItems (
+        id INT IDENTITY(1,1) PRIMARY KEY,
+        userEmail NVARCHAR(255),
+        itemType NVARCHAR(20),
+        itemId INT,
+        pinnedDate DATETIME DEFAULT GETDATE()
+    );
+END
+
+-- Add jobRequisitionNumber to RelocationRequests if missing
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE name = 'jobRequisitionNumber' AND object_id = OBJECT_ID('RelocationRequests'))
+BEGIN
+    ALTER TABLE RelocationRequests ADD jobRequisitionNumber NVARCHAR(50) NULL;
+END
+─────────────
+🔹 TASK 7 – TESTING AFTER FIX
+─────────────
+
+After you implement everything, test these endpoints:
+
+GET /api/health → { status: 'OK', db: 'connected' }
+
+GET /api/accounts → array with accounts and lobs
+
+GET /api/lobs → array of LOBs
+
+GET /api/sites → array of sites
+
+GET /api/cases → array (maybe empty, but no 404)
+
+POST /api/cases → creates a case, returns caseNumber
+
+GET /api/relocations → array (maybe empty, but no 404)
+
+POST /api/relocations → creates relocation, returns requestNumber
+
+GET /api/users/me?email=your@email.com → returns user role
+
+GET /api/notifications → array (maybe empty, but no 404)
+
+─────────────
+🔹 FINAL DELIVERABLES
+─────────────
+
+After you complete this, show me:
+
+The updated server.js (or all route files).
+
+The updated package.json with required dependencies.
+
+Any new helper files (routes/activity.js, routes/analytics.js, routes/pins.js, etc.).
+
+Confirmation that all 404 errors are resolved.
+
+Make sure the app runs without errors and the frontend can call all endpoints successfully.

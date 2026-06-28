@@ -68,7 +68,7 @@ router.get('/counts', async (req, res) => {
         SUM(CASE WHEN CAST(caseOpenedDate AS DATE) = CAST(GETDATE() AS DATE) THEN 1 ELSE 0 END) as newToday,
         SUM(CASE WHEN riskStatus = 'Critical' OR severityLevel = 'Critical' THEN 1 ELSE 0 END) as critical,
         SUM(CASE WHEN riskStatus = 'Monitoring' THEN 1 ELSE 0 END) as monitoring,
-        SUM(CASE WHEN overdueFlag = 1 AND caseStatus = 'Active' THEN 1 ELSE 0 END) as overdue,
+        SUM(CASE WHEN caseStatus = 'Active' AND DATEDIFF(day, caseOpenedDate, GETDATE()) > 3 AND terminationApproved = 0 AND investigationRequested = 0 THEN 1 ELSE 0 END) as overdue,
         SUM(CASE WHEN investigationRequested = 1 AND terminationApproved = 0 THEN 1 ELSE 0 END) as investigationPending,
         SUM(CASE WHEN terminationApproved = 1 AND terminationSheetSent = 0 THEN 1 ELSE 0 END) as terminationPending
       FROM AttritionCases ${whereClause}
@@ -130,11 +130,11 @@ router.get('/', async (req, res) => {
       SELECT a.*,
         acc.AccountName as accountName,
         l.LOBName as lobName,
-        s.Title as siteName
+        s.SiteName as siteName
       FROM AttritionCases a
       LEFT JOIN Accounts acc ON a.account = acc.AccountName
       LEFT JOIN LOBs l ON a.lob = l.LOBName
-      LEFT JOIN Sites s ON a.site = s.Title
+      LEFT JOIN Sites s ON a.site = s.SiteName
       ${whereSQL}
       ORDER BY a.lastUpdatedDate DESC
       OFFSET ${offset} ROWS FETCH NEXT ${limitNum} ROWS ONLY
@@ -145,8 +145,8 @@ router.get('/', async (req, res) => {
     // Count query
     const countQuery = `SELECT COUNT(*) as total FROM AttritionCases a ${whereSQL}`;
     const countRequest = pool.request();
-    for (const p of request.parameters) {
-      countRequest.input(p.name, p.value);
+    for (const p of Object.values(request.parameters)) {
+      countRequest.input(p.name, p.type, p.value);
     }
     const countResult = await countRequest.query(countQuery);
     const total = countResult.recordset[0]?.total || 0;
@@ -186,12 +186,12 @@ router.get('/:caseId', async (req, res) => {
       SELECT a.*,
         acc.AccountName as accountName,
         l.LOBName as lobName,
-        s.Title as siteName
+        s.SiteName as siteName
       FROM AttritionCases a
       LEFT JOIN Accounts acc ON a.account = acc.AccountName
       LEFT JOIN LOBs l ON a.lob = l.LOBName
-      LEFT JOIN Sites s ON a.site = s.Title
-      WHERE a.id = @caseId OR a.caseNumber = @caseId OR a.oracleId = @caseId
+      LEFT JOIN Sites s ON a.site = s.SiteName
+      WHERE a.Id = @caseId OR a.caseNumber = @caseId OR a.oracleId = @caseId
     `);
 
     if (result.recordset.length === 0) {

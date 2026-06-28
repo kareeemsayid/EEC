@@ -11,7 +11,10 @@ const dbConfig = {
     encrypt: true,
     trustServerCertificate: false,
     enableArithAbort: true,
+    connectTimeout: 15000,
   },
+  connectionTimeout: 15000,
+  requestTimeout: 15000,
   pool: {
     max: 10,
     min: 0,

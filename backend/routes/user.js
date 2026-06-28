@@ -101,4 +101,27 @@ router.get('/me', (req, res) => {
   }
 });
 
+// GET /api/users - List all users (for trainer dropdowns etc.)
+router.get('/', async (req, res) => {
+  try {
+    const { getPool } = require('../db/index');
+    const pool = await getPool();
+    const { role } = req.query;
+
+    const request = pool.request();
+    let query = `SELECT email, displayName, role FROM Users WHERE active = 1 OR active IS NULL`;
+    if (role) {
+      request.input('role', role);
+      query += ` AND role = @role`;
+    }
+    query += ` ORDER BY displayName`;
+
+    const result = await request.query(query);
+    res.json(result.recordset);
+  } catch (error) {
+    console.error('[GET /api/users] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 module.exports = router;

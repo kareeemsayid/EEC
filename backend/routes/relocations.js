@@ -86,8 +86,8 @@ router.get('/counts', async (req, res) => {
         SUM(CASE WHEN status = 'TACleared' THEN 1 ELSE 0 END) as taCleared,
         SUM(CASE WHEN status = 'Relocated' THEN 1 ELSE 0 END) as relocated,
         SUM(CASE WHEN status = 'Cancelled' THEN 1 ELSE 0 END) as cancelled,
-        SUM(CASE WHEN status = 'Submitted' AND overdueFlag = 1 THEN 1 ELSE 0 END) as overduePS,
-        SUM(CASE WHEN status = 'PSCleared' AND overdueFlag = 1 THEN 1 ELSE 0 END) as overdueTA
+        SUM(CASE WHEN status = 'Submitted' AND slaStatus LIKE '%Overdue%' THEN 1 ELSE 0 END) as overduePS,
+        SUM(CASE WHEN status = 'PSCleared' AND slaStatus LIKE '%Overdue%' THEN 1 ELSE 0 END) as overdueTA
       FROM RelocationRequests ${whereClause}
     `);
 
@@ -132,15 +132,14 @@ router.get('/', async (req, res) => {
     }
 
     if (status) { request.input('status', status); whereClauses.push('r.status = @status'); }
-    if (account) { request.input('account', account); whereClauses.push('r.account = @account'); }
-    if (lob) { request.input('lob', lob); whereClauses.push('r.lob = @lob'); }
-    if (site) { request.input('site', site); whereClauses.push('r.site = @site'); }
-    if (vertical) { request.input('vertical', vertical); whereClauses.push('r.vertical = @vertical'); }
+    if (account) { request.input('account', account); whereClauses.push('acc.AccountName = @account'); }
+    if (lob) { request.input('lob', lob); whereClauses.push('l.LOBName = @lob'); }
+    if (site) { request.input('site', site); whereClauses.push('s.SiteName = @site'); }
     if (month) { whereClauses.push(`MONTH(r.submittedDate) = ${parseInt(month, 10)}`); }
     if (quarter) { whereClauses.push(`DATEPART(QUARTER, r.submittedDate) = ${parseInt(quarter, 10)}`); }
     if (search) {
       request.input('search', `%${search}%`);
-      whereClauses.push('(r.employeeName LIKE @search OR r.oid LIKE @search OR r.requestId LIKE @search OR r.oracleId LIKE @search)');
+      whereClauses.push('(r.employeeName LIKE @search OR r.requestNumber LIKE @search OR r.oracleId LIKE @search)');
     }
 
     const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -149,24 +148,32 @@ router.get('/', async (req, res) => {
       SELECT r.*,
         acc.AccountName as accountName,
         l.LOBName as lobName,
-        s.Title as siteName,
-        s.Region as siteRegion
+        s.SiteName as siteName,
+        s.City as siteRegion
       FROM RelocationRequests r
-      LEFT JOIN Accounts acc ON r.accountId = acc.Id
-      LEFT JOIN LOBs l ON r.lobId = l.Id
-      LEFT JOIN Sites s ON r.siteId = s.Id
+      LEFT JOIN Accounts acc ON r.currentAccountId = acc.Id
+      LEFT JOIN LOBs l ON r.currentLobId = l.Id
+      LEFT JOIN Sites s ON r.currentSiteId = s.Id
       ${whereSQL}
       ORDER BY r.submittedDate DESC
       OFFSET ${offset} ROWS FETCH NEXT ${limitNum} ROWS ONLY
     `;
 
-    const countQuery = `SELECT COUNT(*) as total FROM RelocationRequests r ${whereSQL}`;
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM RelocationRequests r
+      LEFT JOIN Accounts acc ON r.currentAccountId = acc.Id
+      LEFT JOIN LOBs l ON r.currentLobId = l.Id
+      LEFT JOIN Sites s ON r.currentSiteId = s.Id
+      ${whereSQL}
+    `;
 
     const result = await request.query(query);
-    const countResult = await pool.request().query(countQuery.replace(/@(\w+)/g, (_, p) => {
-      const v = request.parameters.find(param => param.name === p);
-      return v ? `'${v.value}'` : 'NULL';
-    }));
+    const countRequest = pool.request();
+    for (const p of Object.values(request.parameters)) {
+      countRequest.input(p.name, p.type, p.value);
+    }
+    const countResult = await countRequest.query(countQuery);
     const total = countResult.recordset[0]?.total || 0;
 
     // Load holidays for SLA computation
@@ -217,8 +224,8 @@ router.get('/:id', async (req, res) => {
       SELECT r.*,
         acc.AccountName as accountName,
         l.LOBName as lobName,
-        s.Title as siteName,
-        s.Region as siteRegion
+        s.SiteName as siteName,
+        s.City as siteRegion
       FROM RelocationRequests r
       LEFT JOIN Accounts acc ON r.accountId = acc.Id
       LEFT JOIN LOBs l ON r.lobId = l.Id

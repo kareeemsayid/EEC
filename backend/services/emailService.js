@@ -39,15 +39,15 @@ async function getPSDLForSite(pool, siteName) {
 async function logNotification(pool, logEntry) {
   try {
     const req = pool.request();
+    req.input('moduleType', logEntry.channel || 'email');
+    req.input('entityId', logEntry.recordId || null);
+    req.input('type', logEntry.eventType || '');
     req.input('recipient', logEntry.recipient || '');
     req.input('subject', logEntry.subject || '');
-    req.input('eventType', logEntry.eventType || '');
-    req.input('recordId', logEntry.recordId || '');
-    req.input('status', logEntry.status || 'sent');
-    req.input('channel', logEntry.channel || 'email');
+    req.input('success', logEntry.status === 'sent' ? 1 : 0);
     await req.query(`
-      INSERT INTO NotificationLogs (recipient, subject, eventType, recordId, status, channel, sentAt)
-      VALUES (@recipient, @subject, @eventType, @recordId, @status, @channel, GETDATE())
+      INSERT INTO NotificationLogs (moduleType, entityId, type, recipient, sentDate, subject, success)
+      VALUES (@moduleType, @entityId, @type, @recipient, GETDATE(), @subject, @success)
     `);
   } catch (err) {
     console.error('[emailService] Failed to log notification:', err.message);

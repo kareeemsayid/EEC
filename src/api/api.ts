@@ -5,6 +5,12 @@ import { RiskStatus, SeverityLevel, LifecycleStage, CaseStatus } from "../utils/
 
 const API_BASE = process.env.REACT_APP_API_URL || '/api';
 
+// Module-level current user email — set after MSAL login via setApiUserEmail()
+let _currentUserEmail: string = '';
+export function setApiUserEmail(email: string) {
+  _currentUserEmail = email;
+}
+
 // Types
 export interface Account {
   id: string;
@@ -117,10 +123,15 @@ function castCaseFields(item: any): any {
 
 // Helper
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const authHeaders: Record<string, string> = {};
+  if (_currentUserEmail) {
+    authHeaders['Authorization'] = `Bearer ${_currentUserEmail}`;
+  }
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...(options?.headers || {}),
     },
   });

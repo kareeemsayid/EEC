@@ -3,15 +3,70 @@ const { getPool } = require('../db/index');
 const sql = require('mssql');
 const router = express.Router();
 
-// Generate unique investigation number
+// Generate unique investigation number using HRInvestigations
 async function generateInvestigationNumber(pool) {
   const year = new Date().getFullYear();
   const result = await pool.request().query(`
-    SELECT COUNT(*) as count FROM Investigations
-    WHERE YEAR(createdAt) = ${year}
+    SELECT COUNT(*) as count FROM HRInvestigations
+    WHERE YEAR(CreatedDate) = ${year}
   `);
   const count = (result.recordset[0]?.count || 0) + 1;
   return `INV-${year}-${String(count).padStart(4, '0')}`;
+}
+
+// Log to ActivityLog helper
+async function logActivity(pool, { userEmail, userRole, action, entityId, entityRef, details }) {
+  try {
+    const req = pool.request();
+    req.input('userEmail', userEmail || '');
+    req.input('userRole', userRole || '');
+    req.input('action', action || '');
+    req.input('moduleType', 'Investigation');
+    req.input('entityId', entityId || null);
+    req.input('entityRef', entityRef || '');
+    req.input('details', details || '');
+    await req.query(`
+      INSERT INTO ActivityLog (userEmail, userRole, action, moduleType, entityId, entityRef, details, actionDate)
+      VALUES (@userEmail, @userRole, @action, @moduleType, @entityId, @entityRef, @details, GETDATE())
+    `);
+  } catch (e) {
+    console.error('[investigations] ActivityLog insert failed:', e.message);
+  }
+}
+
+// Map DB PascalCase row to camelCase for frontend
+function mapRow(row) {
+  return {
+    id: row.Id,
+    investigationNumber: row.InvestigationNumber,
+    caseId: row.CaseId,
+    caseNumber: row.CaseNumber,
+    traineeName: row.TraineeName,
+    oracleId: row.OracleID,
+    investigationType: row.InvestigationType,
+    status: row.InvestigationStatus,
+    priority: row.Priority,
+    requestedBy: row.InitiatedBy,
+    requestedByEmail: row.InitiatedByEmail || '',
+    assignedTo: row.AssignedTo,
+    assignedToEmail: row.AssignedToEmail,
+    dueDate: row.DueDate,
+    summary: row.Summary,
+    details: row.Details,
+    findings: row.Findings,
+    recommendation: row.Recommendation,
+    resolution: row.Resolution,
+    outcome: row.Recommendation,
+    approvedBy: row.ApprovedBy,
+    approvalDate: row.ApprovalDate,
+    closureNotes: row.ClosureNotes,
+    closedAt: row.CompletedDate,
+    closedBy: row.ApprovedBy,
+    escalatedTo: row.EscalatedTo,
+    createdAt: row.CreatedDate,
+    updatedAt: row.CompletedDate || row.CreatedDate,
+    accountName: row.accountName || null,
+  };
 }
 
 // ─── GET /counts ─────────────────────────────────────────────
@@ -22,21 +77,18 @@ router.get('/counts', async (req, res) => {
 
     let whereClause = '';
     if (user.role === 'Trainer') {
-      whereClause = `WHERE LOWER(requestedByEmail) = '${user.email.replace(/'/g, "''")}'`;
-    } else if (user.role === 'Supervisor' || user.role === 'Manager') {
-      // Supervisors can see investigations from their accounts
-      whereClause = `WHERE 1=1`;
+      whereClause = `WHERE LOWER(InitiatedBy) = '${user.email.replace(/'/g, "''")}'`;
     }
 
     const result = await pool.request().query(`
       SELECT
         COUNT(*) as total,
-        SUM(CASE WHEN status = 'Open' THEN 1 ELSE 0 END) as open,
-        SUM(CASE WHEN status = 'InProgress' THEN 1 ELSE 0 END) as inProgress,
-        SUM(CASE WHEN status = 'PendingReview' THEN 1 ELSE 0 END) as pendingReview,
-        SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) as closed,
-        SUM(CASE WHEN priority = 'Critical' AND status != 'Closed' THEN 1 ELSE 0 END) as critical
-      FROM Investigations ${whereClause}
+        SUM(CASE WHEN InvestigationStatus = 'Open' THEN 1 ELSE 0 END) as openCount,
+        SUM(CASE WHEN InvestigationStatus = 'InProgress' THEN 1 ELSE 0 END) as inProgress,
+        SUM(CASE WHEN InvestigationStatus = 'PendingReview' THEN 1 ELSE 0 END) as pendingReview,
+        SUM(CASE WHEN InvestigationStatus = 'Closed' THEN 1 ELSE 0 END) as closed,
+        SUM(CASE WHEN Priority = 'Critical' AND InvestigationStatus != 'Closed' THEN 1 ELSE 0 END) as critical
+      FROM HRInvestigations ${whereClause}
     `);
 
     const c = result.recordset[0] || {};
@@ -44,7 +96,7 @@ router.get('/counts', async (req, res) => {
       success: true,
       data: {
         total: c.total || 0,
-        open: c.open || 0,
+        open: c.openCount || 0,
         inProgress: c.inProgress || 0,
         pendingReview: c.pendingReview || 0,
         closed: c.closed || 0,
@@ -71,65 +123,55 @@ router.get('/', async (req, res) => {
     let whereClauses = [];
     const request = pool.request();
 
-    // Role filter
     if (user.role === 'Trainer') {
-      request.input('userEmail', user.email);
-      whereClauses.push('LOWER(i.requestedByEmail) = @userEmail');
-    } else if (user.role === 'Supervisor' || user.role === 'Manager') {
-      // Can see investigations from their teams
+      request.input('userEmail', user.email.toLowerCase());
+      whereClauses.push('LOWER(i.InitiatedBy) = @userEmail');
     }
 
     if (status) {
       request.input('status', status);
-      whereClauses.push('i.status = @status');
+      whereClauses.push('i.InvestigationStatus = @status');
     }
     if (priority) {
       request.input('priority', priority);
-      whereClauses.push('i.priority = @priority');
+      whereClauses.push('i.Priority = @priority');
     }
     if (type) {
       request.input('type', type);
-      whereClauses.push('i.investigationType = @type');
+      whereClauses.push('i.InvestigationType = @type');
     }
     if (search) {
       request.input('search', `%${search}%`);
-      whereClauses.push('(i.traineeName LIKE @search OR i.investigationNumber LIKE @search OR i.oracleId LIKE @search OR i.summary LIKE @search)');
+      whereClauses.push('(i.TraineeName LIKE @search OR i.InvestigationNumber LIKE @search OR i.OracleID LIKE @search OR i.Summary LIKE @search)');
     }
 
     const whereSQL = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
-    const query = `
-      SELECT i.*,
-        acc.AccountName as accountName
-      FROM Investigations i
-      LEFT JOIN Accounts acc ON i.accountId = acc.id
+    const result = await request.query(`
+      SELECT i.*, acc.AccountName as accountName
+      FROM HRInvestigations i
+      LEFT JOIN Accounts acc ON i.CaseId = acc.id
       ${whereSQL}
       ORDER BY
-        CASE i.priority
-          WHEN 'Critical' THEN 1
-          WHEN 'High' THEN 2
-          WHEN 'Medium' THEN 3
-          ELSE 4
-        END,
-        i.createdAt DESC
+        CASE i.Priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN 'Medium' THEN 3 ELSE 4 END,
+        i.CreatedDate DESC
       OFFSET ${offset} ROWS FETCH NEXT ${limitNum} ROWS ONLY
-    `;
+    `);
 
-    const result = await request.query(query);
-
-    // Count query
-    const countQuery = `SELECT COUNT(*) as total FROM Investigations i ${whereSQL}`;
     const countRequest = pool.request();
-    for (const p of request.parameters) {
-      countRequest.input(p.name, p.value);
-    }
-    const countResult = await countRequest.query(countQuery);
+    if (status) countRequest.input('status', status);
+    if (priority) countRequest.input('priority', priority);
+    if (type) countRequest.input('type', type);
+    if (search) countRequest.input('search', `%${search}%`);
+    if (user.role === 'Trainer') countRequest.input('userEmail', user.email.toLowerCase());
+
+    const countResult = await countRequest.query(`SELECT COUNT(*) as total FROM HRInvestigations i ${whereSQL}`);
     const total = countResult.recordset[0]?.total || 0;
 
     res.json({
       success: true,
       data: {
-        investigations: result.recordset,
+        investigations: result.recordset.map(mapRow),
         total,
         page: pageNum,
         limit: limitNum,
@@ -151,30 +193,29 @@ router.get('/:id', async (req, res) => {
     request.input('id', id);
 
     const result = await request.query(`
-      SELECT i.*,
-        acc.AccountName as accountName
-      FROM Investigations i
-      LEFT JOIN Accounts acc ON i.accountId = acc.id
-      WHERE i.id = @id OR i.investigationNumber = @id
+      SELECT i.*, acc.AccountName as accountName
+      FROM HRInvestigations i
+      LEFT JOIN Accounts acc ON i.CaseId = acc.id
+      WHERE i.Id = @id OR i.InvestigationNumber = @id
     `);
 
     if (result.recordset.length === 0) {
       return res.status(404).json({ success: false, error: 'Investigation not found' });
     }
 
-    const investigation = result.recordset[0];
+    const investigation = mapRow(result.recordset[0]);
 
-    // Fetch updates/timeline
+    // Fetch activity log entries for this investigation
     const updatesReq = pool.request();
-    updatesReq.input('investigationId', investigation.id);
+    updatesReq.input('entityId', investigation.id);
     const updatesResult = await updatesReq.query(`
-      SELECT * FROM InvestigationUpdates
-      WHERE investigationId = @investigationId
-      ORDER BY createdAt ASC
+      SELECT id, action as updateType, userEmail as updatedByEmail, details as notes, actionDate as createdAt
+      FROM ActivityLog
+      WHERE moduleType = 'Investigation' AND entityId = @entityId
+      ORDER BY actionDate ASC
     `);
 
     investigation.updates = updatesResult.recordset;
-
     res.json({ success: true, data: investigation });
   } catch (error) {
     console.error('[GET /api/investigations/:id] Error:', error);
@@ -188,62 +229,53 @@ router.post('/', async (req, res) => {
     const user = req.user;
     const pool = await getPool();
 
-    // Only Trainers and Supervisors can create investigations
-    if (!['Trainer', 'Supervisor', 'Manager', 'PS', 'TA'].includes(user.role)) {
+    if (!['Trainer', 'Supervisor', 'Manager', 'PS', 'TA', 'Admin'].includes(user.role)) {
       return res.status(403).json({ success: false, error: 'Not authorized to create investigations' });
     }
 
     const investigationNumber = await generateInvestigationNumber(pool);
-    const now = new Date().toISOString();
+    const now = new Date();
 
     const request = pool.request();
-    request.input('investigationNumber', investigationNumber);
-    request.input('traineeName', req.body.traineeName || '');
-    request.input('oracleId', req.body.oracleId || '');
-    request.input('caseNumber', req.body.caseNumber || null);
-    request.input('investigationType', req.body.investigationType || 'Other');
-    request.input('priority', req.body.priority || 'Medium');
-    request.input('summary', req.body.summary || '');
-    request.input('details', req.body.details || '');
-    request.input('accountId', req.body.accountId || null);
-    request.input('requestedBy', user.displayName || user.email);
-    request.input('requestedByEmail', user.email);
-    request.input('assignedTo', req.body.assignedTo || '');
-    request.input('assignedToEmail', req.body.assignedToEmail || '');
-    request.input('dueDate', req.body.dueDate || null);
-    request.input('status', 'Open');
-    request.input('createdAt', now);
-    request.input('updatedAt', now);
+    request.input('InvestigationNumber', investigationNumber);
+    request.input('CaseId', req.body.caseId || null);
+    request.input('CaseNumber', req.body.caseNumber || null);
+    request.input('TraineeName', req.body.traineeName || '');
+    request.input('OracleID', req.body.oracleId || '');
+    request.input('InvestigationType', req.body.investigationType || 'Other');
+    request.input('Priority', req.body.priority || 'Medium');
+    request.input('InvestigationStatus', 'Open');
+    request.input('Summary', req.body.summary || '');
+    request.input('Details', req.body.details || '');
+    request.input('InitiatedBy', user.displayName || user.email);
+    request.input('AssignedTo', req.body.assignedTo || '');
+    request.input('AssignedToEmail', req.body.assignedToEmail || '');
+    request.input('DueDate', req.body.dueDate || null);
+    request.input('CreatedDate', now);
 
     const insertResult = await request.query(`
-      INSERT INTO Investigations (
-        investigationNumber, traineeName, oracleId, caseNumber, investigationType, priority,
-        summary, details, accountId, requestedBy, requestedByEmail, assignedTo,
-        assignedToEmail, dueDate, status, createdAt, updatedAt
-      ) OUTPUT INSERTED.id
+      INSERT INTO HRInvestigations (
+        InvestigationNumber, CaseId, CaseNumber, TraineeName, OracleID,
+        InvestigationType, Priority, InvestigationStatus, Summary, Details,
+        InitiatedBy, AssignedTo, AssignedToEmail, DueDate, CreatedDate
+      ) OUTPUT INSERTED.Id
       VALUES (
-        @investigationNumber, @traineeName, @oracleId, @caseNumber, @investigationType, @priority,
-        @summary, @details, @accountId, @requestedBy, @requestedByEmail, @assignedTo,
-        @assignedToEmail, @dueDate, @status, @createdAt, @updatedAt
+        @InvestigationNumber, @CaseId, @CaseNumber, @TraineeName, @OracleID,
+        @InvestigationType, @Priority, @InvestigationStatus, @Summary, @Details,
+        @InitiatedBy, @AssignedTo, @AssignedToEmail, @DueDate, @CreatedDate
       )
     `);
 
-    const newId = insertResult.recordset[0].id;
+    const newId = insertResult.recordset[0].Id;
 
-    // Insert initial update
-    try {
-      const updateReq = pool.request();
-      updateReq.input('investigationId', newId);
-      updateReq.input('updateType', 'Created');
-      updateReq.input('updatedBy', user.displayName || user.email);
-      updateReq.input('updatedByEmail', user.email);
-      updateReq.input('createdAt', now);
-      updateReq.input('notes', 'Investigation request submitted');
-      await updateReq.query(`
-        INSERT INTO InvestigationUpdates (investigationId, updateType, updatedBy, updatedByEmail, createdAt, notes)
-        VALUES (@investigationId, @updateType, @updatedBy, @updatedByEmail, @createdAt, @notes)
-      `);
-    } catch (e) { console.error('[investigations] Failed to insert update:', e.message); }
+    await logActivity(pool, {
+      userEmail: user.email,
+      userRole: user.role,
+      action: 'Created',
+      entityId: newId,
+      entityRef: investigationNumber,
+      details: 'Investigation request submitted',
+    });
 
     res.json({ success: true, id: newId, investigationNumber, message: 'Investigation request submitted successfully' });
   } catch (error) {
@@ -259,60 +291,59 @@ router.put('/:id', async (req, res) => {
     const user = req.user;
     const pool = await getPool();
 
-    // Find investigation
     const findReq = pool.request();
     findReq.input('id', id);
-    const findResult = await findReq.query(`SELECT * FROM Investigations WHERE id = @id OR investigationNumber = @id`);
+    const findResult = await findReq.query(`SELECT * FROM HRInvestigations WHERE Id = @id OR InvestigationNumber = @id`);
 
     if (findResult.recordset.length === 0) {
       return res.status(404).json({ success: false, error: 'Investigation not found' });
     }
 
     const existing = findResult.recordset[0];
-    const now = new Date().toISOString();
 
-    // Authorization: Trainers can only update own, PS/TA/Admin can update any
-    if (user.role === 'Trainer' && existing.requestedByEmail.toLowerCase() !== user.email.toLowerCase()) {
+    if (user.role === 'Trainer' &&
+        (existing.InitiatedBy || '').toLowerCase() !== user.email.toLowerCase()) {
       return res.status(403).json({ success: false, error: 'Not authorized to update this investigation' });
     }
 
     const updateFields = [];
     const updateReq = pool.request();
 
-    const allowedFields = ['status', 'priority', 'assignedTo', 'assignedToEmail', 'dueDate', 'findings', 'resolution', 'outcome'];
-    for (const [key, value] of Object.entries(req.body)) {
-      if (allowedFields.includes(key) && value !== undefined) {
-        updateFields.push(`${key} = @${key}`);
-        updateReq.input(key, value);
+    const fieldMap = {
+      status: 'InvestigationStatus',
+      priority: 'Priority',
+      assignedTo: 'AssignedTo',
+      assignedToEmail: 'AssignedToEmail',
+      dueDate: 'DueDate',
+      findings: 'Findings',
+      resolution: 'Resolution',
+      outcome: 'Recommendation',
+    };
+
+    for (const [key, dbCol] of Object.entries(fieldMap)) {
+      if (req.body[key] !== undefined) {
+        updateFields.push(`${dbCol} = @${dbCol}`);
+        updateReq.input(dbCol, req.body[key]);
       }
     }
 
     if (updateFields.length === 0) {
-      return res.json({ success: true, investigationNumber: existing.investigationNumber, message: 'No updates provided' });
+      return res.json({ success: true, investigationNumber: existing.InvestigationNumber, message: 'No updates provided' });
     }
 
-    updateFields.push('updatedAt = @updatedAt');
-    updateReq.input('updatedAt', now);
-    updateReq.input('investigationId', existing.id);
+    updateReq.input('investigationId', existing.Id);
+    await updateReq.query(`UPDATE HRInvestigations SET ${updateFields.join(', ')} WHERE Id = @investigationId`);
 
-    await updateReq.query(`UPDATE Investigations SET ${updateFields.join(', ')} WHERE id = @investigationId`);
+    await logActivity(pool, {
+      userEmail: user.email,
+      userRole: user.role,
+      action: 'Updated',
+      entityId: existing.Id,
+      entityRef: existing.InvestigationNumber,
+      details: req.body.updateNotes || 'Investigation updated',
+    });
 
-    // Insert update record
-    try {
-      const insertReq = pool.request();
-      insertReq.input('investigationId', existing.id);
-      insertReq.input('updateType', 'Updated');
-      insertReq.input('updatedBy', user.displayName || user.email);
-      insertReq.input('updatedByEmail', user.email);
-      insertReq.input('createdAt', now);
-      insertReq.input('notes', req.body.updateNotes || 'Investigation updated');
-      await insertReq.query(`
-        INSERT INTO InvestigationUpdates (investigationId, updateType, updatedBy, updatedByEmail, createdAt, notes)
-        VALUES (@investigationId, @updateType, @updatedBy, @updatedByEmail, @createdAt, @notes)
-      `);
-    } catch (e) { /* ignore */ }
-
-    res.json({ success: true, investigationNumber: existing.investigationNumber, message: 'Investigation updated successfully' });
+    res.json({ success: true, investigationNumber: existing.InvestigationNumber, message: 'Investigation updated successfully' });
   } catch (error) {
     console.error('[PUT /api/investigations/:id] Error:', error);
     res.status(500).json({ success: false, error: 'Failed to update investigation' });
@@ -323,43 +354,33 @@ router.put('/:id', async (req, res) => {
 router.post('/:id/comments', async (req, res) => {
   try {
     const { id } = req.params;
-    const { comment, isInternal = false } = req.body;
+    const { comment } = req.body;
     const user = req.user;
     const pool = await getPool();
 
-    // Find investigation
     const findReq = pool.request();
     findReq.input('id', id);
-    const findResult = await findReq.query(`SELECT * FROM Investigations WHERE id = @id OR investigationNumber = @id`);
+    const findResult = await findReq.query(`SELECT * FROM HRInvestigations WHERE Id = @id OR InvestigationNumber = @id`);
 
     if (findResult.recordset.length === 0) {
       return res.status(404).json({ success: false, error: 'Investigation not found' });
     }
 
     const existing = findResult.recordset[0];
-    const now = new Date().toISOString();
 
-    // isInternal only for PS, TA, Admin
-    let internalFlag = false;
-    if (isInternal && ['PS', 'TA', 'Admin'].includes(user.role)) {
-      internalFlag = true;
-    }
+    await logActivity(pool, {
+      userEmail: user.email,
+      userRole: user.role,
+      action: 'Comment',
+      entityId: existing.Id,
+      entityRef: existing.InvestigationNumber,
+      details: comment || '',
+    });
 
-    const insertReq = pool.request();
-    insertReq.input('investigationId', existing.id);
-    insertReq.input('updateType', 'Comment');
-    insertReq.input('updatedBy', user.displayName || user.email);
-    insertReq.input('updatedByEmail', user.email);
-    insertReq.input('createdAt', now);
-    insertReq.input('notes', comment || '');
-    insertReq.input('isInternal', internalFlag ? 1 : 0);
-
-    await insertReq.query(`
-      INSERT INTO InvestigationUpdates (investigationId, updateType, updatedBy, updatedByEmail, createdAt, notes, isInternal)
-      VALUES (@investigationId, @updateType, @updatedBy, @updatedByEmail, @createdAt, @notes, @isInternal)
-    `);
-
-    res.json({ success: true, data: { updateType: 'Comment', updatedBy: user.displayName || user.email, createdAt: now, notes: comment, isInternal: internalFlag } });
+    res.json({
+      success: true,
+      data: { updateType: 'Comment', updatedBy: user.displayName || user.email, createdAt: new Date(), notes: comment },
+    });
   } catch (error) {
     console.error('[POST /api/investigations/:id/comments] Error:', error);
     res.status(500).json({ success: false, error: 'Failed to add comment' });
@@ -374,60 +395,53 @@ router.post('/:id/resolve', async (req, res) => {
     const user = req.user;
     const pool = await getPool();
 
-    // Only PS, TA, Admin can resolve
     if (!['PS', 'TA', 'Admin'].includes(user.role)) {
       return res.status(403).json({ success: false, error: 'Only PS, TA, or Admin can resolve investigations' });
     }
 
-    // Find investigation
     const findReq = pool.request();
     findReq.input('id', id);
-    const findResult = await findReq.query(`SELECT * FROM Investigations WHERE id = @id OR investigationNumber = @id`);
+    const findResult = await findReq.query(`SELECT * FROM HRInvestigations WHERE Id = @id OR InvestigationNumber = @id`);
 
     if (findResult.recordset.length === 0) {
       return res.status(404).json({ success: false, error: 'Investigation not found' });
     }
 
     const existing = findResult.recordset[0];
-    const now = new Date().toISOString();
+    const now = new Date();
 
-    // Update status
     const updateReq = pool.request();
-    updateReq.input('investigationId', existing.id);
+    updateReq.input('investigationId', existing.Id);
     updateReq.input('status', 'Closed');
     updateReq.input('resolution', resolution || '');
-    updateReq.input('outcome', outcome || 'No Action Required');
-    updateReq.input('closedAt', now);
-    updateReq.input('closedBy', user.displayName || user.email);
-    updateReq.input('updatedAt', now);
+    updateReq.input('recommendation', outcome || 'No Action Required');
+    updateReq.input('closureNotes', resolution || '');
+    updateReq.input('completedDate', now);
+    updateReq.input('approvedBy', user.displayName || user.email);
+    updateReq.input('approvalDate', now);
 
     await updateReq.query(`
-      UPDATE Investigations SET
-        status = @status,
-        resolution = @resolution,
-        outcome = @outcome,
-        closedAt = @closedAt,
-        closedBy = @closedBy,
-        updatedAt = @updatedAt
-      WHERE id = @investigationId
+      UPDATE HRInvestigations SET
+        InvestigationStatus = @status,
+        Resolution = @resolution,
+        Recommendation = @recommendation,
+        ClosureNotes = @closureNotes,
+        CompletedDate = @completedDate,
+        ApprovedBy = @approvedBy,
+        ApprovalDate = @approvalDate
+      WHERE Id = @investigationId
     `);
 
-    // Insert update record
-    try {
-      const insertReq = pool.request();
-      insertReq.input('investigationId', existing.id);
-      insertReq.input('updateType', 'Closed');
-      insertReq.input('updatedBy', user.displayName || user.email);
-      insertReq.input('updatedByEmail', user.email);
-      insertReq.input('createdAt', now);
-      insertReq.input('notes', `Investigation closed. Resolution: ${resolution || 'N/A'}. Outcome: ${outcome || 'N/A'}`);
-      await insertReq.query(`
-        INSERT INTO InvestigationUpdates (investigationId, updateType, updatedBy, updatedByEmail, createdAt, notes)
-        VALUES (@investigationId, @updateType, @updatedBy, @updatedByEmail, @createdAt, @notes)
-      `);
-    } catch (e) { /* ignore */ }
+    await logActivity(pool, {
+      userEmail: user.email,
+      userRole: user.role,
+      action: 'Closed',
+      entityId: existing.Id,
+      entityRef: existing.InvestigationNumber,
+      details: `Investigation closed. Resolution: ${resolution || 'N/A'}. Outcome: ${outcome || 'N/A'}`,
+    });
 
-    res.json({ success: true, investigationNumber: existing.investigationNumber, message: 'Investigation closed successfully' });
+    res.json({ success: true, investigationNumber: existing.InvestigationNumber, message: 'Investigation closed successfully' });
   } catch (error) {
     console.error('[POST /api/investigations/:id/resolve] Error:', error);
     res.status(500).json({ success: false, error: 'Failed to resolve investigation' });

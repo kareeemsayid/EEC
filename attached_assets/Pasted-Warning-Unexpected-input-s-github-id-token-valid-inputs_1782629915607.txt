@@ -1,0 +1,227 @@
+Warning: Unexpected input(s) 'github_id_token', valid inputs are ['entryPoint', 'args', 'action', 'app_location', 'azure_static_web_apps_api_token', 'api_build_command', 'api_location', 'app_artifact_location', 'output_location', 'app_build_command', 'repo_token', 'routes_location', 'skip_app_build']
+Run Azure/static-web-apps-deploy@v1
+/usr/bin/docker run --name fc8880e68799ebc04c64ad11d204a91f993c_309328 --label 98fc88 --workdir /github/workspace --rm -e "REACT_APP_AZURE_AD_CLIENT_ID" -e "REACT_APP_AZURE_AD_TENANT_ID" -e "REACT_APP_AZURE_AD_REDIRECT_URI" -e "REACT_APP_API_URL" -e "INPUT_AZURE_STATIC_WEB_APPS_API_TOKEN" -e "INPUT_ACTION" -e "INPUT_APP_LOCATION" -e "INPUT_API_LOCATION" -e "INPUT_OUTPUT_LOCATION" -e "INPUT_GITHUB_ID_TOKEN" -e "INPUT_API_BUILD_COMMAND" -e "INPUT_APP_ARTIFACT_LOCATION" -e "INPUT_APP_BUILD_COMMAND" -e "INPUT_REPO_TOKEN" -e "INPUT_ROUTES_LOCATION" -e "INPUT_SKIP_APP_BUILD" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_ID_TOKEN_REQUEST_URL" -e "ACTIONS_ID_TOKEN_REQUEST_TOKEN" -e "ACTIONS_RESULTS_URL" -e "ACTIONS_ORCHESTRATION_ID" -e GITHUB_ACTIONS=true -e CI=true -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp":"/github/runner_temp" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/EEC/EEC":"/github/workspace" 98fc88:80e68799ebc04c64ad11d204a91f993c
+DeploymentId: fb06fd08-f3ea-4461-b3d5-1bb8f59d52a2
+
+Try to validate location at: '/github/workspace'.
+App Directory Location: '/' was found.
+Try to validate location at: '/github/workspace/swa-db-connections'.
+Looking for event info
+Starting to build app with Oryx
+Azure Static Web Apps utilizes Oryx to build both static applications and Azure Functions. You can find more details on Oryx here: https://github.com/microsoft/Oryx
+---Oryx build logs---
+
+
+Operation performed by Microsoft Oryx, https://github.com/Microsoft/Oryx
+You can report issues at https://github.com/Microsoft/Oryx/issues
+
+Oryx Version: 0.2.20260109.4+7d54dd5970dbbf3ae6bdcf4dee57b07816a392ce, Commit: 7d54dd5970dbbf3ae6bdcf4dee57b07816a392ce, ReleaseTagName: 20260109.4
+
+Build Operation ID: 93b5eefc780da374
+OS Type           : bullseye
+Image Type        : githubactions
+
+Primary SDK Storage URL: https://oryx-cdn.microsoft.io
+Backup SDK Storage URL: 
+Detecting platforms...
+Detected following platforms:
+  nodejs: 22.22.0
+  php: 8.0.30
+Version '22.22.0' of platform 'nodejs' is not installed. Generating script to install it...
+Version '8.0.30' of platform 'php' is not installed. Generating script to install it...
+Detected the following frameworks: React
+
+
+Source directory     : /github/workspace
+Destination directory: /bin/staticsites/fb06fd08-f3ea-4461-b3d5-1bb8f59d52a2-swa-oryx/app
+
+Installing platform...
+
+Downloading and extracting 'nodejs' version '22.22.0' to '/tmp/oryx/platforms/nodejs/22.22.0'...
+Detected image debian flavor: bullseye.
+Binaries download done in 1 sec(s).
+Verifying checksum...
+Extracting contents...
+performing sha512 checksum for: nodejs...
+Checksum verification done in 0 sec(s).
+
+
+Downloading and extracting 'php' version '8.0.30' to '/tmp/oryx/platforms/php/8.0.30'...
+Detected image debian flavor: bullseye.
+Binaries download done in 0 sec(s).
+Verifying checksum...
+Extracting contents...
+performing sha512 checksum for: php...
+Checksum verification done in 0 sec(s).
+
+
+Downloading and extracting 'php-composer' version '2.6.2' to '/tmp/oryx/platforms/php-composer/2.6.2'...
+Detected image debian flavor: bullseye.
+Binaries download done in 0 sec(s).
+Verifying checksum...
+Extracting contents...
+performing sha512 checksum for: php-composer...
+Checksum verification done in 0 sec(s).
+
+Platform installation done in 3 sec(s).
+Running build script snippets...
+Removing existing manifest file
+Creating directory for command manifest file if it does not exist
+Creating a manifest file...
+Node Build Command Manifest file created.
+
+Using Node version:
+v22.22.0
+
+Using Npm version:
+10.9.4
+
+Running 'npm install'...
+
+
+up to date, audited 1360 packages in 4s
+
+271 packages are looking for funding
+  run `npm fund` for details
+
+43 vulnerabilities (4 low, 28 moderate, 11 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+
+Running 'npm run build'...
+
+
+> eec-employee-exit-command-center@1.0.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Compiled successfully.
+
+File sizes after gzip:
+
+  324.37 kB  build/static/js/main.6d1024a1.js
+  17.84 kB   build/static/css/main.354a7f59.css
+  9.63 kB    build/static/js/729.827dde0f.chunk.js
+  8.75 kB    build/static/js/642.b4d9ac88.chunk.js
+  7.7 kB     build/static/js/357.d39af815.chunk.js
+  7.6 kB     build/static/js/482.9da98a94.chunk.js
+  7.32 kB    build/static/js/654.81a8477c.chunk.js
+  6.9 kB     build/static/js/987.f244a5a7.chunk.js
+  6.6 kB     build/static/js/533.e10a1302.chunk.js
+  6.54 kB    build/static/js/749.662ee204.chunk.js
+  6.21 kB    build/static/js/619.4337adfa.chunk.js
+  5.91 kB    build/static/js/781.feea3c32.chunk.js
+  5.81 kB    build/static/js/941.bf045bdc.chunk.js
+  5.68 kB    build/static/js/210.dfb08417.chunk.js
+  5.57 kB    build/static/js/155.e3b35135.chunk.js
+  5.55 kB    build/static/js/644.22d11eca.chunk.js
+  5.48 kB    build/static/js/8.8b60e385.chunk.js
+  5.42 kB    build/static/js/408.aa6b3ece.chunk.js
+  5.1 kB     build/static/js/31.00cf6cb1.chunk.js
+  4.29 kB    build/static/js/194.e2303fd7.chunk.js
+  4.26 kB    build/static/js/954.c493fe6e.chunk.js
+  3.48 kB    build/static/js/621.4979c37a.chunk.js
+  3.38 kB    build/static/js/406.226f01dd.chunk.js
+  3.26 kB    build/static/js/802.2652ea13.chunk.js
+  3.22 kB    build/static/js/898.b48f8155.chunk.js
+  2.9 kB     build/static/js/622.d60c954d.chunk.js
+  2.09 kB    build/static/js/180.705fae72.chunk.js
+  1.84 kB    build/static/js/336.6ed6a0f2.chunk.js
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  npm install -g serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+
+Build script snippets done in 44 sec(s).
+Preparing output...
+
+Copying files to destination directory '/bin/staticsites/fb06fd08-f3ea-4461-b3d5-1bb8f59d52a2-swa-oryx/app'...
+Copying to destination directory done in 6 sec(s).
+Total time for destination directory preparation done in 6 sec(s).
+
+Removing existing manifest file
+Creating a manifest file...
+Manifest file created.
+Copying .ostype to manifest output directory.
+
+Total execution done in 53 sec(s).
+
+
+---End of Oryx build logs---
+Try to validate location at: '/bin/staticsites/fb06fd08-f3ea-4461-b3d5-1bb8f59d52a2-swa-oryx/app/build'.
+Finished building app with Oryx
+Using 'staticwebapp.config.json' file for configuration information, 'routes.json' will be ignored.
+Try to validate location at: '/github/workspace/backend'.
+Api Directory Location: 'backend' was found.
+Starting to build function app with Oryx
+---Oryx build logs---
+
+
+Operation performed by Microsoft Oryx, https://github.com/Microsoft/Oryx
+You can report issues at https://github.com/Microsoft/Oryx/issues
+
+Oryx Version: 0.2.20260109.4+7d54dd5970dbbf3ae6bdcf4dee57b07816a392ce, Commit: 7d54dd5970dbbf3ae6bdcf4dee57b07816a392ce, ReleaseTagName: 20260109.4
+
+Build Operation ID: 979c82ca941ea869
+Repository Commit : fe8a2aca553e973a01f0ee95aa5f53f18cdb1330
+OS Type           : bullseye
+Image Type        : githubactions
+
+Primary SDK Storage URL: https://oryx-cdn.microsoft.io
+Backup SDK Storage URL: 
+Detecting platforms...
+Detected following platforms:
+  nodejs: 22.22.0
+Detected the following frameworks: Express
+
+
+Source directory     : /github/workspace/backend
+Destination directory: /bin/staticsites/fb06fd08-f3ea-4461-b3d5-1bb8f59d52a2-swa-oryx/api
+
+Running build script snippets...
+Removing existing manifest file
+Creating directory for command manifest file if it does not exist
+Creating a manifest file...
+Node Build Command Manifest file created.
+
+Using Node version:
+v22.22.0
+
+Using Npm version:
+10.9.4
+
+Installing production dependencies in '/github/workspace/backend/.oryx_prod_node_modules'...
+
+Running 'npm install --production'...
+
+npm warn config production Use `--omit=dev` instead.
+npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm error code ENOTFOUND
+npm error syscall getaddrinfo
+npm error errno ENOTFOUND
+npm error network request to http://package-firewall.replit.local/npm/nodemailer/-/nodemailer-9.0.1.tgz failed, reason: getaddrinfo ENOTFOUND package-firewall.replit.local
+npm error network This is a problem related to network connectivity.
+npm error network In most cases you are behind a proxy or have bad network settings.
+npm error network
+npm error network If you are behind a proxy, please make sure that the
+npm error network 'proxy' config is set properly.  See: 'npm help config'
+npm error A complete log of this run can be found in: /github/home/.npm/_logs/2026-06-28T06_54_25_314Z-debug-0.log
+
+
+---End of Oryx build logs---
+Oryx has failed to build the solution.

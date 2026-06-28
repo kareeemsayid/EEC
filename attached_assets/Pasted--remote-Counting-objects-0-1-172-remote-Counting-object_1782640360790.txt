@@ -1,0 +1,326 @@
+  remote: Counting objects:   0% (1/172)        
+  remote: Counting objects:   1% (2/172)        
+  remote: Counting objects:   2% (4/172)        
+  remote: Counting objects:   3% (6/172)        
+  remote: Counting objects:   4% (7/172)        
+  remote: Counting objects:   5% (9/172)        
+  remote: Counting objects:   6% (11/172)        
+  remote: Counting objects:   7% (13/172)        
+  remote: Counting objects:   8% (14/172)        
+  remote: Counting objects:   9% (16/172)        
+  remote: Counting objects:  10% (18/172)        
+  remote: Counting objects:  11% (19/172)        
+  remote: Counting objects:  12% (21/172)        
+  remote: Counting objects:  13% (23/172)        
+  remote: Counting objects:  14% (25/172)        
+  remote: Counting objects:  15% (26/172)        
+  remote: Counting objects:  16% (28/172)        
+  remote: Counting objects:  17% (30/172)        
+  remote: Counting objects:  18% (31/172)        
+  remote: Counting objects:  19% (33/172)        
+  remote: Counting objects:  20% (35/172)        
+  remote: Counting objects:  21% (37/172)        
+  remote: Counting objects:  22% (38/172)        
+  remote: Counting objects:  23% (40/172)        
+  remote: Counting objects:  24% (42/172)        
+  remote: Counting objects:  25% (43/172)        
+  remote: Counting objects:  26% (45/172)        
+  remote: Counting objects:  27% (47/172)        
+  remote: Counting objects:  28% (49/172)        
+  remote: Counting objects:  29% (50/172)        
+  remote: Counting objects:  30% (52/172)        
+  remote: Counting objects:  31% (54/172)        
+  remote: Counting objects:  32% (56/172)        
+  remote: Counting objects:  33% (57/172)        
+  remote: Counting objects:  34% (59/172)        
+  remote: Counting objects:  35% (61/172)        
+  remote: Counting objects:  36% (62/172)        
+  remote: Counting objects:  37% (64/172)        
+  remote: Counting objects:  38% (66/172)        
+  remote: Counting objects:  39% (68/172)        
+  remote: Counting objects:  40% (69/172)        
+  remote: Counting objects:  41% (71/172)        
+  remote: Counting objects:  42% (73/172)        
+  remote: Counting objects:  43% (74/172)        
+  remote: Counting objects:  44% (76/172)        
+  remote: Counting objects:  45% (78/172)        
+  remote: Counting objects:  46% (80/172)        
+  remote: Counting objects:  47% (81/172)        
+  remote: Counting objects:  48% (83/172)        
+  remote: Counting objects:  49% (85/172)        
+  remote: Counting objects:  50% (86/172)        
+  remote: Counting objects:  51% (88/172)        
+  remote: Counting objects:  52% (90/172)        
+  remote: Counting objects:  53% (92/172)        
+  remote: Counting objects:  54% (93/172)        
+  remote: Counting objects:  55% (95/172)        
+  remote: Counting objects:  56% (97/172)        
+  remote: Counting objects:  57% (99/172)        
+  remote: Counting objects:  58% (100/172)        
+  remote: Counting objects:  59% (102/172)        
+  remote: Counting objects:  60% (104/172)        
+  remote: Counting objects:  61% (105/172)        
+  remote: Counting objects:  62% (107/172)        
+  remote: Counting objects:  63% (109/172)        
+  remote: Counting objects:  64% (111/172)        
+  remote: Counting objects:  65% (112/172)        
+  remote: Counting objects:  66% (114/172)        
+  remote: Counting objects:  67% (116/172)        
+  remote: Counting objects:  68% (117/172)        
+  remote: Counting objects:  69% (119/172)        
+  remote: Counting objects:  70% (121/172)        
+  remote: Counting objects:  71% (123/172)        
+  remote: Counting objects:  72% (124/172)        
+  remote: Counting objects:  73% (126/172)        
+  remote: Counting objects:  74% (128/172)        
+  remote: Counting objects:  75% (129/172)        
+  remote: Counting objects:  76% (131/172)        
+  remote: Counting objects:  77% (133/172)        
+  remote: Counting objects:  78% (135/172)        
+  remote: Counting objects:  79% (136/172)        
+  remote: Counting objects:  80% (138/172)        
+  remote: Counting objects:  81% (140/172)        
+  remote: Counting objects:  82% (142/172)        
+  remote: Counting objects:  83% (143/172)        
+  remote: Counting objects:  84% (145/172)        
+  remote: Counting objects:  85% (147/172)        
+  remote: Counting objects:  86% (148/172)        
+  remote: Counting objects:  87% (150/172)        
+  remote: Counting objects:  88% (152/172)        
+  remote: Counting objects:  89% (154/172)        
+  remote: Counting objects:  90% (155/172)        
+  remote: Counting objects:  91% (157/172)        
+  remote: Counting objects:  92% (159/172)        
+  remote: Counting objects:  93% (160/172)        
+  remote: Counting objects:  94% (162/172)        
+  remote: Counting objects:  95% (164/172)        
+  remote: Counting objects:  96% (166/172)        
+  remote: Counting objects:  97% (167/172)        
+  remote: Counting objects:  98% (169/172)        
+  remote: Counting objects:  99% (171/172)        
+  remote: Counting objects: 100% (172/172)        
+  remote: Counting objects: 100% (172/172), done.        
+  remote: Compressing objects:   0% (1/150)        
+  remote: Compressing objects:   1% (2/150)        
+  remote: Compressing objects:   2% (3/150)        
+  remote: Compressing objects:   3% (5/150)        
+  remote: Compressing objects:   4% (6/150)        
+  remote: Compressing objects:   5% (8/150)        
+  remote: Compressing objects:   6% (9/150)        
+  remote: Compressing objects:   7% (11/150)        
+  remote: Compressing objects:   8% (12/150)        
+  remote: Compressing objects:   9% (14/150)        
+  remote: Compressing objects:  10% (15/150)        
+  remote: Compressing objects:  11% (17/150)        
+  remote: Compressing objects:  12% (18/150)        
+  remote: Compressing objects:  13% (20/150)        
+  remote: Compressing objects:  14% (21/150)        
+  remote: Compressing objects:  15% (23/150)        
+  remote: Compressing objects:  16% (24/150)        
+  remote: Compressing objects:  17% (26/150)        
+  remote: Compressing objects:  18% (27/150)        
+  remote: Compressing objects:  19% (29/150)        
+  remote: Compressing objects:  20% (30/150)        
+  remote: Compressing objects:  21% (32/150)        
+  remote: Compressing objects:  22% (33/150)        
+  remote: Compressing objects:  23% (35/150)        
+  remote: Compressing objects:  24% (36/150)        
+  remote: Compressing objects:  25% (38/150)        
+  remote: Compressing objects:  26% (39/150)        
+  remote: Compressing objects:  27% (41/150)        
+  remote: Compressing objects:  28% (42/150)        
+  remote: Compressing objects:  29% (44/150)        
+  remote: Compressing objects:  30% (45/150)        
+  remote: Compressing objects:  31% (47/150)        
+  remote: Compressing objects:  32% (48/150)        
+  remote: Compressing objects:  33% (50/150)        
+  remote: Compressing objects:  34% (51/150)        
+  remote: Compressing objects:  35% (53/150)        
+  remote: Compressing objects:  36% (54/150)        
+  remote: Compressing objects:  37% (56/150)        
+  remote: Compressing objects:  38% (57/150)        
+  remote: Compressing objects:  39% (59/150)        
+  remote: Compressing objects:  40% (60/150)        
+  remote: Compressing objects:  41% (62/150)        
+  remote: Compressing objects:  42% (63/150)        
+  remote: Compressing objects:  43% (65/150)        
+  remote: Compressing objects:  44% (66/150)        
+  remote: Compressing objects:  45% (68/150)        
+  remote: Compressing objects:  46% (69/150)        
+  remote: Compressing objects:  47% (71/150)        
+  remote: Compressing objects:  48% (72/150)        
+  remote: Compressing objects:  49% (74/150)        
+  remote: Compressing objects:  50% (75/150)        
+  remote: Compressing objects:  51% (77/150)        
+  remote: Compressing objects:  52% (78/150)        
+  remote: Compressing objects:  53% (80/150)        
+  remote: Compressing objects:  54% (81/150)        
+  remote: Compressing objects:  55% (83/150)        
+  remote: Compressing objects:  56% (84/150)        
+  remote: Compressing objects:  57% (86/150)        
+  remote: Compressing objects:  58% (87/150)        
+  remote: Compressing objects:  59% (89/150)        
+  remote: Compressing objects:  60% (90/150)        
+  remote: Compressing objects:  61% (92/150)        
+  remote: Compressing objects:  62% (93/150)        
+  remote: Compressing objects:  63% (95/150)        
+  remote: Compressing objects:  64% (96/150)        
+  remote: Compressing objects:  65% (98/150)        
+  remote: Compressing objects:  66% (99/150)        
+  remote: Compressing objects:  67% (101/150)        
+  remote: Compressing objects:  68% (102/150)        
+  remote: Compressing objects:  69% (104/150)        
+  remote: Compressing objects:  70% (105/150)        
+  remote: Compressing objects:  71% (107/150)        
+  remote: Compressing objects:  72% (108/150)        
+  remote: Compressing objects:  73% (110/150)        
+  remote: Compressing objects:  74% (111/150)        
+  remote: Compressing objects:  75% (113/150)        
+  remote: Compressing objects:  76% (114/150)        
+  remote: Compressing objects:  77% (116/150)        
+  remote: Compressing objects:  78% (117/150)        
+  remote: Compressing objects:  79% (119/150)        
+  remote: Compressing objects:  80% (120/150)        
+  remote: Compressing objects:  81% (122/150)        
+  remote: Compressing objects:  82% (123/150)        
+  remote: Compressing objects:  83% (125/150)        
+  remote: Compressing objects:  84% (126/150)        
+  remote: Compressing objects:  85% (128/150)        
+  remote: Compressing objects:  86% (129/150)        
+  remote: Compressing objects:  87% (131/150)        
+  remote: Compressing objects:  88% (132/150)        
+  remote: Compressing objects:  89% (134/150)        
+  remote: Compressing objects:  90% (135/150)        
+  remote: Compressing objects:  91% (137/150)        
+  remote: Compressing objects:  92% (138/150)        
+  remote: Compressing objects:  93% (140/150)        
+  remote: Compressing objects:  94% (141/150)        
+  remote: Compressing objects:  95% (143/150)        
+  remote: Compressing objects:  96% (144/150)        
+  remote: Compressing objects:  97% (146/150)        
+  remote: Compressing objects:  98% (147/150)        
+  remote: Compressing objects:  99% (149/150)        
+  remote: Compressing objects: 100% (150/150)        
+  remote: Compressing objects: 100% (150/150), done.        
+  Receiving objects:   0% (1/172)
+  Receiving objects:   1% (2/172)
+  Receiving objects:   2% (4/172)
+  Receiving objects:   3% (6/172)
+  Receiving objects:   4% (7/172)
+  Receiving objects:   5% (9/172)
+  Receiving objects:   6% (11/172)
+  Receiving objects:   7% (13/172)
+  Receiving objects:   8% (14/172)
+  Receiving objects:   9% (16/172)
+  Receiving objects:  10% (18/172)
+  Receiving objects:  11% (19/172)
+  Receiving objects:  12% (21/172)
+  Receiving objects:  13% (23/172)
+  Receiving objects:  14% (25/172)
+  Receiving objects:  15% (26/172)
+  Receiving objects:  16% (28/172)
+  Receiving objects:  17% (30/172)
+  Receiving objects:  18% (31/172)
+  Receiving objects:  19% (33/172)
+  Receiving objects:  20% (35/172)
+  Receiving objects:  21% (37/172)
+  Receiving objects:  22% (38/172)
+  Receiving objects:  23% (40/172)
+  Receiving objects:  24% (42/172)
+  Receiving objects:  25% (43/172)
+  Receiving objects:  26% (45/172)
+  Receiving objects:  27% (47/172)
+  Receiving objects:  28% (49/172)
+  Receiving objects:  29% (50/172)
+  Receiving objects:  30% (52/172)
+  Receiving objects:  31% (54/172)
+  Receiving objects:  32% (56/172)
+  Receiving objects:  33% (57/172)
+  Receiving objects:  34% (59/172)
+  Receiving objects:  35% (61/172)
+  Receiving objects:  36% (62/172)
+  Receiving objects:  37% (64/172)
+  ##[debug]branch 'main' set up to track 'origin/main'.
+  ##[debug]
+  ::endgroup::
+::group::Setting up auth for fetching submodules
+Setting up auth for fetching submodules
+::group::Fetching submodules
+Fetching submodules
+::group::Determining the checkout info
+Determining the checkout info
+::group::Checking out the ref
+Checking out the ref
+  /usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+  Switched to a new branch 'main'
+  branch 'main' set up to track 'origin/main'.
+  ##[debug]0
+  ##[debug]0
+  ##[debug]
+  /usr/bin/git submodule foreach git config --local gc.auto 0
+  ##[debug]0
+  ##[debug]
+  ::endgroup::
+::group::Persisting credentials for submodules
+Persisting credentials for submodules
+##[debug]0
+##[debug]commit 352f5c1249369381635650cfe07ff85380a75be3
+##[debug]Author: Replit Agent <agent@replit.com>
+##[debug]Date:   Sun Jun 28 09:34:51 2026 +0000
+##[debug]
+##[debug]    Update deployment configuration to include backend location
+##[debug]    
+##[debug]    Correctly configure the Azure Static Web App deployment to include the backend API location.
+##[debug]    
+##[debug]    Replit-Commit-Author: Agent
+##[debug]    Replit-Commit-Session-Id: fe8793ab-04d9-4fc5-9138-49ad30338094
+##[debug]    Replit-Commit-Checkpoint-Type: full_checkpoint
+##[debug]    Replit-Commit-Event-Id: daa82869-c6cf-4ea0-93d2-8d8922497873
+##[debug]    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/87bb5e3e-7b93-415b-bd36-e1b17e89a539/fe8793ab-04d9-4fc5-9138-49ad30338094/0zjYuAh
+##[debug]    Replit-Helium-Checkpoint-Created: true
+##[debug]
+/usr/bin/git log -1 --format='%H'
+'352f5c1249369381635650cfe07ff85380a75be3'
+##[debug]0
+##[debug]'352f5c1249369381635650cfe07ff85380a75be3'
+##[debug]
+##[debug]Unsetting HOME override
+::remove-matcher owner=checkout-git::
+##[debug]Removed matchers: 'checkout-git'
+##[debug]Node Action run completed with exit code 0
+##[debug]Save intra-action state isPost = true
+##[debug]Save intra-action state setSafeDirectory = true
+##[debug]Save intra-action state repositoryPath = /home/runner/work/EEC/EEC
+##[debug]Finishing: Run actions/checkout@v3
+21s
+##[debug]Evaluating condition for step: 'Build And Deploy'
+##[debug]Evaluating: success()
+##[debug]Evaluating success:
+##[debug]=> true
+##[debug]Result: true
+##[debug]Starting: Build And Deploy
+##[debug]Loading inputs
+##[debug]Evaluating: secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310
+##[debug]Evaluating Index:
+##[debug]..Evaluating secrets:
+##[debug]..=> Object
+##[debug]..Evaluating String:
+##[debug]..=> 'AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310'
+##[debug]=> '***'
+##[debug]Result: '***'
+##[debug]Loading env
+Run Azure/static-web-apps-deploy@v1
+/usr/bin/docker run --name ee1bcdff5d2d38f4831b581c951b44fa940_c69c99 --label 940ee1 --workdir /github/workspace --rm -e "REACT_APP_AZURE_AD_CLIENT_ID" -e "REACT_APP_AZURE_AD_TENANT_ID" -e "REACT_APP_AZURE_AD_REDIRECT_URI" -e "REACT_APP_API_URL" -e "INPUT_AZURE_STATIC_WEB_APPS_API_TOKEN" -e "INPUT_ACTION" -e "INPUT_APP_LOCATION" -e "INPUT_API_LOCATION" -e "INPUT_OUTPUT_LOCATION" -e "INPUT_API_BUILD_COMMAND" -e "INPUT_APP_ARTIFACT_LOCATION" -e "INPUT_APP_BUILD_COMMAND" -e "INPUT_REPO_TOKEN" -e "INPUT_ROUTES_LOCATION" -e "INPUT_SKIP_APP_BUILD" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PR
+DeploymentId: 28fba299-9728-4868-a6eb-41d099226618
+Try to validate location at: '/github/workspace'.
+App Directory Location: '/' was found.
+Try to validate location at: '/github/workspace/swa-db-connections'.
+Looking for event info
+The content server has rejected the request with: BadRequest
+Reason: No matching Static Web App was found or the api key was invalid.
+
+For further information, please visit the Azure Static Web Apps documentation at https://docs.microsoft.com/en-us/azure/static-web-apps/
+If you believe this behavior is unexpected, please raise a GitHub issue at https://github.com/azure/static-web-apps/issues/
+Exiting
+##[debug]Docker Action run completed with exit code 1
+##[debug]Finishing: Build And Deploy
