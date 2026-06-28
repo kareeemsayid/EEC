@@ -13,7 +13,7 @@ import EmptyState from "../components/EmptyState";
 import CountUp from "../components/CountUp";
 import { formatHours, timeAgo } from "../utils/formatters";
 import toast from "react-hot-toast";
-import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, Calendar, Activity, ChevronRight, ChevronDown, Shield, Minus, Building2, Scale, UserCheck, MapPin, Sparkles, Zap, Target, Award } from "lucide-react";
+import { FolderOpen, TriangleAlert as AlertTriangle, TrendingUp, TrendingDown, Eye, LogOut, Plus, Calendar, Activity, ChevronRight, ChevronDown, Shield, Minus, Building2, Scale, UserCheck, MapPin, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Dynamic greeting based on time of day with creative messaging
@@ -450,8 +450,8 @@ export default function HomeScreen() {
           />
         </div>
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-8 p-10">
-          {/* Left: greeting + stats */}
+        <div className="relative z-10 flex flex-col gap-8 p-10">
+          {/* Greeting + stats - full width */}
           <div className="flex-1 min-w-0">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -575,177 +575,6 @@ export default function HomeScreen() {
               </motion.div>
             </motion.div>
           </div>
-
-          {/* Right: Compact premium user profile card */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.35, duration: 0.6, type: "spring", stiffness: 100 }}
-            className="shrink-0 md:w-56"
-          >
-            <motion.div
-              whileHover={{ scale: 1.02, y: -4 }}
-              transition={{ duration: 0.3 }}
-              className="relative rounded-2xl p-4 backdrop-blur-2xl border border-white/20 overflow-hidden group"
-              style={{
-                background: "linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
-                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
-              }}
-            >
-              {/* Animated conic gradient outer ring */}
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                className="absolute -inset-1 rounded-2xl opacity-50"
-                style={{
-                  background: "conic-gradient(from 0deg, #00C4B4, transparent 30%, #2563EB, transparent 60%, #00E6D4, #00C4B4)",
-                  filter: "blur(8px)",
-                }}
-              />
-
-              <div className="relative flex flex-col items-center gap-3">
-                {/* Photo / Initials avatar with circle ring animation */}
-                <motion.div
-                  className="relative cursor-pointer"
-                  whileHover={{ scale: 1.08 }}
-                >
-                  {/* Circle rotating glow ring */}
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
-                    className="absolute -inset-3 rounded-full"
-                    style={{
-                      background: "conic-gradient(from 0deg, #00C4B4 0%, transparent 25%, #00E6D4 50%, transparent 75%, #00C4B4 100%)",
-                      opacity: 0.7,
-                    }}
-                  />
-                  {/* Inner pulse ring */}
-                  <motion.div
-                    className="absolute -inset-1.5 rounded-full"
-                    animate={{ scale: [1, 1.1, 1], opacity: [0.4, 0.7, 0.4] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    style={{ background: "rgba(0,196,180,0.2)" }}
-                  />
-                  {/* Pulse ring */}
-                  <motion.div
-                    className="absolute -inset-3 rounded-full border-2"
-                    style={{ borderColor: "rgba(0,196,180,0.4)" }}
-                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
-                    transition={{ duration: 2.5, repeat: Infinity }}
-                  />
-
-                  {/* Avatar container */}
-                  <div
-                    className="relative w-28 h-28 rounded-full flex items-center justify-center overflow-hidden"
-                    style={{
-                      background: "linear-gradient(135deg, #00C4B4 0%, #0D2B45 100%)",
-                      boxShadow: "0 0 50px rgba(0,196,180,0.4), inset 0 0 25px rgba(255,255,255,0.15)",
-                      border: "3px solid rgba(255,255,255,0.25)",
-                    }}
-                  >
-                    {user?.photoUrl ? (
-                      <img src={user.photoUrl} alt={user.displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-3xl font-black text-white select-none drop-shadow-lg">
-                        {user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "EE"}
-                      </span>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Gradient display name with animated underline */}
-                <div className="text-center relative w-full">
-                  <motion.h2
-                    className="text-xl font-black leading-tight relative"
-                    style={{
-                      background: "linear-gradient(135deg, #FFFFFF 0%, #00E6D4 50%, #FFFFFF 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                      backgroundSize: "200% 200%",
-                    }}
-                    animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    {user?.displayName?.split(" ")[0] || "Welcome"}
-                  </motion.h2>
-                  {/* Animated underline */}
-                  <motion.div
-                    className="absolute -bottom-1 left-1/2 h-0.5 rounded-full"
-                    style={{
-                      background: "linear-gradient(90deg, transparent, #00C4B4, #00E6D4, #00C4B4, transparent)",
-                      width: "70%",
-                    }}
-                    animate={{ x: ["-50%", "-50%"], scaleX: [0.6, 1, 0.6] }}
-                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                </div>
-
-                {/* Shiny job title badge with shimmer */}
-                {user?.jobTitle && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-                    className="relative overflow-hidden px-5 py-2 rounded-full"
-                    style={{
-                      background: "linear-gradient(135deg, rgba(0,196,180,0.25), rgba(37,99,235,0.2))",
-                      border: "1px solid rgba(0,196,180,0.4)",
-                      boxShadow: "0 0 25px rgba(0,196,180,0.2), inset 0 1px 0 rgba(255,255,255,0.1)",
-                    }}
-                  >
-                    {/* Shimmer effect */}
-                    <motion.div
-                      className="absolute inset-0"
-                      style={{
-                        background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
-                        transform: "skewX(-12deg)",
-                      }}
-                      animate={{ x: ["-150%", "150%"] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-                    />
-                    <span className="relative text-xs font-bold uppercase tracking-wider" style={{ color: "#00E6D4" }}>
-                      {user.jobTitle}
-                    </span>
-                  </motion.div>
-                )}
-
-                {/* Compact stats bar */}
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="grid grid-cols-3 gap-2 w-full mt-2"
-                >
-                  {[
-                    { icon: Target, value: kpi.activeCases, label: "Cases", color: "#00C4B4" },
-                    { icon: Award, value: kpi.highRisk, label: "High", color: "#F59E0B" },
-                    { icon: Zap, value: resolvedCases, label: "Done", color: "#22C55E" },
-                  ].map((stat, i) => (
-                    <motion.div
-                      key={stat.label}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.7 + i * 0.1 }}
-                      whileHover={{ scale: 1.08, y: -2 }}
-                      className="text-center p-3 rounded-xl transition-all cursor-pointer relative overflow-hidden"
-                      style={{ background: "rgba(255,255,255,0.05)" }}
-                    >
-                      <motion.div
-                        className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity"
-                        style={{ background: `radial-gradient(circle, ${stat.color}15, transparent)` }}
-                      />
-                      <div className="relative">
-                        <stat.icon className="w-4 h-4 mx-auto mb-1" style={{ color: stat.color }} />
-                        <p className="text-xl font-black text-white">{stat.value}</p>
-                        <p className="text-[9px] text-white/50 uppercase font-semibold">{stat.label}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
-            </motion.div>
-          </motion.div>
         </div>
       </motion.div>
 
@@ -757,7 +586,7 @@ export default function HomeScreen() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="eec-card-gradient p-7 min-h-[440px] flex flex-col relative overflow-hidden group"
+            className="eec-card-gradient p-7 min-h-[440px] flex flex-col relative overflow-visible group"
             style={{
               background: "linear-gradient(160deg, rgba(13,43,69,0.98) 0%, rgba(30,58,95,0.95) 40%, rgba(13,43,69,0.98) 100%)",
               boxShadow: "0 25px 50px -12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)",
@@ -858,7 +687,7 @@ export default function HomeScreen() {
                       initial={{ opacity: 0, y: -8, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                      className="absolute right-0 mt-2 z-20 w-44 rounded-xl overflow-hidden"
+                      className="absolute right-0 mt-2 z-50 w-44 rounded-xl overflow-hidden"
                       style={{
                         background: "linear-gradient(180deg, rgba(13,43,69,0.98) 0%, rgba(7,28,46,0.98) 100%)",
                         border: "1px solid rgba(0,196,180,0.3)",
@@ -1015,6 +844,72 @@ export default function HomeScreen() {
               ))}
             </div>
           </motion.div>
+
+          {/* Send Termination Sheet Button */}
+          <motion.button
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            onClick={() => navigate("/termination")}
+            className="w-full relative overflow-hidden rounded-2xl p-5 cursor-pointer group"
+            style={{
+              background: "linear-gradient(135deg, rgba(13,43,69,0.95) 0%, rgba(30,58,95,0.9) 100%)",
+              border: "1px solid rgba(0,196,180,0.25)",
+              boxShadow: "0 15px 35px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
+            }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {/* Animated gradient sweep */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                background: "linear-gradient(90deg, transparent, rgba(0,196,180,0.1), transparent)",
+                transform: "skewX(-12deg) translateX(-150%)",
+              }}
+              animate={{ transform: "skewX(-12deg) translateX(150%)" }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            />
+            {/* Pulsing border glow */}
+            <motion.div
+              className="absolute inset-0 rounded-2xl"
+              style={{
+                border: "1px solid rgba(0,196,180,0.3)",
+                boxShadow: "0 0 20px rgba(0,196,180,0.15)",
+              }}
+              animate={{ opacity: [0.4, 0.8, 0.4] }}
+              transition={{ duration: 2.5, repeat: Infinity }}
+            />
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <motion.div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(0,196,180,0.2) 0%, rgba(0,196,180,0.08) 100%)",
+                    border: "1px solid rgba(0,196,180,0.4)",
+                  }}
+                  whileHover={{ rotate: [0, -5, 5, 0], scale: 1.1 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <LogOut className="w-5 h-5" style={{ color: "#00E6D4" }} />
+                </motion.div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white mb-0.5">Send Termination Sheet</p>
+                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                    Routes to PS DL and stakeholders automatically
+                  </p>
+                </div>
+              </div>
+              <motion.div
+                className="flex items-center gap-2 px-4 py-2 rounded-xl"
+                style={{ background: "rgba(0,196,180,0.15)", border: "1px solid rgba(0,196,180,0.3)" }}
+                whileHover={{ background: "rgba(0,196,180,0.25)" }}
+              >
+                <span className="text-xs font-semibold" style={{ color: "#00E6D4" }}>Start</span>
+                <ChevronRight className="w-4 h-4" style={{ color: "#00E6D4" }} />
+              </motion.div>
+            </div>
+          </motion.button>
         </div>
 
         {/* Right Stack - 35% width */}
@@ -1095,12 +990,6 @@ export default function HomeScreen() {
                 onClick={() => navigate("/relocations/submit")}
               />
               <QuickActionCard
-                icon={LogOut}
-                label="Term Sheet"
-                color="#EF4444"
-                onClick={() => navigate("/termination")}
-              />
-              <QuickActionCard
                 icon={Scale}
                 label="Investigation"
                 color="#7C3AED"
@@ -1111,12 +1000,6 @@ export default function HomeScreen() {
                 label="All Cases"
                 color="#2563EB"
                 onClick={() => navigate("/my-cases")}
-              />
-              <QuickActionCard
-                icon={Activity}
-                label="Analytics"
-                color="#F59E0B"
-                onClick={() => navigate("/analytics")}
               />
             </div>
           </motion.div>
