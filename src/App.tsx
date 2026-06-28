@@ -39,6 +39,7 @@ const ManagerDashboard = lazy(() => import("./pages/manager/Dashboard"));
 const TADashboard = lazy(() => import("./pages/TADashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
+const LinkCenter = lazy(() => import("./pages/LinkCenter"));
 
 const PageLoader = () => <LoadingScreen subtitle="Loading your workspace" />;
 
@@ -361,6 +362,14 @@ function AppRoutes() {
           element={
             <AuthenticatedRoute>
               <HelpSupport />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/links"
+          element={
+            <AuthenticatedRoute>
+              <LinkCenter />
             </AuthenticatedRoute>
           }
         />

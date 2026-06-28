@@ -50,8 +50,195 @@ const WEEKLY_TREND = [
 
 const PERIOD_OPTIONS = ["Last 6 weeks", "Last 30 days", "Last quarter", "This year"];
 
-// Ultra-creative welcome card background with morphing blobs and particles
-function WelcomeCardCanvas() {
+// Ultra-creative constellation particle network with mouse parallax
+function ConstellationCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number>(0);
+  const tRef = useRef(0);
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    const dpr = window.devicePixelRatio || 1;
+
+    const resize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      canvas.width = parent.offsetWidth * dpr;
+      canvas.height = parent.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      mouseRef.current = {
+        x: (e.clientX - rect.left) / rect.width,
+        y: (e.clientY - rect.top) / rect.height,
+      };
+    };
+    canvas.addEventListener("mousemove", handleMouseMove);
+
+    // Constellation stars
+    type Star = { x: number; y: number; vx: number; vy: number; size: number; alpha: number; pulse: number };
+    const stars: Star[] = Array.from({ length: 60 }, () => ({
+      x: Math.random(),
+      y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.00008,
+      vy: (Math.random() - 0.5) * 0.00008,
+      size: 1 + Math.random() * 2.5,
+      alpha: 0.3 + Math.random() * 0.5,
+      pulse: Math.random() * Math.PI * 2,
+    }));
+
+    // Teal wave particles
+    type WaveParticle = { x: number; baseY: number; amplitude: number; phase: number; speed: number; size: number };
+    const waveParticles: WaveParticle[] = Array.from({ length: 40 }, (_, i) => ({
+      x: i / 40,
+      baseY: 0.7 + Math.random() * 0.2,
+      amplitude: 0.02 + Math.random() * 0.03,
+      phase: Math.random() * Math.PI * 2,
+      speed: 0.5 + Math.random() * 0.5,
+      size: 1.5 + Math.random() * 2,
+    }));
+
+    const draw = () => {
+      tRef.current += 0.012;
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+      ctx.clearRect(0, 0, W, H);
+
+      // Layer 1: Deep gradient base
+      const bgGrad = ctx.createRadialGradient(W * 0.3, H * 0.3, 0, W * 0.5, H * 0.5, W);
+      bgGrad.addColorStop(0, "rgba(13,43,69,0.15)");
+      bgGrad.addColorStop(0.5, "rgba(30,58,95,0.08)");
+      bgGrad.addColorStop(1, "transparent");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Layer 2: Teal wave effect
+      ctx.beginPath();
+      for (let i = 0; i <= W; i += 3) {
+        const waveY = H * 0.75 + Math.sin(i * 0.008 + tRef.current * 0.6) * 25 + Math.sin(i * 0.015 + tRef.current * 0.4) * 15;
+        if (i === 0) ctx.moveTo(i, waveY);
+        else ctx.lineTo(i, waveY);
+      }
+      ctx.lineTo(W, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      const waveGrad = ctx.createLinearGradient(0, H * 0.6, 0, H);
+      waveGrad.addColorStop(0, "rgba(0,196,180,0.08)");
+      waveGrad.addColorStop(1, "transparent");
+      ctx.fillStyle = waveGrad;
+      ctx.fill();
+
+      // Layer 3: Wave particles
+      waveParticles.forEach(p => {
+        const px = p.x * W + Math.sin(tRef.current * p.speed + p.phase) * 8;
+        const py = p.baseY * H + Math.sin(tRef.current * 0.8 + p.phase) * p.amplitude * H;
+        const alpha = 0.4 + 0.3 * Math.sin(tRef.current * 1.2 + p.phase);
+
+        const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, p.size * 8);
+        glowGrad.addColorStop(0, `rgba(0,196,180,${alpha * 0.6})`);
+        glowGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size * 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = `rgba(200,255,250,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Layer 4: Constellation stars with parallax
+      stars.forEach(star => {
+        star.x += star.vx;
+        star.y += star.vy;
+        if (star.x < 0) star.x = 1;
+        if (star.x > 1) star.x = 0;
+        if (star.y < 0) star.y = 1;
+        if (star.y > 1) star.y = 0;
+
+        const parallaxX = (mx - 0.5) * 15;
+        const parallaxY = (my - 0.5) * 12;
+        const px = star.x * W + parallaxX;
+        const py = star.y * H + parallaxY;
+        const pulseAlpha = star.alpha * (0.7 + 0.3 * Math.sin(tRef.current * 2 + star.pulse));
+
+        // Star glow
+        const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, star.size * 10);
+        glowGrad.addColorStop(0, `rgba(0,196,180,${pulseAlpha * 0.5})`);
+        glowGrad.addColorStop(0.4, `rgba(0,196,180,${pulseAlpha * 0.2})`);
+        glowGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(px, py, star.size * 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Star core
+        ctx.fillStyle = `rgba(200,255,250,${pulseAlpha})`;
+        ctx.beginPath();
+        ctx.arc(px, py, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Layer 5: Constellation connections
+      for (let i = 0; i < stars.length; i++) {
+        for (let j = i + 1; j < stars.length; j++) {
+          const sx1 = stars[i].x * W + (mx - 0.5) * 15;
+          const sy1 = stars[i].y * H + (my - 0.5) * 12;
+          const sx2 = stars[j].x * W + (mx - 0.5) * 15;
+          const sy2 = stars[j].y * H + (my - 0.5) * 12;
+          const dist = Math.hypot(sx2 - sx1, sy2 - sy1);
+          if (dist < 120) {
+            const alpha = 0.15 * (1 - dist / 120);
+            ctx.strokeStyle = `rgba(0,196,180,${alpha})`;
+            ctx.lineWidth = 0.6;
+            ctx.beginPath();
+            ctx.moveTo(sx1, sy1);
+            ctx.lineTo(sx2, sy2);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Layer 6: Mouse glow
+      const mouseGlow = ctx.createRadialGradient(mx * W, my * H, 0, mx * W, my * H, 150);
+      mouseGlow.addColorStop(0, "rgba(0,196,180,0.12)");
+      mouseGlow.addColorStop(1, "transparent");
+      ctx.fillStyle = mouseGlow;
+      ctx.fillRect(0, 0, W, H);
+
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      canvas.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full"
+      style={{ opacity: 0.95 }}
+    />
+  );
+}
+
+// Morphing background blobs (available for future use)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function MorphingBlobCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const tRef = useRef(0);
@@ -72,52 +259,19 @@ function WelcomeCardCanvas() {
     resize();
     window.addEventListener("resize", resize);
 
-    // Morphing organic blobs
-    type Blob = {
-      x: number; y: number;
-      baseRadius: number;
-      phase: number;
-      speedX: number;
-      speedY: number;
-      hue: number;
-      points: number;
-    };
-
+    type Blob = { x: number; y: number; baseRadius: number; phase: number; speedX: number; speedY: number; hue: number; points: number };
     const blobs: Blob[] = [
       { x: 0.15, y: 0.25, baseRadius: 180, phase: 0, speedX: 0.0002, speedY: 0.00015, hue: 174, points: 8 },
       { x: 0.85, y: 0.75, baseRadius: 220, phase: Math.PI, speedX: -0.00018, speedY: 0.00022, hue: 210, points: 6 },
       { x: 0.5, y: 0.5, baseRadius: 160, phase: Math.PI / 2, speedX: 0.00025, speedY: -0.0002, hue: 200, points: 7 },
     ];
 
-    // Floating particles
-    type Particle = { x: number; y: number; vx: number; vy: number; size: number; alpha: number; hue: number };
-    const particles: Particle[] = Array.from({ length: 35 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0003,
-      vy: (Math.random() - 0.5) * 0.0003,
-      size: 1.5 + Math.random() * 3,
-      alpha: 0.15 + Math.random() * 0.25,
-      hue: 174 + Math.random() * 30,
-    }));
-
-    // Connection nodes
-    type Node = { x: number; y: number; vx: number; vy: number; size: number };
-    const nodes: Node[] = Array.from({ length: 15 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.00015,
-      vy: (Math.random() - 0.5) * 0.00015,
-      size: 2 + Math.random() * 2,
-    }));
-
     const draw = () => {
       tRef.current += 0.008;
-      const W = canvas!.offsetWidth;
-      const H = canvas!.offsetHeight;
+      const W = canvas.offsetWidth;
+      const H = canvas.offsetHeight;
       ctx.clearRect(0, 0, W, H);
 
-      // Layer 1: Morphing organic blobs with smooth edges
       blobs.forEach((blob, bi) => {
         blob.x += blob.speedX + Math.sin(tRef.current * 0.3 + bi) * 0.00005;
         blob.y += blob.speedY + Math.cos(tRef.current * 0.25 + bi) * 0.00005;
@@ -129,7 +283,6 @@ function WelcomeCardCanvas() {
         const cx = blob.x * W;
         const cy = blob.y * H;
 
-        // Draw morphing blob
         ctx.beginPath();
         for (let i = 0; i <= blob.points * 10; i++) {
           const angle = (i / (blob.points * 10)) * Math.PI * 2;
@@ -146,7 +299,6 @@ function WelcomeCardCanvas() {
         }
         ctx.closePath();
 
-        // Gradient fill
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, blob.baseRadius * 1.8);
         grad.addColorStop(0, `hsla(${blob.hue}, 80%, 55%, 0.12)`);
         grad.addColorStop(0.5, `hsla(${blob.hue}, 70%, 45%, 0.06)`);
@@ -154,117 +306,6 @@ function WelcomeCardCanvas() {
         ctx.fillStyle = grad;
         ctx.fill();
       });
-
-      // Layer 2: Connection nodes with lines
-      nodes.forEach(node => {
-        node.x += node.vx;
-        node.y += node.vy;
-        if (node.x < 0 || node.x > 1) node.vx *= -1;
-        if (node.y < 0 || node.y > 1) node.vy *= -1;
-      });
-
-      // Draw connections
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const x1 = nodes[i].x * W;
-          const y1 = nodes[i].y * H;
-          const x2 = nodes[j].x * W;
-          const y2 = nodes[j].y * H;
-          const dist = Math.hypot(x2 - x1, y2 - y1);
-          if (dist < 150) {
-            const alpha = 0.08 * (1 - dist / 150);
-            ctx.strokeStyle = `rgba(45, 212, 191, ${alpha})`;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-          }
-        }
-      }
-
-      // Draw nodes
-      nodes.forEach(node => {
-        const px = node.x * W;
-        const py = node.y * H;
-
-        // Glow
-        const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, node.size * 6);
-        glowGrad.addColorStop(0, "rgba(45, 212, 191, 0.15)");
-        glowGrad.addColorStop(1, "transparent");
-        ctx.fillStyle = glowGrad;
-        ctx.beginPath();
-        ctx.arc(px, py, node.size * 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Core
-        ctx.fillStyle = `rgba(45, 212, 191, ${0.4 + 0.2 * Math.sin(tRef.current * 2)})`;
-        ctx.beginPath();
-        ctx.arc(px, py, node.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Layer 3: Floating particles with trails
-      particles.forEach(p => {
-        p.x += p.vx + Math.sin(tRef.current * 0.4 + p.hue) * 0.00008;
-        p.y += p.vy + Math.cos(tRef.current * 0.35 + p.hue) * 0.00008;
-        if (p.x < 0) p.x = 1;
-        if (p.x > 1) p.x = 0;
-        if (p.y < 0) p.y = 1;
-        if (p.y > 1) p.y = 0;
-
-        const px = p.x * W;
-        const py = p.y * H;
-        const alpha = p.alpha * (0.6 + 0.4 * Math.sin(tRef.current * 1.5 + p.hue));
-
-        // Glow
-        const glowGrad = ctx.createRadialGradient(px, py, 0, px, py, p.size * 5);
-        glowGrad.addColorStop(0, `hsla(${p.hue}, 80%, 60%, ${alpha * 0.5})`);
-        glowGrad.addColorStop(1, "transparent");
-        ctx.fillStyle = glowGrad;
-        ctx.beginPath();
-        ctx.arc(px, py, p.size * 5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Core
-        ctx.fillStyle = `hsla(${p.hue}, 70%, 70%, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(px, py, p.size, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      // Layer 4: Sweeping light rays
-      const rayCount = 3;
-      for (let r = 0; r < rayCount; r++) {
-        const rayAngle = tRef.current * 0.15 + (r * Math.PI * 2) / rayCount;
-        const rayX = W * 0.5 + Math.cos(rayAngle) * W * 0.6;
-        const rayY = H * 0.5 + Math.sin(rayAngle) * H * 0.6;
-
-        const rayGrad = ctx.createRadialGradient(rayX, rayY, 0, rayX, rayY, 100);
-        rayGrad.addColorStop(0, "rgba(45, 212, 191, 0.03)");
-        rayGrad.addColorStop(1, "transparent");
-        ctx.fillStyle = rayGrad;
-        ctx.beginPath();
-        ctx.arc(rayX, rayY, 100, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Layer 5: Subtle grid overlay
-      ctx.strokeStyle = "rgba(45, 212, 191, 0.02)";
-      ctx.lineWidth = 0.5;
-      const gridSize = 50;
-      for (let x = 0; x < W; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, H);
-        ctx.stroke();
-      }
-      for (let y = 0; y < H; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(W, y);
-        ctx.stroke();
-      }
 
       rafRef.current = requestAnimationFrame(draw);
     };
@@ -276,13 +317,7 @@ function WelcomeCardCanvas() {
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ opacity: 0.9 }}
-    />
-  );
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" style={{ opacity: 0.9 }} />;
 }
 
 export default function HomeScreen() {
@@ -345,19 +380,19 @@ export default function HomeScreen() {
     <div className="space-y-8 pb-12 animate-fade-in">
       {error && <ErrorBanner message={error} onDismiss={() => setError(null)} />}
 
-      {/* ULTRA-CREATIVE WELCOME SECTION WITH GLASSMORPHISM */}
+      {/* ULTRA-CREATIVE WELCOME SECTION WITH CONSTELLATION PARTICLE NETWORK */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="relative overflow-hidden rounded-3xl min-h-[320px]"
+        className="relative overflow-hidden rounded-3xl min-h-[340px]"
         style={{
-          background: "linear-gradient(135deg, rgba(13,43,69,0.95) 0%, rgba(30,58,95,0.9) 50%, rgba(13,43,69,0.95) 100%)",
-          boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.1) inset",
+          background: "linear-gradient(160deg, rgba(13,43,69,0.98) 0%, rgba(30,58,95,0.95) 40%, rgba(13,43,69,0.98) 100%)",
+          boxShadow: "0 30px 60px -15px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,196,180,0.15) inset, 0 0 80px rgba(0,196,180,0.08)",
         }}
       >
-        {/* Ultra-creative animated canvas background */}
-        <WelcomeCardCanvas />
+        {/* Constellation particle network canvas */}
+        <ConstellationCanvas />
 
         {/* Glassmorphism overlay cards */}
         <div className="absolute inset-0 pointer-events-none">
@@ -509,109 +544,186 @@ export default function HomeScreen() {
             </motion.div>
           </div>
 
-          {/* Right: user profile card with ultra-glassmorphism */}
+          {/* Right: Ultra-premium user profile card */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.35, duration: 0.6, type: "spring", stiffness: 100 }}
-            className="shrink-0 md:w-64"
+            className="shrink-0 md:w-72"
           >
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="relative rounded-3xl p-6 backdrop-blur-2xl border border-white/20"
+              whileHover={{ scale: 1.02, y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="relative rounded-3xl p-6 backdrop-blur-2xl border border-white/20 overflow-hidden group"
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)",
-                boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
+                background: "linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%)",
+                boxShadow: "0 30px 60px -15px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)",
               }}
             >
-              {/* Animated conic gradient ring */}
+              {/* Animated conic gradient outer ring */}
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="absolute -inset-1 rounded-3xl opacity-30"
+                transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+                className="absolute -inset-1 rounded-3xl opacity-50"
                 style={{
-                  background: "conic-gradient(from 0deg, #00C4B4, #2563EB, #7C3AED, #00C4B4)",
-                  filter: "blur(8px)",
+                  background: "conic-gradient(from 0deg, #00C4B4, transparent 30%, #2563EB, transparent 60%, #00E6D4, #00C4B4)",
+                  filter: "blur(10px)",
                 }}
               />
 
+              {/* Shimmer sweep effect */}
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: "linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%)",
+                }}
+                animate={{ x: ["-100%", "100%"] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", repeatDelay: 2 }}
+              />
+
               <div className="relative flex flex-col items-center gap-4">
-                {/* Photo / Initials avatar with ultra-glow */}
+                {/* Photo / Initials avatar with glowing ring and pulse */}
                 <motion.div
-                  animate={{ scale: [1, 1.03, 1] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="relative group cursor-pointer"
+                  animate={{ scale: [1, 1.04, 1] }}
+                  transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative cursor-pointer"
+                  whileHover={{ scale: 1.08 }}
                 >
+                  {/* Multi-layer glowing ring */}
                   <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute -inset-3 rounded-full opacity-40"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className="absolute -inset-4 rounded-full"
                     style={{
-                      background: "conic-gradient(from 0deg, #00C4B4, transparent, #2563EB, transparent, #00C4B4)",
+                      background: "conic-gradient(from 0deg, #00C4B4 0%, transparent 15%, #00E6D4 30%, transparent 45%, #2563EB 60%, transparent 75%, #00C4B4 100%)",
+                      opacity: 0.6,
                     }}
                   />
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute -inset-2 rounded-full opacity-80"
+                    style={{
+                      background: "conic-gradient(from 180deg, #00C4B4, transparent, #00E6D4, transparent, #00C4B4)",
+                    }}
+                  />
+                  {/* Pulse ring */}
+                  <motion.div
+                    className="absolute -inset-3 rounded-full border-2"
+                    style={{ borderColor: "rgba(0,196,180,0.4)" }}
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 2.5, repeat: Infinity }}
+                  />
+
+                  {/* Avatar container */}
                   <div
-                    className="relative w-24 h-24 rounded-full flex items-center justify-center overflow-hidden border-3 border-white/30"
+                    className="relative w-28 h-28 rounded-full flex items-center justify-center overflow-hidden"
                     style={{
                       background: "linear-gradient(135deg, #00C4B4 0%, #0D2B45 100%)",
-                      boxShadow: "0 0 40px rgba(0,196,180,0.3), inset 0 0 20px rgba(255,255,255,0.1)",
+                      boxShadow: "0 0 50px rgba(0,196,180,0.4), inset 0 0 25px rgba(255,255,255,0.15)",
+                      border: "3px solid rgba(255,255,255,0.25)",
                     }}
                   >
                     {user?.photoUrl ? (
                       <img src={user.photoUrl} alt={user.displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-3xl font-black text-white select-none">
+                      <span className="text-3xl font-black text-white select-none drop-shadow-lg">
                         {user?.displayName?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "EE"}
                       </span>
                     )}
                   </div>
                 </motion.div>
 
-                {/* Name and title */}
-                <div className="text-center">
-                  <p className="font-bold text-white text-lg leading-tight">{user?.displayName || "Welcome"}</p>
-                  {user?.jobTitle && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.7 }}
-                      className="inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider"
-                      style={{
-                        background: "linear-gradient(135deg, rgba(0,196,180,0.2), rgba(37,99,235,0.2))",
-                        color: "#00E6D4",
-                        border: "1px solid rgba(0,196,180,0.3)",
-                        boxShadow: "0 0 20px rgba(0,196,180,0.15)",
-                      }}
-                    >
-                      {user.jobTitle}
-                    </motion.span>
-                  )}
+                {/* Gradient display name with animated underline */}
+                <div className="text-center relative w-full">
+                  <motion.h2
+                    className="text-xl font-black leading-tight relative"
+                    style={{
+                      background: "linear-gradient(135deg, #FFFFFF 0%, #00E6D4 50%, #FFFFFF 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      backgroundSize: "200% 200%",
+                    }}
+                    animate={{ backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    {user?.displayName?.split(" ")[0] || "Welcome"}
+                  </motion.h2>
+                  {/* Animated underline */}
+                  <motion.div
+                    className="absolute -bottom-1 left-1/2 h-0.5 rounded-full"
+                    style={{
+                      background: "linear-gradient(90deg, transparent, #00C4B4, #00E6D4, #00C4B4, transparent)",
+                      width: "70%",
+                    }}
+                    animate={{ x: ["-50%", "-50%"], scaleX: [0.6, 1, 0.6] }}
+                    transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
                 </div>
 
-                {/* Quick stats badges */}
-                <div className="grid grid-cols-3 gap-2 w-full mt-2">
-                  <div className="text-center p-2 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
-                    <div className="flex items-center justify-center mb-1">
-                      <Target className="w-3.5 h-3.5" style={{ color: "#00C4B4" }} />
-                    </div>
-                    <p className="text-lg font-bold text-white">{kpi.activeCases}</p>
-                    <p className="text-[9px] text-white/50 uppercase">Cases</p>
-                  </div>
-                  <div className="text-center p-2 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
-                    <div className="flex items-center justify-center mb-1">
-                      <Award className="w-3.5 h-3.5 text-yellow-400" />
-                    </div>
-                    <p className="text-lg font-bold text-white">{kpi.highRisk}</p>
-                    <p className="text-[9px] text-white/50 uppercase">High</p>
-                  </div>
-                  <div className="text-center p-2 rounded-xl" style={{ background: "rgba(255,255,255,0.05)" }}>
-                    <div className="flex items-center justify-center mb-1">
-                      <Zap className="w-3.5 h-3.5 text-green-400" />
-                    </div>
-                    <p className="text-lg font-bold text-white">{resolvedCases}</p>
-                    <p className="text-[9px] text-white/50 uppercase">Done</p>
-                  </div>
-                </div>
+                {/* Shiny job title badge with shimmer */}
+                {user?.jobTitle && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                    className="relative overflow-hidden px-5 py-2 rounded-full"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(0,196,180,0.25), rgba(37,99,235,0.2))",
+                      border: "1px solid rgba(0,196,180,0.4)",
+                      boxShadow: "0 0 25px rgba(0,196,180,0.2), inset 0 1px 0 rgba(255,255,255,0.1)",
+                    }}
+                  >
+                    {/* Shimmer effect */}
+                    <motion.div
+                      className="absolute inset-0"
+                      style={{
+                        background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+                        transform: "skewX(-12deg)",
+                      }}
+                      animate={{ x: ["-150%", "150%"] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
+                    />
+                    <span className="relative text-xs font-bold uppercase tracking-wider" style={{ color: "#00E6D4" }}>
+                      {user.jobTitle}
+                    </span>
+                  </motion.div>
+                )}
+
+                {/* Compact stats bar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="grid grid-cols-3 gap-2 w-full mt-2"
+                >
+                  {[
+                    { icon: Target, value: kpi.activeCases, label: "Cases", color: "#00C4B4" },
+                    { icon: Award, value: kpi.highRisk, label: "High", color: "#F59E0B" },
+                    { icon: Zap, value: resolvedCases, label: "Done", color: "#22C55E" },
+                  ].map((stat, i) => (
+                    <motion.div
+                      key={stat.label}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.7 + i * 0.1 }}
+                      whileHover={{ scale: 1.08, y: -2 }}
+                      className="text-center p-3 rounded-xl transition-all cursor-pointer relative overflow-hidden"
+                      style={{ background: "rgba(255,255,255,0.05)" }}
+                    >
+                      <motion.div
+                        className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity"
+                        style={{ background: `radial-gradient(circle, ${stat.color}15, transparent)` }}
+                      />
+                      <div className="relative">
+                        <stat.icon className="w-4 h-4 mx-auto mb-1" style={{ color: stat.color }} />
+                        <p className="text-xl font-black text-white">{stat.value}</p>
+                        <p className="text-[9px] text-white/50 uppercase font-semibold">{stat.label}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>
@@ -785,6 +897,12 @@ export default function HomeScreen() {
                 onClick={() => navigate("/relocations/submit")}
               />
               <QuickActionCard
+                icon={LogOut}
+                label="Term Sheet"
+                color="#EF4444"
+                onClick={() => navigate("/termination")}
+              />
+              <QuickActionCard
                 icon={Scale}
                 label="Investigation"
                 color="#7C3AED"
@@ -795,6 +913,12 @@ export default function HomeScreen() {
                 label="All Cases"
                 color="#2563EB"
                 onClick={() => navigate("/my-cases")}
+              />
+              <QuickActionCard
+                icon={Activity}
+                label="Analytics"
+                color="#F59E0B"
+                onClick={() => navigate("/analytics")}
               />
             </div>
           </motion.div>

@@ -5,7 +5,7 @@ import { useAuth } from "../auth/useAuth";
 import { useThemeContext } from "../context/ThemeContext";
 import { UserRole } from "../api/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Settings as SettingsIcon, Menu, X, Search, CircleHelp as HelpCircle, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Home, MapPin, TriangleAlert as AlertTriangle, Plus, FolderOpen, SquarePen as PenSquare, FileSearch, BarChart2, Calendar, UserCog, Moon, Sun, Activity, User } from "lucide-react";
+import { LogOut, Settings as SettingsIcon, Menu, X, Search, CircleHelp as HelpCircle, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Home, MapPin, TriangleAlert as AlertTriangle, Plus, FolderOpen, SquarePen as PenSquare, FileSearch, BarChart2, Calendar, UserCog, Moon, Sun, Activity, User, Globe, BookOpen } from "lucide-react";
 import NotificationBell from "./NotificationBell";
 
 interface LayoutProps { children: React.ReactNode; }
@@ -83,6 +83,14 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/relocation-center",  label: "Relocation Center",   icon: MapPin, tooltip: "Manage all relocation requests" },
       { to: "/relocations/submit", label: "Submit Relocation",   icon: Plus,   tooltip: "Submit a new relocation request" },
+    ],
+  },
+  {
+    label: "Resources",
+    tooltip: "Training and resource links",
+    items: [
+      { to: "/links", label: "Link Center", icon: Globe, tooltip: "Training & Resources Hub" },
+      { to: "/help", label: "Help Center", icon: BookOpen, tooltip: "FAQs and documentation" },
     ],
   },
   {

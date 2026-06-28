@@ -171,7 +171,7 @@ export default function ProfilePage() {
         </div>
       </motion.div>
 
-      {/* Hero Card with Animated Gradient */}
+      {/* Ultra-Creative Hero Card with Enhanced Glassmorphism */}
       <ProfileHero user={user} initials={initials} roleColor={roleColor} roleLabel={roleLabel} />
 
       {/* Statistics Cards */}
@@ -241,7 +241,7 @@ export default function ProfilePage() {
   );
 }
 
-/* ─── Hero Card with Avatar ─────────────────────────────────── */
+/* ─── Hero Card with Avatar - ULTRA PREMIUM ───────────────────────────── */
 function ProfileHero({ user, initials, roleColor, roleLabel }: {
   user: any; initials: string; roleColor: string; roleLabel: string;
 }) {
@@ -250,138 +250,209 @@ function ProfileHero({ user, initials, roleColor, roleLabel }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative rounded-3xl overflow-hidden shadow-xl z-10"
-      style={{ border: "1px solid rgba(0,196,180,0.2)" }}
+      className="relative rounded-3xl overflow-hidden z-10"
+      style={{
+        border: "1px solid rgba(0,196,180,0.25)",
+        boxShadow: "0 30px 80px -20px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,196,180,0.1) inset",
+      }}
     >
       {/* Animated gradient background */}
       <div className={`absolute inset-0 bg-gradient-to-br ${roleColor}`} />
       <div
-        className="absolute inset-0 opacity-30"
+        className="absolute inset-0 opacity-40"
         style={{
-          background: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.2), transparent 60%)",
+          background: "radial-gradient(circle at 20% 50%, rgba(255,255,255,0.25), transparent 60%)",
         }}
       />
 
-      {/* Animated particles */}
+      {/* Constellation particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(12)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-2 h-2 rounded-full bg-white/20"
+            className="absolute rounded-full"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              width: 2 + Math.random() * 4,
+              height: 2 + Math.random() * 4,
+              background: "rgba(255,255,255,0.3)",
             }}
             animate={{
-              y: [0, -30, 0],
-              opacity: [0, 1, 0],
+              y: [0, -30 - Math.random() * 20, 0],
+              opacity: [0, 0.8, 0],
+              scale: [0.5, 1, 0.5],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
-              delay: i * 0.3,
+              duration: 4 + Math.random() * 3,
+              delay: i * 0.2,
               repeat: Infinity,
             }}
           />
         ))}
       </div>
 
-      <div className="relative px-8 py-10 flex flex-col md:flex-row items-center gap-6">
-        {/* Avatar with glowing ring */}
+      {/* Morphing blob background */}
+      <motion.div
+        className="absolute -right-32 -top-32 w-80 h-80 rounded-full opacity-20"
+        style={{
+          background: "radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%)",
+        }}
+        animate={{
+          scale: [1, 1.2, 1],
+          rotate: [0, 45, 0],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <div className="relative px-8 py-12 flex flex-col md:flex-row items-center gap-8">
+        {/* Avatar with multi-layer glowing ring */}
         <div className="relative shrink-0">
+          {/* Outermost glow ring */}
           <motion.div
-            className="absolute -inset-3 rounded-2xl"
+            className="absolute -inset-6 rounded-full"
             style={{
-              background: "conic-gradient(from 0deg, rgba(255,255,255,0.3), transparent, rgba(255,255,255,0.3))",
+              background: "conic-gradient(from 0deg, rgba(0,196,180,0.5), transparent 20%, rgba(255,255,255,0.3), transparent 40%, rgba(0,196,180,0.5), transparent 60%, rgba(255,255,255,0.3), transparent 80%, rgba(0,196,180,0.5))",
             }}
             animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
           />
+          {/* Middle rotating ring */}
           <motion.div
-            className="absolute -inset-1 rounded-2xl bg-white/20"
-            animate={{ scale: [1, 1.05, 1], opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute -inset-4 rounded-full"
+            style={{
+              background: "conic-gradient(from 90deg, transparent, rgba(255,255,255,0.4), transparent, rgba(0,196,180,0.4), transparent)",
+            }}
+            animate={{ rotate: -360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
           />
-          <div className="relative w-28 h-28 rounded-2xl overflow-hidden ring-4 ring-white/30 shadow-2xl">
+          {/* Inner pulse ring */}
+          <motion.div
+            className="absolute -inset-2 rounded-full bg-white/20"
+            animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2.5, repeat: Infinity }}
+          />
+
+          {/* Avatar container */}
+          <motion.div
+            className="relative w-36 h-36 rounded-2xl overflow-hidden"
+            style={{
+              boxShadow: "0 0 60px rgba(0,196,180,0.4), 0 0 100px rgba(0,196,180,0.2), inset 0 0 30px rgba(255,255,255,0.15)",
+              border: "4px solid rgba(255,255,255,0.25)",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.1))",
+            }}
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3 }}
+          >
             {user.photoUrl ? (
               <img src={user.photoUrl} alt={user.displayName} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white text-4xl font-bold">
-                {initials}
+              <div className="w-full h-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                <span className="text-5xl font-black text-white drop-shadow-lg">{initials}</span>
               </div>
             )}
-          </div>
+          </motion.div>
+
+          {/* Verified badge */}
           <motion.div
-            className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #00C4B4, #0D2B45)", border: "3px solid white" }}
-            animate={{ scale: [1, 1.1, 1] }}
+            className="absolute -bottom-3 -right-3 w-10 h-10 rounded-full flex items-center justify-center"
+            style={{
+              background: "linear-gradient(135deg, #00C4B4, #0D2B45)",
+              border: "4px solid white",
+              boxShadow: "0 4px 15px rgba(0,196,180,0.5)",
+            }}
+            animate={{ scale: [1, 1.15, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <Shield className="w-3.5 h-3.5 text-white" />
+            <Shield className="w-4 h-4 text-white" />
           </motion.div>
         </div>
 
+        {/* User info */}
         <div className="flex-1 min-w-0 text-center md:text-left">
+          {/* Animated gradient name */}
           <motion.h2
-            className="text-3xl font-bold text-white tracking-tight"
-            initial={{ opacity: 0, x: -20 }}
+            className="text-4xl font-black text-white tracking-tight relative"
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {user.displayName}
+            <span style={{
+              background: "linear-gradient(135deg, #FFFFFF 0%, #00E6D4 50%, #FFFFFF 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              backgroundSize: "200% 200%",
+            }}>
+              {user.displayName}
+            </span>
           </motion.h2>
+
           <motion.p
-            className="text-white/70 mt-1 font-medium text-lg"
-            initial={{ opacity: 0, x: -20 }}
+            className="text-white/80 mt-2 font-semibold text-xl"
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.25 }}
           >
             {user.jobTitle}
           </motion.p>
+
           <motion.div
-            className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-4"
-            initial={{ opacity: 0, y: 10 }}
+            className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-5"
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.35 }}
           >
-            <span className="flex items-center gap-1.5 text-white/60 text-sm">
-              <Mail className="w-4 h-4" />
-              {user.email}
-            </span>
-            {user.department && (
-              <span className="flex items-center gap-1.5 text-white/60 text-sm">
-                <Building2 className="w-4 h-4" />
-                {user.department}
-              </span>
-            )}
-            {user.officeLocation && (
-              <span className="flex items-center gap-1.5 text-white/60 text-sm">
-                <MapPin className="w-4 h-4" />
-                {user.officeLocation}
-              </span>
-            )}
+            {[
+              { icon: Mail, value: user.email },
+              { icon: Building2, value: user.department },
+              { icon: MapPin, value: user.officeLocation },
+            ].filter(item => item.value).map((item, i) => (
+              <motion.span
+                key={i}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm"
+                style={{
+                  background: "rgba(255,255,255,0.1)",
+                  backdropFilter: "blur(8px)",
+                  color: "rgba(255,255,255,0.85)",
+                }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+              >
+                <item.icon className="w-3.5 h-3.5" />
+                {item.value}
+              </motion.span>
+            ))}
           </motion.div>
         </div>
 
         {/* Role badge */}
         <motion.div
           className="flex flex-col gap-2 shrink-0"
-          initial={{ opacity: 0, x: 20 }}
+          initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.35 }}
+          transition={{ delay: 0.4 }}
         >
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 relative overflow-hidden">
+          <div className="relative flex items-center gap-3 px-5 py-3 rounded-2xl overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.15)",
+              backdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.2)",
+            }}>
+            {/* Shimmer effect */}
             <motion.div
               className="absolute inset-0"
               style={{
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)",
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
               }}
-              animate={{ x: [-100, 100] }}
-              transition={{ duration: 3, repeat: Infinity }}
+              animate={{ x: ["-150%", "150%"] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 1 }}
             />
-            <KeyRound className="w-4 h-4 text-white/80 relative z-10" />
+            <KeyRound className="w-5 h-5 text-white/80 relative z-10" />
             <div className="relative z-10">
-              <p className="text-[10px] text-white/50 uppercase tracking-wider">Role</p>
-              <p className="text-sm font-semibold text-white">{roleLabel}</p>
+              <p className="text-[10px] text-white/50 uppercase tracking-wider font-medium">Role</p>
+              <p className="text-base font-bold text-white">{roleLabel}</p>
             </div>
           </div>
         </motion.div>

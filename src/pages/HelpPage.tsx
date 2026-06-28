@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Search, ChevronRight, CircleHelp as HelpCircle, Users, TriangleAlert as AlertTriangle, Shield, Clock, ArrowLeft, Mail, MessageCircle, ExternalLink, Sparkles, Zap, Lightbulb, TrendingUp } from "lucide-react";
+import { BookOpen, Search, ChevronRight, CircleHelp as HelpCircle, Users, TriangleAlert as AlertTriangle, Shield, Clock, ArrowLeft, Mail, MessageCircle, ExternalLink, Sparkles, Zap, Lightbulb, TrendingUp, Phone, Headphones, X, Send } from "lucide-react";
 
 const FAQ_DATA = [
   {
@@ -570,6 +570,157 @@ export default function HelpPage() {
           </motion.div>
         </motion.a>
       </motion.div>
+
+      {/* Support Cards Grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7, duration: 0.5 }}
+        className="relative z-10"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <Headphones className="w-4 h-4" style={{ color: "#00C4B4" }} />
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748B" }}>Support Channels</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { icon: BookOpen, label: "Documentation", color: "#00C4B4", desc: "Guides & tutorials" },
+            { icon: Mail, label: "Email Support", color: "#2563EB", desc: "24hr response" },
+            { icon: Phone, label: "Phone Support", color: "#22C55E", desc: "Mon-Fri 9-6" },
+            { icon: MessageCircle, label: "Live Chat", color: "#F59E0B", desc: "Coming soon" },
+          ].map((card, i) => (
+            <motion.div
+              key={card.label}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.75 + i * 0.08, duration: 0.4 }}
+              whileHover={{ scale: 1.05, y: -4 }}
+              className="relative rounded-2xl p-5 border overflow-hidden cursor-pointer group"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8))",
+                backdropFilter: "blur(20px)",
+                borderColor: `${card.color}30`,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+              }}
+            >
+              <motion.div
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: `radial-gradient(circle, ${card.color}12, transparent)` }}
+              />
+              <motion.div
+                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3`}
+                style={{ background: `${card.color}15` }}
+                whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+              >
+                <card.icon className="w-5 h-5" style={{ color: card.color }} />
+              </motion.div>
+              <p className="text-sm font-semibold" style={{ color: "#0D2B45" }}>{card.label}</p>
+              <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>{card.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Floating Chat Button */}
+      <FloatingChatButton />
     </div>
+  );
+}
+
+/* ─── Floating Chat Button Component ───────────────────────────── */
+function FloatingChatButton() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [message, setMessage] = useState("");
+
+  return (
+    <>
+      {/* Chat Modal */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed bottom-24 right-8 w-80 bg-white rounded-2xl shadow-2xl overflow-hidden z-50"
+            style={{ border: "1px solid rgba(0,196,180,0.2)" }}
+          >
+            {/* Header */}
+            <div className="p-4 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #00C4B4, #0D2B45)" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <Headphones className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">Support Chat</p>
+                  <p className="text-[10px] text-white/70">Usually replies in minutes</p>
+                </div>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 h-48 overflow-y-auto">
+              <div className="bg-slate-100 rounded-xl p-3 text-sm text-slate-600">
+                Hi there! 👋 How can we help you today?
+              </div>
+            </div>
+
+            {/* Input */}
+            <div className="p-3 border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #00C4B4, #0D2B45)" }}
+                >
+                  <Send className="w-4 h-4 text-white" />
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Button */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center z-50 shadow-xl"
+        style={{
+          background: isOpen ? "#0D2B45" : "linear-gradient(135deg, #00C4B4, #0D2B45)",
+          boxShadow: "0 8px 24px rgba(0,196,180,0.4)",
+        }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        animate={{ y: [0, -4, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        <motion.div
+          animate={{ rotate: isOpen ? 90 : 0, scale: isOpen ? 0.8 : 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          {isOpen ? (
+            <X className="w-6 h-6 text-white" />
+          ) : (
+            <MessageCircle className="w-6 h-6 text-white" />
+          )}
+        </motion.div>
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          style={{ border: "2px solid rgba(255,255,255,0.3)" }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      </motion.button>
+    </>
   );
 }
