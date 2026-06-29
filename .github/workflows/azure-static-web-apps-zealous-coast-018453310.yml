@@ -8,25 +8,38 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Install OIDC dependencies
+        run: npm install @actions/core@1.6.0 @actions/http-client
+
+      - name: Get GitHub OIDC Token
+        uses: actions/github-script@v6
         with:
-          node-version: '20'
+          script: |
+            const core = require('@actions/core');
+            const { HttpClient } = require('@actions/http-client');
 
-      - name: Install dependencies
-        run: npm ci
+            const idTokenUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+            const idTokenToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
 
-      - name: Build React app
-        env:
-          CI: false
-          REACT_APP_AZURE_AD_CLIENT_ID: ${{ secrets.REACT_APP_AZURE_AD_CLIENT_ID }}
-          REACT_APP_AZURE_AD_TENANT_ID: ${{ secrets.REACT_APP_AZURE_AD_TENANT_ID }}
-          REACT_APP_AZURE_AD_REDIRECT_URI: ${{ secrets.REACT_APP_AZURE_AD_REDIRECT_URI }}
-          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
-        run: npm run build
+            if (!idTokenUrl || !idTokenToken) {
+              core.setFailed('OIDC token endpoint not available');
+              return;
+            }
+
+            const http = new HttpClient();
+            const response = await http.get(`${idTokenUrl}&audience=api://AzureADTokenExchange`, {
+              Authorization: `Bearer ${idTokenToken}`
+            });
+            const body = await response.readBody();
+            const data = JSON.parse(body);
+            core.setOutput('id_token', data.value);
+            core.exportVariable('GITHUB_ID_TOKEN', data.value);
 
       - name: Deploy to Azure SWA
         uses: Azure/static-web-apps-deploy@v1
@@ -34,6 +47,11 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310 }}
           action: "upload"
           app_location: "/"
-          output_location: "build"
-          skip_app_build: true
           api_location: "backend"
+          output_location: "build"
+          github_id_token: ${{ env.GITHUB_ID_TOKEN }}
+        env:
+          REACT_APP_AZURE_AD_CLIENT_ID: ${{ secrets.REACT_APP_AZURE_AD_CLIENT_ID }}
+          REACT_APP_AZURE_AD_TENANT_ID: ${{ secrets.REACT_APP_AZURE_AD_TENANT_ID }}
+          REACT_APP_AZURE_AD_REDIRECT_URI: ${{ secrets.REACT_APP_AZURE_AD_REDIRECT_URI }}
+          REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
