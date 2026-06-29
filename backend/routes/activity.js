@@ -2,8 +2,8 @@ const express = require('express');
 const { getPool } = require('../db/index');
 const router = express.Router();
 
-// GET /api/activity/recent - Last 20 activities from CaseUpdates + RelocationUpdates
-router.get('/recent', async (req, res) => {
+// GET /api/activity  AND  GET /api/activity/recent - same handler
+router.get(['/', '/recent'], async (req, res) => {
   try {
     const pool = await getPool();
     const user = req.user;

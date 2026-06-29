@@ -5,8 +5,9 @@ import { useAuth } from "../auth/useAuth";
 import { useThemeContext } from "../context/ThemeContext";
 import { UserRole } from "../api/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogOut, Settings as SettingsIcon, Menu, X, Search, CircleHelp as HelpCircle, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Home, MapPin, TriangleAlert as AlertTriangle, Plus, FolderOpen, SquarePen as PenSquare, FileSearch, BarChart2, Calendar, UserCog, Moon, Sun, Activity, User, Globe, BookOpen } from "lucide-react";
+import { LogOut, Settings as SettingsIcon, Menu, X, Search, CircleHelp as HelpCircle, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight, Home, MapPin, TriangleAlert as AlertTriangle, Plus, FolderOpen, SquarePen as PenSquare, FileSearch, BarChart2, Calendar, UserCog, Moon, Sun, Activity, User } from "lucide-react";
 import NotificationBell from "./NotificationBell";
+import DbStatusBanner from "./DbStatusBanner";
 
 interface LayoutProps { children: React.ReactNode; }
 
@@ -45,6 +46,19 @@ const ROLE_COLORS: Record<string, { bg: string }> = {
   Admin:     { bg: "#EF4444" },
 };
 
+function getRoleDashboard(role?: string): string {
+  switch (role) {
+    case "Trainer":   return "/dashboard/trainer";
+    case "Supervisor":return "/dashboard/supervisor";
+    case "Manager":
+    case "SrManager": return "/dashboard/manager";
+    case "PS":        return "/ps-dashboard";
+    case "TA":        return "/dashboard/ta";
+    case "Admin":     return "/admin";
+    default:          return "/";
+  }
+}
+
 const NAV_GROUPS: NavGroup[] = [
   {
     label: "Main",
@@ -70,26 +84,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: "/relocation-center",  label: "Relocation Center",   icon: MapPin, tooltip: "Manage all relocation requests" },
       { to: "/relocations/submit", label: "Submit Relocation",   icon: Plus,   tooltip: "Submit a new relocation request" },
-    ],
-  },
-  {
-    label: "My Dashboard",
-    tooltip: "Your personalized dashboard view",
-    items: [
-      { to: "/dashboard/trainer", label: "Trainer Dashboard", icon: Activity, tooltip: "Your training dashboard", roles: ["Trainer"] },
-      { to: "/dashboard/supervisor", label: "Supervisor Dashboard", icon: Activity, tooltip: "Your team dashboard", roles: ["Supervisor"] },
-      { to: "/dashboard/manager", label: "Manager Dashboard", icon: Activity, tooltip: "Account overview dashboard", roles: ["Manager", "SrManager"] },
-      { to: "/ps-dashboard", label: "PS Command Center", icon: Activity, tooltip: "People Solutions command center", roles: ["PS"] },
-      { to: "/dashboard/ta", label: "TA Dashboard", icon: Activity, tooltip: "Talent Acquisition hub", roles: ["TA"] },
-      { to: "/admin", label: "Admin Dashboard", icon: Activity, tooltip: "Admin control panel", roles: ["Admin"] },
-    ],
-  },
-  {
-    label: "Resources",
-    tooltip: "Training and resource links",
-    items: [
-      { to: "/links", label: "Link Center", icon: Globe, tooltip: "Training & Resources Hub" },
-      { to: "/help", label: "Help Center", icon: BookOpen, tooltip: "FAQs and documentation" },
     ],
   },
   {
@@ -190,6 +184,7 @@ export default function Layout({ children }: LayoutProps) {
   const userRole = user?.role as UserRole | undefined;
   const roleLabel = ROLE_LABELS[userRole || ""] || userRole || "User";
   const roleColors = ROLE_COLORS[userRole || ""] || ROLE_COLORS.Trainer;
+  const roleDashboard = getRoleDashboard(userRole);
 
   const initials = useMemo(() => {
     if (!user?.displayName) return "?";
@@ -226,7 +221,8 @@ export default function Layout({ children }: LayoutProps) {
   const sidebarWidth = sidebarCollapsed ? 64 : 240;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--eec-bg, #EEF2FF)" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--eec-bg, #EEF2FF)" }}>
+      <DbStatusBanner />
 
       {/* Sidebar CSS animations */}
       <style>{`
@@ -607,6 +603,31 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           ))}
 
+          {/* My Dashboard shortcut */}
+          {roleDashboard !== "/" && (
+            <div className="mt-5">
+              <AnimatePresence>
+                {!sidebarCollapsed && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="px-3 mb-1.5 text-[9px] font-bold uppercase tracking-[0.15em]"
+                    style={{ color: "rgba(0,196,180,0.45)" }}
+                  >
+                    Dashboard
+                  </motion.p>
+                )}
+              </AnimatePresence>
+              <SidebarNavItem
+                item={{ to: roleDashboard, label: "My Dashboard", icon: Activity, tooltip: "Your personalized dashboard" }}
+                collapsed={sidebarCollapsed}
+                isActive={location.pathname === roleDashboard}
+                delay={0}
+                onNavigate={(to) => { navigate(to); setMobileOpen(false); }}
+              />
+            </div>
+          )}
         </nav>
 
         {/* ── PROFILE SECTION ── */}

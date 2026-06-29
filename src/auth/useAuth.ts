@@ -18,20 +18,6 @@ import {
 
 export type { UserRole };
 
-function normalizeRole(role: string | undefined): UserRole {
-  const map: Record<string, UserRole> = {
-    trainer: 'Trainer',
-    supervisor: 'Supervisor',
-    manager: 'Manager',
-    ps: 'PS',
-    ta: 'TA',
-    srmanager: 'SrManager',
-    admin: 'Admin',
-  };
-  if (!role) return 'Trainer';
-  return map[role.toLowerCase()] || (role as UserRole) || 'Trainer';
-}
-
 const GRAPH = "https://graph.microsoft.com/v1.0";
 
 export interface ManagerInfo {
@@ -156,13 +142,11 @@ export function useAuth(): UseAuthReturn {
       setProfileLoading(true);
 
       try {
+        const token = await getAccessToken();
         const userEmail = accounts[0]?.username || "";
 
-        if (userEmail) {
-          setApiUserEmail(userEmail);
-        }
-
-        const token = await getAccessToken();
+        // Forward the signed-in email to the API layer so backend auth works
+        if (userEmail) setApiUserEmail(userEmail);
 
         // Fetch Graph data in parallel: profile, photo, manager1, department
         const [profile, photoUrl, manager1, meGraphRaw] = await Promise.all([
@@ -193,7 +177,7 @@ export function useAuth(): UseAuthReturn {
             department: meGraph?.department || "",
             officeLocation: meGraph?.officeLocation || "",
             photoUrl,
-            role: normalizeRole(roleData.role),
+            role: roleData.role,
             supervisorAccounts,
             manager: manager1,
             manager1,
@@ -235,28 +219,25 @@ export function useAuth(): UseAuthReturn {
   }, [instance]);
 
   const logout = useCallback(() => {
-    // Clear all local storage and session data immediately
+    // Clear all MSAL cache and session data
     localStorage.clear();
     sessionStorage.clear();
-
-    // Clear all cookies for this domain
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    // Remove all MSAL-specific keys
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('msal.')) localStorage.removeItem(key);
     });
-
-    // Redirect immediately to login without popup
-    // Clear MSAL cache silently
-    const clearMsalCache = () => {
-      try {
-        instance.clearCache();
-      } catch {
-        // Ignore cache clear errors
-      }
-    };
-    clearMsalCache();
-
-    // Force immediate redirect to login page
-    window.location.href = '/login';
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('msal.')) sessionStorage.removeItem(key);
+    });
+    // Use logoutPopup to avoid the account picker page, then force redirect
+    instance.logoutPopup({
+      postLogoutRedirectUri: window.location.origin + '/login',
+    }).catch(() => {
+      // Fallback: force navigate to login if popup fails
+      window.location.href = window.location.origin + '/login';
+    }).finally(() => {
+      window.location.href = window.location.origin + '/login';
+    });
   }, [instance]);
 
   return { user, profileLoading, isAuthenticated, login, logout, getAccessToken };

@@ -1,14 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Search, ChevronRight, CircleHelp as HelpCircle, Users, TriangleAlert as AlertTriangle, Shield, Clock, ArrowLeft, Mail, MessageCircle, ExternalLink, Sparkles, Zap, Lightbulb, TrendingUp, Phone, Headphones, X, Send } from "lucide-react";
+import { BookOpen, Search, ChevronRight, CircleHelp as HelpCircle, Users, TriangleAlert as AlertTriangle, Shield, Clock, ArrowLeft, Mail, MessageCircle, ExternalLink } from "lucide-react";
 
 const FAQ_DATA = [
   {
     category: "Getting Started",
     icon: BookOpen,
-    color: "#22C55E",
-    gradient: "from-green-500 to-emerald-600",
     questions: [
       {
         question: "How do I submit a new attrition case?",
@@ -27,8 +25,6 @@ const FAQ_DATA = [
   {
     category: "Relocations",
     icon: Users,
-    color: "#2563EB",
-    gradient: "from-blue-500 to-indigo-600",
     questions: [
       {
         question: "How do I request a relocation?",
@@ -43,8 +39,6 @@ const FAQ_DATA = [
   {
     category: "High Risk Cases",
     icon: AlertTriangle,
-    color: "#EF4444",
-    gradient: "from-red-500 to-orange-600",
     questions: [
       {
         question: "What qualifies as a high-risk case?",
@@ -59,8 +53,6 @@ const FAQ_DATA = [
   {
     category: "Security & Access",
     icon: Shield,
-    color: "#7C3AED",
-    gradient: "from-violet-500 to-purple-600",
     questions: [
       {
         question: "How do I reset my password?",
@@ -74,9 +66,7 @@ const FAQ_DATA = [
   },
   {
     category: "Performance & SLA",
-    icon: TrendingUp,
-    color: "#F59E0B",
-    gradient: "from-amber-500 to-yellow-600",
+    icon: Clock,
     questions: [
       {
         question: "What are the SLA targets?",
@@ -90,85 +80,10 @@ const FAQ_DATA = [
   }
 ];
 
-const QUICK_TIPS = [
-  { icon: Zap, text: "Press ? anywhere to open quick commands", color: "#00C4B4" },
-  { icon: Lightbulb, text: "Use filters to find cases faster on dashboards", color: "#F59E0B" },
-  { icon: Clock, text: "SLA timers auto-update every 5 minutes", color: "#2563EB" },
-];
-
 export default function HelpPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
-  const [activeTip, setActiveTip] = useState(0);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // Animated background
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
-      ctx.scale(dpr, dpr);
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const hexagons: { x: number; y: number; size: number; alpha: number; rotation: number }[] = [];
-    for (let i = 0; i < 15; i++) {
-      hexagons.push({
-        x: Math.random() * canvas.offsetWidth,
-        y: Math.random() * canvas.offsetHeight,
-        size: 20 + Math.random() * 40,
-        alpha: 0.02 + Math.random() * 0.04,
-        rotation: Math.random() * Math.PI,
-      });
-    }
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
-
-      hexagons.forEach(h => {
-        h.rotation += 0.002;
-        ctx.save();
-        ctx.translate(h.x, h.y);
-        ctx.rotate(h.rotation);
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const angle = (Math.PI / 3) * i;
-          const x = h.size * Math.cos(angle);
-          const y = h.size * Math.sin(angle);
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.strokeStyle = `rgba(0,196,180,${h.alpha})`;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.restore();
-      });
-
-      requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  // Rotate tips
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveTip(t => (t + 1) % QUICK_TIPS.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Filter FAQs based on search
   const filteredFAQs = FAQ_DATA.map(category => ({
@@ -184,16 +99,12 @@ export default function HelpPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto animate-fade-in space-y-6 relative">
-      {/* Animated background canvas */}
-      <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0 opacity-60" />
-
+    <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10"
+        transition={{ duration: 0.4 }}
       >
         <button
           onClick={() => navigate(-1)}
@@ -206,220 +117,90 @@ export default function HelpPage() {
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <motion.div
-              className="flex items-center gap-2 mb-1"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <motion.div
-                className="w-10 h-10 rounded-xl flex items-center justify-center relative"
-                style={{ background: "linear-gradient(135deg, #00C4B4, #0D2B45)" }}
-                animate={{ rotate: [0, 5, -5, 0] }}
-                transition={{ duration: 3, repeat: Infinity }}
-              >
-                <HelpCircle className="w-5 h-5 text-white" />
-              </motion.div>
-              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#00C4B4" }}>
-                Knowledge Base
+            <div className="flex items-center gap-2 mb-1">
+              <HelpCircle className="w-5 h-5" style={{ color: "#00C4B4" }} />
+              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#00C4B4" }}>
+                How Can We Assist You?
               </span>
-            </motion.div>
-            <motion.h1
-              className="text-3xl font-bold"
-              style={{ color: "#0D2B45", letterSpacing: "0.02em" }}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-            >
-              HELP CENTER
-            </motion.h1>
-            <motion.p
-              className="text-sm mt-1"
-              style={{ color: "#64748B" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              Find answers instantly — or ask our team
-            </motion.p>
-          </div>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="hidden md:block"
-          >
-            <div className="px-4 py-2 rounded-full" style={{ background: "linear-gradient(135deg, rgba(0,196,180,0.1), rgba(13,43,69,0.05))" }}>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4" style={{ color: "#00C4B4" }} />
-                <span className="text-xs font-semibold" style={{ color: "#0D2B45" }}>{FAQ_DATA.reduce((a, c) => a + c.questions.length, 0)} Articles</span>
-              </div>
             </div>
-          </motion.div>
+            <h1 className="text-3xl font-bold" style={{ color: "#0D2B45", letterSpacing: "0.02em" }}>
+              HELP CENTER
+            </h1>
+            <p className="text-sm mt-1" style={{ color: "#64748B" }}>
+              Knowledge Base – Find Your Answers
+            </p>
+          </div>
         </div>
       </motion.div>
 
-      {/* Quick Tips Bar */}
+      {/* Search Bar */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25, duration: 0.5 }}
-        className="relative z-10 rounded-xl p-4 border overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7))",
-          backdropFilter: "blur(20px)",
-          borderColor: "rgba(0,196,180,0.2)",
-        }}
+        transition={{ delay: 0.1, duration: 0.4 }}
+        className="relative"
       >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTip}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-center gap-3"
-          >
-            {React.createElement(QUICK_TIPS[activeTip].icon, {
-              className: "w-4 h-4",
-              style: { color: QUICK_TIPS[activeTip].color }
-            })}
-            <span className="text-sm" style={{ color: "#0D2B45" }}>{QUICK_TIPS[activeTip].text}</span>
-          </motion.div>
-        </AnimatePresence>
-        <div className="absolute bottom-2 right-4 flex gap-1">
-          {QUICK_TIPS.map((_, i) => (
-            <div
-              key={i}
-              className="w-1.5 h-1.5 rounded-full transition-all"
-              style={{
-                background: i === activeTip ? "#00C4B4" : "rgba(0,196,180,0.2)",
-                width: i === activeTip ? "12px" : "6px",
-              }}
-            />
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Search Bar - Glassmorphism */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="relative z-10"
-      >
-        <div
-          className="flex items-center gap-3 px-5 py-4 rounded-2xl border relative overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8))",
-            backdropFilter: "blur(20px)",
-            borderColor: "rgba(0,196,180,0.2)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
-          }}
-        >
-          <motion.div
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <Search className="w-5 h-5 shrink-0" style={{ color: "#00C4B4" }} />
-          </motion.div>
+        <div className="flex items-center gap-3 px-5 py-4 rounded-2xl border border-gray-100 shadow-sm bg-white">
+          <Search className="w-5 h-5 shrink-0" style={{ color: "#00C4B4" }} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search for answers..."
-            className="flex-1 text-sm outline-none bg-transparent"
+            className="flex-1 text-sm outline-none"
             style={{ color: "#0D2B45" }}
           />
           {searchQuery && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+            <button
               onClick={() => setSearchQuery("")}
-              className="text-xs px-3 py-1.5 rounded-lg transition-colors font-medium"
-              style={{ color: "#00C4B4", background: "rgba(0,196,180,0.1)" }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-gray-100"
+              style={{ color: "#94A3B8" }}
             >
               Clear
-            </motion.button>
+            </button>
           )}
         </div>
       </motion.div>
 
-      {/* FAQ Accordion with Stagger Animations */}
-      <div className="space-y-4 relative z-10">
+      {/* FAQ Accordion */}
+      <div className="space-y-4">
         {filteredFAQs.map((category, categoryIndex) => (
           <motion.div
             key={category.category}
-            initial={{ opacity: 0, y: 30, rotateX: -10 }}
-            animate={{ opacity: 1, y: 0, rotateX: 0 }}
-            transition={{
-              delay: 0.35 + categoryIndex * 0.08,
-              duration: 0.5,
-              type: "spring",
-              stiffness: 100
-            }}
-            className="rounded-2xl border overflow-hidden relative group"
-            style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8))",
-              backdropFilter: "blur(20px)",
-              borderColor: "rgba(255,255,255,0.5)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
-            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + categoryIndex * 0.05, duration: 0.4 }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
           >
-            {/* Gradient accent on hover */}
-            <motion.div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{ background: `linear-gradient(135deg, ${category.color}08, transparent)` }}
-            />
-
             {/* Category Header */}
-            <div className="px-5 py-4 flex items-center gap-3 border-b relative" style={{ borderColor: "rgba(0,196,180,0.1)" }}>
-              <motion.div
-                className={`w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br ${category.gradient}`}
-                whileHover={{ scale: 1.1, rotate: [0, -5, 5, 0] }}
-                transition={{ duration: 0.3 }}
-              >
-                <category.icon className="w-5 h-5 text-white" />
-              </motion.div>
+            <div className="px-5 py-4 flex items-center gap-3 border-b border-gray-100">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.1)" }}>
+                <category.icon className="w-5 h-5" style={{ color: "#00C4B4" }} />
+              </div>
               <div>
                 <h3 className="font-semibold text-sm" style={{ color: "#0D2B45" }}>{category.category}</h3>
                 <p className="text-xs" style={{ color: "#94A3B8" }}>{category.questions.length} question{category.questions.length !== 1 ? "s" : ""}</p>
               </div>
-              <div className="ml-auto">
-                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold" style={{ background: `${category.color}15`, color: category.color }}>
-                  FAQ
-                </span>
-              </div>
             </div>
 
             {/* Questions */}
-            <div className="divide-y" style={{ borderColor: "rgba(0,196,180,0.05)" }}>
+            <div className="divide-y divide-gray-50">
               {category.questions.map((faq, faqIndex) => {
                 const faqId = `${categoryIndex}-${faqIndex}`;
                 const isExpanded = expandedFAQ === faqId;
 
                 return (
-                  <motion.div
-                    key={faqIndex}
-                    className="overflow-hidden relative"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 + categoryIndex * 0.08 + faqIndex * 0.05, duration: 0.4 }}
-                  >
+                  <div key={faqIndex} className="overflow-hidden">
                     <button
                       onClick={() => toggleFAQ(faqId)}
-                      className="w-full flex items-center justify-between px-5 py-4 text-left transition-all relative group/q"
+                      className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-gray-50"
                     >
-                      <div className="absolute inset-0 opacity-0 group-hover/q:opacity-100 transition-opacity" style={{ background: "linear-gradient(90deg, rgba(0,196,180,0.05), transparent)" }} />
-                      <div className="flex items-center gap-3 flex-1 min-w-0 relative z-10">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
                         <motion.div
-                          animate={{ rotate: isExpanded ? 90 : 0, scale: isExpanded ? 1.2 : 1 }}
+                          animate={{ rotate: isExpanded ? 90 : 0 }}
                           transition={{ duration: 0.2 }}
-                          className="shrink-0"
                         >
-                          <ChevronRight className="w-4 h-4" style={{ color: isExpanded ? category.color : "#94A3B8" }} />
+                          <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "#94A3B8" }} />
                         </motion.div>
                         <span className="text-sm font-medium" style={{ color: "#0D2B45" }}>{faq.question}</span>
                       </div>
@@ -433,26 +214,13 @@ export default function HelpPage() {
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.3, ease: "easeInOut" }}
                         >
-                          <motion.div
-                            className="px-5 pb-4 pl-12 relative"
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                          >
-                            <div
-                              className="p-4 rounded-xl border-l-2"
-                              style={{
-                                background: `${category.color}08`,
-                                borderColor: category.color,
-                              }}
-                            >
-                              <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>{faq.answer}</p>
-                            </div>
-                          </motion.div>
+                          <div className="px-5 pb-4 pl-12">
+                            <p className="text-sm leading-relaxed" style={{ color: "#64748B" }}>{faq.answer}</p>
+                          </div>
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
@@ -463,264 +231,55 @@ export default function HelpPage() {
       {/* No Results */}
       {filteredFAQs.length === 0 && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-12 relative z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-12"
         >
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <HelpCircle className="w-16 h-16 mx-auto mb-4" style={{ color: "#CBD5E1" }} />
-          </motion.div>
-          <p className="font-semibold text-lg" style={{ color: "#0D2B45" }}>No results found</p>
-          <p className="text-sm mt-2 max-w-md mx-auto" style={{ color: "#94A3B8" }}>
-            Try a different search term or browse the categories above.
-          </p>
-          <motion.button
-            onClick={() => setSearchQuery("")}
-            className="mt-4 px-5 py-2 rounded-xl text-sm font-medium"
-            style={{ background: "rgba(0,196,180,0.1)", color: "#00C4B4" }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Clear search
-          </motion.button>
+          <HelpCircle className="w-12 h-12 mx-auto mb-3" style={{ color: "#CBD5E1" }} />
+          <p className="font-medium" style={{ color: "#64748B" }}>No results found</p>
+          <p className="text-sm mt-1" style={{ color: "#94A3B8" }}>Try a different search term or browse the categories above.</p>
         </motion.div>
       )}
 
-      {/* Quick Links - Glassmorphism */}
+      {/* Quick Links */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6, duration: 0.5 }}
-        className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10"
+        transition={{ delay: 0.4, duration: 0.4 }}
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
       >
-        <motion.button
+        <button
           onClick={() => navigate("/support")}
-          className="flex items-center justify-between p-5 rounded-2xl border relative overflow-hidden group"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8))",
-            backdropFilter: "blur(20px)",
-            borderColor: "rgba(0,196,180,0.2)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
-          }}
-          whileHover={{ scale: 1.02, boxShadow: "0 12px 40px rgba(0,196,180,0.12)" }}
-          whileTap={{ scale: 0.98 }}
+          className="flex items-center justify-between p-5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all group"
         >
-          <motion.div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: "radial-gradient(circle at left center, rgba(0,196,180,0.1), transparent)" }}
-          />
-          <div className="flex items-center gap-4 relative z-10">
-            <motion.div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, rgba(0,196,180,0.2), rgba(0,196,180,0.1))" }}
-              whileHover={{ rotate: [0, -10, 10, 0] }}
-            >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,196,180,0.1)" }}>
               <Mail className="w-5 h-5" style={{ color: "#00C4B4" }} />
-            </motion.div>
+            </div>
             <div className="text-left">
               <p className="text-sm font-semibold" style={{ color: "#0D2B45" }}>Contact Support</p>
               <p className="text-xs" style={{ color: "#94A3B8" }}>Get personalized help</p>
             </div>
           </div>
-          <motion.div
-            animate={{ x: [0, 4, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <ChevronRight className="w-5 h-5" style={{ color: "#94A3B8" }} />
-          </motion.div>
-        </motion.button>
+          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" style={{ color: "#94A3B8" }} />
+        </button>
 
-        <motion.a
+        <a
           href="mailto:kareem.alihamza@concentrix.com?subject=EEC%20Feature%20Request"
-          className="flex items-center justify-between p-5 rounded-2xl border relative overflow-hidden group"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8))",
-            backdropFilter: "blur(20px)",
-            borderColor: "rgba(37,99,235,0.2)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.06)",
-          }}
-          whileHover={{ scale: 1.02, boxShadow: "0 12px 40px rgba(37,99,235,0.12)" }}
-          whileTap={{ scale: 0.98 }}
+          className="flex items-center justify-between p-5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all group"
         >
-          <motion.div
-            className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: "radial-gradient(circle at left center, rgba(37,99,235,0.1), transparent)" }}
-          />
-          <div className="flex items-center gap-4 relative z-10">
-            <motion.div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.2), rgba(37,99,235,0.1))" }}
-              whileHover={{ rotate: [0, -10, 10, 0] }}
-            >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(37,99,235,0.1)" }}>
               <MessageCircle className="w-5 h-5" style={{ color: "#2563EB" }} />
-            </motion.div>
+            </div>
             <div className="text-left">
               <p className="text-sm font-semibold" style={{ color: "#0D2B45" }}>Request a Feature</p>
               <p className="text-xs" style={{ color: "#94A3B8" }}>Suggest improvements</p>
             </div>
           </div>
-          <motion.div
-            animate={{ x: [0, 4, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <ExternalLink className="w-5 h-5" style={{ color: "#94A3B8" }} />
-          </motion.div>
-        </motion.a>
+          <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" style={{ color: "#94A3B8" }} />
+        </a>
       </motion.div>
-
-      {/* Support Cards Grid */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.5 }}
-        className="relative z-10"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <Headphones className="w-4 h-4" style={{ color: "#00C4B4" }} />
-          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: "#64748B" }}>Support Channels</span>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { icon: BookOpen, label: "Documentation", color: "#00C4B4", desc: "Guides & tutorials" },
-            { icon: Mail, label: "Email Support", color: "#2563EB", desc: "24hr response" },
-            { icon: Phone, label: "Phone Support", color: "#22C55E", desc: "Mon-Fri 9-6" },
-            { icon: MessageCircle, label: "Live Chat", color: "#F59E0B", desc: "Coming soon" },
-          ].map((card, i) => (
-            <motion.div
-              key={card.label}
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.75 + i * 0.08, duration: 0.4 }}
-              whileHover={{ scale: 1.05, y: -4 }}
-              className="relative rounded-2xl p-5 border overflow-hidden cursor-pointer group"
-              style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8))",
-                backdropFilter: "blur(20px)",
-                borderColor: `${card.color}30`,
-                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-              }}
-            >
-              <motion.div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                style={{ background: `radial-gradient(circle, ${card.color}12, transparent)` }}
-              />
-              <motion.div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3`}
-                style={{ background: `${card.color}15` }}
-                whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
-              >
-                <card.icon className="w-5 h-5" style={{ color: card.color }} />
-              </motion.div>
-              <p className="text-sm font-semibold" style={{ color: "#0D2B45" }}>{card.label}</p>
-              <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>{card.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Floating Chat Button */}
-      <FloatingChatButton />
     </div>
-  );
-}
-
-/* ─── Floating Chat Button Component ───────────────────────────── */
-function FloatingChatButton() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [message, setMessage] = useState("");
-
-  return (
-    <>
-      {/* Chat Modal */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed bottom-24 right-8 w-80 bg-white rounded-2xl shadow-2xl overflow-hidden z-50"
-            style={{ border: "1px solid rgba(0,196,180,0.2)" }}
-          >
-            {/* Header */}
-            <div className="p-4 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #00C4B4, #0D2B45)" }}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                  <Headphones className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">Support Chat</p>
-                  <p className="text-[10px] text-white/70">Usually replies in minutes</p>
-                </div>
-              </div>
-              <button onClick={() => setIsOpen(false)} className="text-white/70 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-4 h-48 overflow-y-auto">
-              <div className="bg-slate-100 rounded-xl p-3 text-sm text-slate-600">
-                Hi there! 👋 How can we help you today?
-              </div>
-            </div>
-
-            {/* Input */}
-            <div className="p-3 border-t border-slate-100">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-teal-400"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #00C4B4, #0D2B45)" }}
-                >
-                  <Send className="w-4 h-4 text-white" />
-                </motion.button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center z-50 shadow-xl"
-        style={{
-          background: isOpen ? "#0D2B45" : "linear-gradient(135deg, #00C4B4, #0D2B45)",
-          boxShadow: "0 8px 24px rgba(0,196,180,0.4)",
-        }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        animate={{ y: [0, -4, 0] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
-      >
-        <motion.div
-          animate={{ rotate: isOpen ? 90 : 0, scale: isOpen ? 0.8 : 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {isOpen ? (
-            <X className="w-6 h-6 text-white" />
-          ) : (
-            <MessageCircle className="w-6 h-6 text-white" />
-          )}
-        </motion.div>
-        <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{ border: "2px solid rgba(255,255,255,0.3)" }}
-          animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-      </motion.button>
-    </>
   );
 }

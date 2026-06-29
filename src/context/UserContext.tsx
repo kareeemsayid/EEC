@@ -1,5 +1,4 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useAuth } from '../auth/useAuth';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface Permissions {
   canComment: boolean;
@@ -19,9 +18,6 @@ interface User {
   assignedAccounts: string[];
   assignedLOBs: string[];
   permissions: Permissions;
-  jobTitle?: string;
-  department?: string;
-  photoUrl?: string | null;
 }
 
 interface UserContextValue {
@@ -31,77 +27,15 @@ interface UserContextValue {
   refetch: () => void;
 }
 
-const PERMISSIONS: Record<string, Permissions> = {
-  Trainer: {
-    canComment: false,
-    canApproveTermination: false,
-    canRequestInvestigation: true,
-    canViewAllCases: false,
-    canViewRelocations: true,
-    canClearPS: false,
-    canClearTA: false,
-    canResolveCase: false,
-  },
-  PS: {
-    canComment: true,
-    canApproveTermination: true,
-    canRequestInvestigation: false,
-    canViewAllCases: true,
-    canViewRelocations: true,
-    canClearPS: true,
-    canClearTA: true,
-    canResolveCase: true,
-  },
-  TA: {
-    canComment: true,
-    canApproveTermination: true,
-    canRequestInvestigation: false,
-    canViewAllCases: true,
-    canViewRelocations: true,
-    canClearPS: true,
-    canClearTA: true,
-    canResolveCase: true,
-  },
-  Supervisor: {
-    canComment: true,
-    canApproveTermination: false,
-    canRequestInvestigation: false,
-    canViewAllCases: true,
-    canViewRelocations: true,
-    canClearPS: false,
-    canClearTA: false,
-    canResolveCase: false,
-  },
-  Manager: {
-    canComment: true,
-    canApproveTermination: false,
-    canRequestInvestigation: false,
-    canViewAllCases: true,
-    canViewRelocations: true,
-    canClearPS: false,
-    canClearTA: false,
-    canResolveCase: false,
-  },
-  SrManager: {
-    canComment: true,
-    canApproveTermination: true,
-    canRequestInvestigation: false,
-    canViewAllCases: true,
-    canViewRelocations: true,
-    canClearPS: false,
-    canClearTA: false,
-    canResolveCase: true,
-  },
-  Admin: {
-    canComment: true,
-    canApproveTermination: true,
-    canRequestInvestigation: true,
-    canViewAllCases: true,
-    canViewRelocations: true,
-    canClearPS: true,
-    canClearTA: true,
-    canResolveCase: true,
-  },
+const DEFAULT_PERMISSIONS: Permissions = {
+  canComment: false,
+  canApproveTermination: false,
+  canRequestInvestigation: true,
+  canViewAllCases: false,
+  canViewRelocations: true,
+  canClearPS: false,
+  canClearTA: false,
+  canResolveCase: false,
 };
 
 const UserContext = createContext<UserContextValue>({
@@ -112,27 +46,70 @@ const UserContext = createContext<UserContextValue>({
 });
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const { user: authUser, profileLoading, isAuthenticated } = useAuth();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const user: User | null = authUser ? {
-    email: authUser.email || '',
-    displayName: authUser.displayName || '',
-    role: authUser.role || 'Trainer',
-    assignedAccounts: authUser.assignedAccounts || [],
-    assignedLOBs: authUser.assignedLOBs || [],
-    permissions: PERMISSIONS[authUser.role] || PERMISSIONS.Trainer,
-    jobTitle: authUser.jobTitle,
-    department: authUser.department,
-    photoUrl: authUser.photoUrl,
-  } : null;
+  const fetchUser = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch('/api/user/me', {
+        credentials: 'include',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.status === 401) {
+        setError('session_expired');
+        setLoading(false);
+        return;
+      }
+
+      if (response.status === 403) {
+        setError('access_denied');
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        // API not available or error - don't block the app
+        console.warn(`User API returned ${response.status}, using fallback`);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      setUser(data);
+    } catch (err) {
+      // Network error or timeout - don't block the app
+      console.warn('Failed to fetch user info:', err);
+      setError(null); // Don't set error for network issues
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Only fetch user info if user is authenticated (check for MSAL tokens)
+    const hasMsalToken = sessionStorage.getItem('msal.token.keys') ||
+                         localStorage.getItem('msal.token.keys');
+
+    if (hasMsalToken) {
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
   return (
-    <UserContext.Provider value={{
-      user,
-      loading: profileLoading,
-      error: !isAuthenticated ? 'not_authenticated' : null,
-      refetch: () => window.location.reload(),
-    }}>
+    <UserContext.Provider value={{ user, loading, error, refetch: fetchUser }}>
       {children}
     </UserContext.Provider>
   );
@@ -146,4 +123,4 @@ export function useUser() {
   return context;
 }
 
-export { PERMISSIONS as DEFAULT_PERMISSIONS };
+export { DEFAULT_PERMISSIONS };

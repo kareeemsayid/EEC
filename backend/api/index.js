@@ -16,4 +16,22 @@ const app = require('../app');
 
 // The exported async function IS the Azure Function. Azure's runtime calls it
 // with (context, req) and awaits the returned Promise.
-module.exports = createHandler(app);
+const handler = createHandler(app);
+
+// Wrap the handler to catch any unhandled errors and return a structured 500
+// instead of the generic "Backend call failure" message from Azure Functions
+module.exports = async function (context, req) {
+  try {
+    await handler(context, req);
+  } catch (err) {
+    console.error('[Azure Function] Unhandled error:', err);
+    if (!context.res) {
+      context.res = {};
+    }
+    context.res.status = 500;
+    context.res.body = {
+      success: false,
+      error: err.message || 'Internal server error',
+    };
+  }
+};

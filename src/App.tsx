@@ -19,6 +19,8 @@ const CaseTimeline = lazy(() => import("./pages/CaseTimeline"));
 const AttendanceLog = lazy(() => import("./pages/AttendanceLog"));
 const HighRiskDashboard = lazy(() => import("./pages/HighRiskDashboard"));
 const TerminationCenter = lazy(() => import("./pages/TerminationCenter"));
+const WorkdayTermination = lazy(() => import("./pages/WorkdayTermination"));
+const TerminationSheetForm = lazy(() => import("./pages/TerminationSheetForm"));
 const PSDashboard = lazy(() => import("./pages/PSDashboard"));
 const Investigations = lazy(() => import("./pages/Investigations"));
 const InvestigationDetail = lazy(() => import("./pages/InvestigationDetail"));
@@ -39,7 +41,6 @@ const ManagerDashboard = lazy(() => import("./pages/manager/Dashboard"));
 const TADashboard = lazy(() => import("./pages/TADashboard"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const AdminPanel = lazy(() => import("./pages/AdminPanel"));
-const LinkCenter = lazy(() => import("./pages/LinkCenter"));
 
 const PageLoader = () => <LoadingScreen subtitle="Loading your workspace" />;
 
@@ -256,6 +257,22 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/termination/workday"
+          element={
+            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager", "Trainer"]}>
+              <WorkdayTermination />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/termination/sheet"
+          element={
+            <AuthenticatedRoute allowedRoles={["PS", "SrManager", "Manager", "Trainer"]}>
+              <TerminationSheetForm />
+            </AuthenticatedRoute>
+          }
+        />
+        <Route
           path="/investigations"
           element={
             <AuthenticatedRoute>
@@ -362,14 +379,6 @@ function AppRoutes() {
           element={
             <AuthenticatedRoute>
               <HelpSupport />
-            </AuthenticatedRoute>
-          }
-        />
-        <Route
-          path="/links"
-          element={
-            <AuthenticatedRoute>
-              <LinkCenter />
             </AuthenticatedRoute>
           }
         />

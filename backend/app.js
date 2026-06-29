@@ -11,7 +11,6 @@ const cors = require('cors');
 const sql = require('mssql');
 const { getPool } = require('./db/index');
 const authMiddleware = require('./utils/authMiddleware');
-const { normalizeRole } = require('./utils/normalizeRole');
 const userRoutes = require('./routes/user');
 const relocationsRoutes = require('./routes/relocations');
 const casesRoutes = require('./routes/cases');
@@ -24,53 +23,23 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware — allow Azure Static Web Apps, Azure Functions, Replit, and localhost
-// Enhanced CORS with proper preflight handling
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-
-    // List of allowed origins
-    const allowedPatterns = [
-      '.azurestaticapps.net',
-      '.azurewebsites.net',
-      '.replit.dev',
-      '.replit.app',
-      'localhost',
-      '127.0.0.1',
-      '.vercel.app',
-      '.netlify.app',
-    ];
-
-    const isAllowed = allowedPatterns.some(pattern => origin.includes(pattern));
-
-    if (isAllowed) {
+    if (
+      origin.includes('.azurestaticapps.net') ||
+      origin.includes('.azurewebsites.net') ||
+      origin.includes('.replit.dev') ||
+      origin.includes('.replit.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
       return callback(null, true);
     }
-
-    // Log rejected origins for debugging
-    console.log('[CORS] Rejected origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-Info', 'Apikey', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Content-Length', 'X-Request-Id'],
-  maxAge: 86400, // 24 hours
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
 }));
-
-// Explicit OPTIONS handler for preflight requests
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Client-Info, Apikey, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.sendStatus(204);
-});
-
 app.use(express.json());
 
 // Request logger
@@ -79,9 +48,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check (no auth required)
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check (no auth required) - includes DB connectivity status
+app.get('/api/health', async (req, res) => {
+  const { checkDbConnection } = require('./db/index');
+  const db = await checkDbConnection();
+  res.json({
+    status: db.connected ? 'ok' : 'degraded',
+    db: db.connected ? 'connected' : 'unavailable',
+    dbError: db.error || null,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Mount authMiddleware on all /api routes (except health check above)
@@ -248,6 +224,186 @@ app.post('/api/termination/send', async (req, res) => {
   }
 });
 
+// Termination sheet submission endpoint — stores the sheet, routes emails to stakeholders, and notifies PS
+app.post('/api/termination/sheet', async (req, res) => {
+  try {
+    const pool = await getPool();
+    const user = req.user;
+    const sheet = req.body;
+
+    if (!sheet || !sheet.account || !sheet.lob || !sheet.employeeName || !sheet.oracleId) {
+      return res.status(400).json({ success: false, error: 'Missing required fields: account, lob, employeeName, oracleId' });
+    }
+
+    const now = new Date().toISOString();
+    const sheetId = `TS-${Date.now()}`;
+
+    // 1. Insert the termination sheet record
+    try {
+      const insertReq = pool.request();
+      insertReq.input('sheetId', sql.NVarChar(50), sheetId);
+      insertReq.input('account', sql.NVarChar(200), sheet.account);
+      insertReq.input('lob', sql.NVarChar(200), sheet.lob);
+      insertReq.input('employeeName', sql.NVarChar(300), sheet.employeeName);
+      insertReq.input('oracleId', sql.NVarChar(50), sheet.oracleId);
+      insertReq.input('status', sql.NVarChar(100), sheet.status || '');
+      insertReq.input('lastDayWorking', sql.NVarChar(50), sheet.lastDayWorking || '');
+      insertReq.input('terminationReason', sql.NVarChar(sql.MAX), sheet.terminationReason || '');
+      insertReq.input('comment', sql.NVarChar(sql.MAX), sheet.comment || '');
+      insertReq.input('resignationSubmitted', sql.NVarChar(10), sheet.resignationSubmitted || 'N/A');
+      insertReq.input('headsetReturned', sql.NVarChar(10), sheet.headsetReturned || 'N/A');
+      insertReq.input('medicalCardReturned', sql.NVarChar(10), sheet.medicalCardReturned || 'N/A');
+      insertReq.input('accessCardReturned', sql.NVarChar(10), sheet.accessCardReturned || 'N/A');
+      insertReq.input('tokenReturned', sql.NVarChar(10), sheet.tokenReturned || 'N/A');
+      insertReq.input('userDeactivated', sql.NVarChar(10), sheet.userDeactivated || 'N/A');
+      insertReq.input('signedResign', sql.NVarChar(10), sheet.signedResign || 'N/A');
+      insertReq.input('freezeDocuments', sql.NVarChar(10), sheet.freezeDocuments || 'N/A');
+      insertReq.input('freezeSalary', sql.NVarChar(10), sheet.freezeSalary || 'N/A');
+      insertReq.input('submittedBy', sql.NVarChar(255), user.email);
+      insertReq.input('submittedByName', sql.NVarChar(255), user.displayName || user.email);
+      insertReq.input('submittedDate', now);
+
+      await insertReq.query(`
+        INSERT INTO TerminationSheets (
+          sheetId, account, lob, employeeName, oracleId, status,
+          lastDayWorking, terminationReason, comment,
+          resignationSubmitted, headsetReturned, medicalCardReturned,
+          accessCardReturned, tokenReturned, userDeactivated,
+          signedResign, freezeDocuments, freezeSalary,
+          submittedBy, submittedByName, submittedDate
+        ) VALUES (
+          @sheetId, @account, @lob, @employeeName, @oracleId, @status,
+          @lastDayWorking, @terminationReason, @comment,
+          @resignationSubmitted, @headsetReturned, @medicalCardReturned,
+          @accessCardReturned, @tokenReturned, @userDeactivated,
+          @signedResign, @freezeDocuments, @freezeSalary,
+          @submittedBy, @submittedByName, @submittedDate
+        )
+      `);
+    } catch (insertErr) {
+      console.error('[POST /api/termination/sheet] Insert failed (table may not exist yet):', insertErr.message);
+      // Continue even if table doesn't exist — we still send emails
+    }
+
+    // 2. Route based on account/LOB using RelocationRoutingRules (same pattern as relocation)
+    let routing = { supervisorEmails: [], managerEmails: [], taEmails: [], psEmails: [] };
+    try {
+      const { getRoutingForLOB } = require('./services/relocationEmail');
+      routing = await getRoutingForLOB(pool, sheet.lob);
+    } catch (e) {
+      console.error('[POST /api/termination/sheet] Routing lookup failed:', e.message);
+    }
+
+    // 3. Send email notification to stakeholders
+    try {
+      const { sendEmail } = require('./services/emailService');
+      const to = [...routing.psEmails];
+      const cc = [...routing.taEmails, ...routing.supervisorEmails, ...routing.managerEmails, user.email].filter(Boolean);
+
+      const subject = `[EEC] Termination Sheet | ${sheet.account} | ${sheet.lob} | ${sheet.employeeName} | ${sheet.oracleId}`;
+
+      const ynRows = [
+        ['Employee submitted resignation on system', sheet.resignationSubmitted],
+        ['Headset Returned', sheet.headsetReturned],
+        ['Medical Card Returned', sheet.medicalCardReturned],
+        ['Access Card Returned', sheet.accessCardReturned],
+        ['Token Returned', sheet.tokenReturned],
+        ['User Deactivated', sheet.userDeactivated],
+        ['Signed Resign.', sheet.signedResign],
+        ['Freeze Documents', sheet.freezeDocuments],
+        ['Freeze Salary', sheet.freezeSalary],
+      ];
+
+      const ynHtml = ynRows.map(([label, val]) => {
+        const color = val === 'Yes' ? '#10B981' : val === 'No' ? '#EF4444' : '#6B7280';
+        return `<tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;">${label}</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:13px;font-weight:600;color:${color};">${val || 'N/A'}</td></tr>`;
+      }).join('');
+
+      const html = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"></head>
+      <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Segoe UI',Calibri,Arial,sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 0;">
+          <tr><td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+              <tr>
+                <td style="background:linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%);padding:28px 32px;">
+                  <p style="margin:0 0 4px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#fecaca;font-weight:600;">Concentrix Training Operations</p>
+                  <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;">Termination Sheet Submitted</p>
+                  <p style="margin:4px 0 0;font-size:13px;color:#fecaca;">Sheet ID: ${sheetId}</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:24px 32px;">
+                  <p style="margin:0 0 16px;font-size:14px;color:#1f2937;">A termination sheet has been submitted by <strong>${user.displayName || user.email}</strong> and requires your review.</p>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;width:40%;font-size:11px;color:#6b7280;text-transform:uppercase;">Account</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:14px;font-weight:600;color:#1f2937;">${sheet.account}</td></tr>
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;">LOB</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:14px;font-weight:600;color:#1f2937;">${sheet.lob}</td></tr>
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;">Employee Name</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:14px;font-weight:600;color:#1f2937;">${sheet.employeeName}</td></tr>
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;">Oracle ID</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:14px;font-family:monospace;color:#1f2937;">${sheet.oracleId}</td></tr>
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;">Status</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#1f2937;">${sheet.status || '—'}</td></tr>
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;">Last Day Working</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:14px;color:#1f2937;">${sheet.lastDayWorking || '—'}</td></tr>
+                    <tr><td style="padding:8px 16px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-transform:uppercase;">Termination Reason</td><td style="padding:8px 16px;border-bottom:1px solid #e5e7eb;font-size:13px;color:#1f2937;">${sheet.terminationReason || '—'}</td></tr>
+                    ${sheet.comment ? `<tr><td style="padding:8px 16px;background:#f9fafb;font-size:11px;color:#6b7280;text-transform:uppercase;">Comment</td><td style="padding:8px 16px;font-size:13px;color:#1f2937;">${sheet.comment}</td></tr>` : ''}
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 32px 24px;">
+                  <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:0.5px;">Equipment & System Status</p>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                    ${ynHtml}
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="background:#f9fafb;padding:16px 32px;border-top:1px solid #e5e7eb;">
+                  <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">
+                    Concentrix Corporation &copy; 2026 | Training Attrition Command Center | Sheet ID: ${sheetId}
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+      </body>
+      </html>`;
+
+      await sendEmail({ to, cc, subject, html });
+    } catch (emailErr) {
+      console.error('[POST /api/termination/sheet] Email send failed:', emailErr.message);
+    }
+
+    // 4. Create in-app notifications for PS team members
+    try {
+      const psEmails = routing.psEmails;
+      for (const psEmail of psEmails) {
+        try {
+          const notifReq = pool.request();
+          notifReq.input('userEmail', sql.NVarChar(255), psEmail.toLowerCase());
+          notifReq.input('message', sql.NVarChar(sql.MAX), `Termination Sheet: ${sheet.employeeName} (${sheet.oracleId}) — ${sheet.account} / ${sheet.lob}`);
+          notifReq.input('linkUrl', sql.NVarChar(500), '/ps-dashboard');
+          notifReq.input('createdAt', now);
+          await notifReq.query(`
+            INSERT INTO UserNotifications (userEmail, message, linkUrl, createdAt)
+            VALUES (@userEmail, @message, @linkUrl, @createdAt)
+          `);
+        } catch (nErr) {
+          console.error('[POST /api/termination/sheet] Notification insert failed for', psEmail, ':', nErr.message);
+        }
+      }
+    } catch (notifErr) {
+      console.error('[POST /api/termination/sheet] Notification block failed:', notifErr.message);
+    }
+
+    res.json({ success: true, sheetId, message: 'Termination sheet submitted and stakeholders notified' });
+  } catch (error) {
+    console.error('[POST /api/termination/sheet] Error:', error);
+    res.status(500).json({ success: false, error: 'Failed to submit termination sheet' });
+  }
+});
+
 // 1. GET /api/accounts - Fetch all accounts (FIXED)
 app.get('/api/accounts', async (req, res) => {
   try {
@@ -273,8 +429,8 @@ app.get('/api/lobs', async (req, res) => {
 
     let query = 'SELECT Id AS id, LOBName AS title, AccountId AS accountId FROM LOBs';
     if (accountId) {
-      request.input('accountId', sql.Int, parseInt(accountId, 10));
       query += ' WHERE AccountId = @accountId';
+      request.input('accountId', sql.NVarChar(50), accountId);
     }
     query += ' ORDER BY LOBName';
 
@@ -293,6 +449,7 @@ app.get('/api/sites', async (req, res) => {
     const result = await pool.request().query(`
       SELECT Id AS id, SiteName AS title, City AS region
       FROM Sites
+      WHERE active = 1 OR active IS NULL
       ORDER BY City, SiteName
     `);
     res.json(result.recordset);
@@ -306,34 +463,27 @@ app.get('/api/sites', async (req, res) => {
 app.get('/api/roles', async (req, res) => {
   try {
     const { email } = req.query;
-    const userEmail = email || req.user?.email;
-
-    if (!userEmail) {
+    if (!email) {
       return res.status(400).json({ error: 'Email parameter required' });
     }
 
     const pool = await getPool();
     const request = pool.request();
-    request.input('email', sql.NVarChar(255), userEmail.toLowerCase().trim());
+    request.input('email', sql.NVarChar(255), email.toLowerCase());
 
     const result = await request.query(`
-      SELECT role, displayName 
-      FROM Users
-      WHERE LOWER(email) = @email
+      SELECT role FROM Users
+      WHERE LOWER(email) = @email AND (active = 1 OR active IS NULL)
     `);
 
     if (result.recordset.length > 0) {
-      const row = result.recordset[0];
-      return res.json({
-        role: normalizeRole(row.role),
-        displayName: row.displayName,
-      });
+      return res.json({ role: result.recordset[0].role || 'Trainer' });
     }
 
     res.json({ role: 'Trainer' });
   } catch (error) {
     console.error('[GET /api/roles] Error:', error);
-    res.status(500).json({ error: 'Failed to fetch role', role: 'Trainer' });
+    res.status(500).json({ error: 'Failed to fetch role' });
   }
 });
 
@@ -544,7 +694,10 @@ app.delete('/api/pins/:type/:id', async (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  // Return structured error so the frontend can display a meaningful message
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || 'Internal server error';
+  res.status(status).json({ error: message, success: false });
 });
 
 module.exports = app;

@@ -1,6 +1,7 @@
 const sql = require('mssql');
 
 let pool = null;
+let connecting = false;
 
 const dbConfig = {
   server: process.env.SQL_SERVER || process.env.DB_SERVER,
@@ -11,10 +12,9 @@ const dbConfig = {
     encrypt: true,
     trustServerCertificate: false,
     enableArithAbort: true,
-    connectTimeout: 15000,
   },
-  connectionTimeout: 15000,
-  requestTimeout: 15000,
+  connectionTimeout: 30000,
+  requestTimeout: 30000,
   pool: {
     max: 10,
     min: 0,
@@ -23,10 +23,55 @@ const dbConfig = {
 };
 
 async function getPool() {
-  if (!pool) {
-    pool = await sql.connect(dbConfig);
+  // Return healthy pool if it exists
+  if (pool && pool.connected) {
+    return pool;
   }
+
+  // If a connection attempt is already in progress, wait for it
+  if (connecting) {
+    let attempts = 0;
+    while (connecting && attempts < 50) {
+      await new Promise(r => setTimeout(r, 100));
+      attempts++;
+    }
+    if (pool && pool.connected) return pool;
+  }
+
+  // Close any stale/errored pool
+  if (pool) {
+    try { await pool.close(); } catch (_) { /* ignore */ }
+    pool = null;
+  }
+
+  connecting = true;
+  try {
+    pool = await sql.connect(dbConfig);
+
+    // Reset on pool error so the next request reconnects
+    pool.on('error', (err) => {
+      console.error('[DB] Pool error — will reconnect on next request:', err.message);
+      pool = null;
+    });
+  } catch (err) {
+    console.error('[DB] Connection failed:', err.message);
+    pool = null;
+    throw err;
+  } finally {
+    connecting = false;
+  }
+
   return pool;
 }
 
-module.exports = { getPool };
+async function checkDbConnection() {
+  try {
+    const p = await getPool();
+    await p.request().query('SELECT 1 AS ok');
+    return { connected: true };
+  } catch (err) {
+    return { connected: false, error: err.message };
+  }
+}
+
+module.exports = { getPool, checkDbConnection };

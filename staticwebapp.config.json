@@ -1,6 +1,12 @@
 {
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/static/*", "/*.{css,js,map,ico,png,jpg,svg,woff2}"]
+    "exclude": ["/static/*", "/*.{css,js,map,ico,png,jpg,svg,woff2,ttf,eot}"]
+  },
+  "globalHeaders": {
+    "Cache-Control": "no-cache"
+  },
+  "mimeTypes": {
+    ".json": "application/json"
   }
 }

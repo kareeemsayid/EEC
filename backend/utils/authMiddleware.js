@@ -1,5 +1,4 @@
 const { getPool } = require('../db/index');
-const { normalizeRole } = require('./normalizeRole');
 
 async function authMiddleware(req, res, next) {
   try {
@@ -18,22 +17,6 @@ async function authMiddleware(req, res, next) {
       email = process.env.DEV_USER_EMAIL;
     }
 
-    if (!email && req.query.email && typeof req.query.email === 'string') {
-      email = req.query.email;
-    }
-
-    const REFERENCE_DATA_PATHS = ['/accounts', '/lobs', '/sites'];
-    if (!email && REFERENCE_DATA_PATHS.some(p => req.path === p || req.path.startsWith(`${p}/`))) {
-      req.user = {
-        email: 'anonymous',
-        displayName: 'Anonymous',
-        role: 'Trainer',
-        assignedAccounts: [],
-        assignedLOBs: [],
-      };
-      return next();
-    }
-
     if (!email) {
       return res.status(401).json({ error: 'Unauthorized: No user email provided' });
     }
@@ -48,10 +31,7 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    const pool = await getPool().catch((err) => {
-      console.log('[authMiddleware] DB unavailable, using defaults:', err.message);
-      return null;
-    });
+    const pool = await getPool();
 
     // Default user object
     let user = {
@@ -61,11 +41,6 @@ async function authMiddleware(req, res, next) {
       assignedAccounts: [],
       assignedLOBs: [],
     };
-
-    if (!pool) {
-      req.user = user;
-      return next();
-    }
 
     // Try to query Users table if it exists
     try {
@@ -80,7 +55,7 @@ async function authMiddleware(req, res, next) {
         user = {
           email: userResult.recordset[0].email || email,
           displayName: userResult.recordset[0].displayName || email.split('@')[0],
-          role: normalizeRole(userResult.recordset[0].role),
+          role: userResult.recordset[0].role || 'Trainer',
           assignedAccounts: [],
           assignedLOBs: [],
         };
