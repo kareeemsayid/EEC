@@ -5,16 +5,9 @@ on:
       - main
   workflow_dispatch:
 
-env:
-  SWA_NAME: 'zealous-coast-018453310'
-  AZURE_CLI_VERSION: '2.63.0'
-
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v3
 
@@ -35,23 +28,10 @@ jobs:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
         run: npm run build
 
-      - name: Azure Login via OIDC
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Mask SWA deployment token
-        run: |
-          SWA_TOKEN=$(az staticwebapp secrets list --name ${{ env.SWA_NAME }} --query properties.apiKey -o tsv)
-          echo "::add-mask::$SWA_TOKEN"
-          echo "SWA_TOKEN=$SWA_TOKEN" >> $GITHUB_ENV
-
       - name: Deploy to Azure SWA
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ env.SWA_TOKEN }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310 }}
           action: "upload"
           app_location: "/"
           output_location: "build"
