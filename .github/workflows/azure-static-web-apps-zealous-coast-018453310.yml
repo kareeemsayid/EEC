@@ -19,33 +19,21 @@ jobs:
       REACT_APP_AZURE_AD_TENANT_ID: ${{ secrets.REACT_APP_AZURE_AD_TENANT_ID }}
       REACT_APP_AZURE_AD_REDIRECT_URI: ${{ secrets.REACT_APP_AZURE_AD_REDIRECT_URI }}
       REACT_APP_API_URL: https://eec-backend-app-buh6htfxfvgmaghd.denmarkeast-01.azurewebsites.net/api
-    permissions:
-      id-token: write
-      contents: read
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-          lfs: false
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core@1.6.0 @actions/http-client
-      - name: Get Id Token
-        uses: actions/github-script@v6
-        id: idtoken
-        with:
-          script: |
-            const coredemo = require('@actions/core')
-            return await coredemo.getIDToken()
-          result-encoding: string
+      - uses: actions/checkout@v4
+
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
+          # If deploy fails with "api key was invalid", refresh this secret:
+          # Azure Portal → Static Web App → Manage deployment token → paste into GitHub secret
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310 }}
-          action: "upload"
-          app_location: "/"
-          api_location: ""
-          output_location: "build"
+          action: upload
+          app_location: /
+          api_location: ''
+          output_location: build
+          app_build_command: npm run build
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -53,7 +41,7 @@ jobs:
     name: Close Pull Request Job
     steps:
       - name: Close Pull Request
-        id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
-          action: "close"
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310 }}
+          action: close
