@@ -2,14 +2,10 @@
 // EEC Frontend API Client - replaces SharePoint API calls with backend REST API
 
 import { RiskStatus, SeverityLevel, LifecycleStage, CaseStatus } from "../utils/types";
+import { getApiBase } from "./config";
+import { setApiUserEmail, getApiUserEmail } from "./authEmail";
 
-const API_BASE = process.env.REACT_APP_API_URL || '/api';
-
-// Module-level current user email — set after MSAL login via setApiUserEmail()
-let _currentUserEmail: string = '';
-export function setApiUserEmail(email: string) {
-  _currentUserEmail = email;
-}
+export { setApiUserEmail };
 
 // Types
 export interface Account {
@@ -124,10 +120,11 @@ function castCaseFields(item: any): any {
 // Helper
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const authHeaders: Record<string, string> = {};
-  if (_currentUserEmail) {
-    authHeaders['Authorization'] = `Bearer ${_currentUserEmail}`;
+  const email = getApiUserEmail();
+  if (email) {
+    authHeaders['Authorization'] = `Bearer ${email}`;
   }
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(`${getApiBase()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',

@@ -18,6 +18,10 @@ async function authMiddleware(req, res, next) {
       email = process.env.DEV_USER_EMAIL;
     }
 
+    if (!email && req.query.email && typeof req.query.email === 'string') {
+      email = req.query.email;
+    }
+
     const REFERENCE_DATA_PATHS = ['/accounts', '/lobs', '/sites'];
     if (!email && REFERENCE_DATA_PATHS.some(p => req.path === p || req.path.startsWith(`${p}/`))) {
       req.user = {

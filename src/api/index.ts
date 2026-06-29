@@ -1,6 +1,7 @@
 // Unified API client — base fetch wrapper with auth handling
 
-const API_BASE = process.env.REACT_APP_API_URL || '/api';
+import { getApiBase } from './config';
+import { getApiUserEmail } from './authEmail';
 
 export class ApiError extends Error {
   status: number;
@@ -21,10 +22,14 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
     ...(options.headers as Record<string, string> || {}),
   };
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const email = getApiUserEmail();
+  if (email && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${email}`;
+  }
+
+  const res = await fetch(`${getApiBase()}${path}`, {
     ...options,
     headers,
-    credentials: 'include',
   });
 
   if (res.status === 401 || res.status === 403) {
@@ -46,5 +51,5 @@ export async function apiFetch<T = any>(path: string, options: RequestInit = {})
   return data as T;
 }
 
-const apiClient = { apiFetch, ApiError, dispatchSessionExpiry, API_BASE };
+const apiClient = { apiFetch, ApiError, dispatchSessionExpiry, getApiBase };
 export default apiClient;
