@@ -353,8 +353,29 @@ function HexPatternBackground() {
 }
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, profileLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!profileLoading && user) {
+      switch (user.role) {
+        case 'PS':
+        case 'TA':
+        case 'SrManager':
+          navigate('/ps-dashboard', { replace: true });
+          break;
+        case 'Supervisor':
+          navigate('/dashboard/supervisor', { replace: true });
+          break;
+        case 'Manager':
+          navigate('/dashboard/manager', { replace: true });
+          break;
+        case 'Admin':
+          navigate('/admin', { replace: true });
+          break;
+      }
+    }
+  }, [user, profileLoading, navigate]);
 
   const [cases, setCases] = useState<AttritionCase[]>([]);
   const [loading, setLoading] = useState(true);

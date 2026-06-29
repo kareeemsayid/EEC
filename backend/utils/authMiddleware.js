@@ -17,6 +17,18 @@ async function authMiddleware(req, res, next) {
       email = process.env.DEV_USER_EMAIL;
     }
 
+    const REFERENCE_DATA_PATHS = ['/accounts', '/lobs', '/sites'];
+    if (!email && REFERENCE_DATA_PATHS.some(p => req.path === p || req.path.startsWith(`${p}/`))) {
+      req.user = {
+        email: 'anonymous',
+        displayName: 'Anonymous',
+        role: 'Trainer',
+        assignedAccounts: [],
+        assignedLOBs: [],
+      };
+      return next();
+    }
+
     if (!email) {
       return res.status(401).json({ error: 'Unauthorized: No user email provided' });
     }

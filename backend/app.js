@@ -272,8 +272,8 @@ app.get('/api/lobs', async (req, res) => {
 
     let query = 'SELECT Id AS id, LOBName AS title, AccountId AS accountId FROM LOBs';
     if (accountId) {
+      request.input('accountId', sql.Int, parseInt(accountId, 10));
       query += ' WHERE AccountId = @accountId';
-      request.input('accountId', sql.NVarChar(50), accountId);
     }
     query += ' ORDER BY LOBName';
 
@@ -306,27 +306,34 @@ app.get('/api/sites', async (req, res) => {
 app.get('/api/roles', async (req, res) => {
   try {
     const { email } = req.query;
-    if (!email) {
+    const userEmail = email || req.user?.email;
+
+    if (!userEmail) {
       return res.status(400).json({ error: 'Email parameter required' });
     }
 
     const pool = await getPool();
     const request = pool.request();
-    request.input('email', sql.NVarChar(255), email.toLowerCase());
+    request.input('email', sql.NVarChar(255), userEmail.toLowerCase().trim());
 
     const result = await request.query(`
-      SELECT role FROM Users
-      WHERE LOWER(email) = @email AND (active = 1 OR active IS NULL)
+      SELECT role, displayName 
+      FROM Users
+      WHERE LOWER(email) = @email
     `);
 
     if (result.recordset.length > 0) {
-      return res.json({ role: result.recordset[0].role || 'Trainer' });
+      const row = result.recordset[0];
+      return res.json({
+        role: row.role || 'Trainer',
+        displayName: row.displayName,
+      });
     }
 
     res.json({ role: 'Trainer' });
   } catch (error) {
     console.error('[GET /api/roles] Error:', error);
-    res.status(500).json({ error: 'Failed to fetch role' });
+    res.status(500).json({ error: 'Failed to fetch role', role: 'Trainer' });
   }
 });
 
