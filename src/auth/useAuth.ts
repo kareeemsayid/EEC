@@ -18,6 +18,20 @@ import {
 
 export type { UserRole };
 
+function normalizeRole(role: string | undefined): UserRole {
+  const map: Record<string, UserRole> = {
+    trainer: 'Trainer',
+    supervisor: 'Supervisor',
+    manager: 'Manager',
+    ps: 'PS',
+    ta: 'TA',
+    srmanager: 'SrManager',
+    admin: 'Admin',
+  };
+  if (!role) return 'Trainer';
+  return map[role.toLowerCase()] || (role as UserRole) || 'Trainer';
+}
+
 const GRAPH = "https://graph.microsoft.com/v1.0";
 
 export interface ManagerInfo {
@@ -179,7 +193,7 @@ export function useAuth(): UseAuthReturn {
             department: meGraph?.department || "",
             officeLocation: meGraph?.officeLocation || "",
             photoUrl,
-            role: roleData.role,
+            role: normalizeRole(roleData.role),
             supervisorAccounts,
             manager: manager1,
             manager1,

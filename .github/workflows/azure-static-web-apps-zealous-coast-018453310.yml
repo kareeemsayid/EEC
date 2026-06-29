@@ -18,6 +18,7 @@ jobs:
       REACT_APP_AZURE_AD_CLIENT_ID: ${{ secrets.REACT_APP_AZURE_AD_CLIENT_ID }}
       REACT_APP_AZURE_AD_TENANT_ID: ${{ secrets.REACT_APP_AZURE_AD_TENANT_ID }}
       REACT_APP_AZURE_AD_REDIRECT_URI: ${{ secrets.REACT_APP_AZURE_AD_REDIRECT_URI }}
+      REACT_APP_API_URL: https://eec-backend-app-buh6htfxfvgmaghd.denmarkeast-01.azurewebsites.net/api
     permissions:
       id-token: write
       contents: read
@@ -43,9 +44,8 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_ZEALOUS_COAST_018453310 }}
           action: "upload"
           app_location: "/"
-          api_location: ""           # <--- CRITICAL: Leave empty
+          api_location: ""
           output_location: "build"
-          github_id_token: ${{ steps.idtoken.outputs.result }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

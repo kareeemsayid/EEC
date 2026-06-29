@@ -11,6 +11,7 @@ const cors = require('cors');
 const sql = require('mssql');
 const { getPool } = require('./db/index');
 const authMiddleware = require('./utils/authMiddleware');
+const { normalizeRole } = require('./utils/normalizeRole');
 const userRoutes = require('./routes/user');
 const relocationsRoutes = require('./routes/relocations');
 const casesRoutes = require('./routes/cases');
@@ -292,7 +293,6 @@ app.get('/api/sites', async (req, res) => {
     const result = await pool.request().query(`
       SELECT Id AS id, SiteName AS title, City AS region
       FROM Sites
-      WHERE active = 1 OR active IS NULL
       ORDER BY City, SiteName
     `);
     res.json(result.recordset);
@@ -325,7 +325,7 @@ app.get('/api/roles', async (req, res) => {
     if (result.recordset.length > 0) {
       const row = result.recordset[0];
       return res.json({
-        role: row.role || 'Trainer',
+        role: normalizeRole(row.role),
         displayName: row.displayName,
       });
     }

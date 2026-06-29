@@ -4,8 +4,8 @@
   "description": "EEC Employee Exit Command Center Backend API",
   "main": "app.js",
   "scripts": {
-    "start": "node app.js",
-    "dev": "node app.js"
+    "start": "node local.js",
+    "dev": "node local.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -1,4 +1,5 @@
 const { getPool } = require('../db/index');
+const { normalizeRole } = require('./normalizeRole');
 
 async function authMiddleware(req, res, next) {
   try {
@@ -43,7 +44,10 @@ async function authMiddleware(req, res, next) {
       });
     }
 
-    const pool = await getPool();
+    const pool = await getPool().catch((err) => {
+      console.log('[authMiddleware] DB unavailable, using defaults:', err.message);
+      return null;
+    });
 
     // Default user object
     let user = {
@@ -53,6 +57,11 @@ async function authMiddleware(req, res, next) {
       assignedAccounts: [],
       assignedLOBs: [],
     };
+
+    if (!pool) {
+      req.user = user;
+      return next();
+    }
 
     // Try to query Users table if it exists
     try {
@@ -67,7 +76,7 @@ async function authMiddleware(req, res, next) {
         user = {
           email: userResult.recordset[0].email || email,
           displayName: userResult.recordset[0].displayName || email.split('@')[0],
-          role: userResult.recordset[0].role || 'Trainer',
+          role: normalizeRole(userResult.recordset[0].role),
           assignedAccounts: [],
           assignedLOBs: [],
         };
